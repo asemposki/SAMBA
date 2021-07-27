@@ -505,6 +505,90 @@ class Switching:
                                   + (1.0 - self.switchcos(g1, g2, g3[j], g[i])) * Mixing.high_g(self, g[i], highorder)
             
         return result_array
+    
+    
+    def plot_ppd(self, g_data, g_true, g_ppd, data, ppd_results, ppd_intervals, percent, loworder, highorder):
+        
+        '''
+        A plotting function that can be used to plot the posterior predictive distribution (PPD) results (mean and 
+        credible interval) obtained from calling the functions above in the main code, as well as data generated, 
+        the true model, and the small- and large-g expansions chosen for the mixed model calculation. 
+        
+        :Example:
+            Switching.plot_ppd(g_data=np.linspace(0.0, 0.5, 20), g_true=np.linspace(0.0, 0.5, 100), 
+            g_ppd=np.linspace(0.0, 0.5, 200), data=np.array(), ppd_results=np.array(), ppd_intervals=np.array(),
+            loworder=5, highorder=23)
+            
+        Parameters:
+        -----------
+        g_data
+            The linspace used to generate the data.
+        
+        g_true
+            The linspace used to calculate the true model over the input space, as well as the expansions.
+        
+        g_ppd
+            The linspace chosen to calculate the PPD over. 
+        
+        data
+            An array of data either generated or supplied by the user.
+            
+        ppd_results
+            An array of the mean of the PPD at each point in the g_ppd linspace.
+        
+        ppd_intervals
+            A 2D array of the credibility interval calculated for the PPD (containing both bounds).
+            
+        percent
+            The percent credibility interval calculated for the variable ppd_intervals (used in the plot
+            legend). 
+        
+        loworder
+            The order of the small-g expansion used in the mixed model.
+        
+        highorder
+            The order of the large-g expansion used in the mixed model. 
+        
+        Returns:
+        --------
+        None.
+        '''
+    
+        xmin = float(input('Enter the minimum g to plot.'))
+        xmax = float(input('Enter the maximum g to plot.'))
+
+        fig = plt.figure(figsize=(8,5), dpi=100)
+        ax = plt.axes()
+        ax.tick_params(axis='x', labelsize=14)
+        ax.tick_params(axis='y', labelsize=14)
+        ax.set_xlabel('g', fontsize=16)
+        ax.set_ylabel('F(g)', fontsize=16)
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(1.8,2.6)
+        ax.set_title('Mixed Prediction with Calibration Posteriors', fontsize=16)
+
+        ax.plot(g_data, data, 'k.', label='Data set')  
+        ax.plot(g_true, Mixing.true_model(self, g_true), 'k', label='Exact')
+
+        ax.plot(g_true, Mixing.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
+        ax.plot(g_true, Mixing.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
+
+        ax.plot(g_ppd, ppd_results, 'g', label='Calibrated mixed model')
+        ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label='{}% credible interval (HPD)'.format(percent))
+        ax.plot(g_ppd, ppd_intervals[:, 1], 'g', linestyle='dotted')
+
+        ax.legend(fontsize=12)
+        plt.show()
+
+        answer = input('Would you like to save the plot to a file (yes/no)?')
+
+        if answer == 'yes':
+            name = input('Enter a file name to use (include file type as .png, .pdf, etc.).')
+            fig.savefig(name)
+        else:
+            pass
+        
+        return None
 
 
 class Mixing(Switching):
