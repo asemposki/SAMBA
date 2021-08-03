@@ -2,12 +2,16 @@ Current and future plans for the class and the project:
 
 I. Work out a way for the class to have user-entered functions and data.
 
-II. Develop the class so that we can have the priors in the mixed model functions (and the functions themselves if possible) switched out for others given a question to the user and a selection made. This should be possible, need to look into it very soon. If I am able to do this, it will cut out a lot of long functions that take up a lot of the class "space" (lines). 
+II. Develop the class so that we can have the priors in the mixed model functions (and the functions themselves if possible) switched out for 
+others given a question to the user and a selection made. This should be possible, need to look into it very soon. If I am able to do this, it 
+will cut out a lot of long functions that take up a lot of the class "space" (lines). 
 
-III. Add a generic plotting function to be used with all of the plotting in the class, if possible. This would cut a LOT of functions out of the class, too, and make it much more compact and versatile, which would be a step towards a package format. 
+III. Add a generic plotting function to be used with all of the plotting in the class, if possible. This would cut a LOT of functions out of 
+the class, too, and make it much more compact and versatile, which would be a step towards a package format. 
 
 IV. Eventually add unit tests and examples so that this class can be checked in all ways. 
 
 V. Concerning the analysis, need to determine if another prior might work better than the uniform or Gaussian ones I have tried. 
 
-VI. See if we can get the mean of the PPD down to the data---any other ways to work with this model? Maybe not a linear mixture but something formulated differently? Anything like that exist outside of GPs or weights, or should we try something more along those lines?
+VI. See if we can get the mean of the PPD down to the data---any other ways to work with this model? Maybe not a linear mixture but something 
+formulated differently? Anything like that exist outside of GPs or weights, or should we try something more along those lines?
