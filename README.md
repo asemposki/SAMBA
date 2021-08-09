@@ -1,5 +1,5 @@
 # BAND Bayesian Model Mixing: Expansions of Toy Models
-Tentatively deemed the 'Bayesian Fremkit', this repo stores the class structures and test code to perform BMM on two expansions in a toy model setting. 
+This repo stores the class structures and test code to perform BMM on two expansions in a toy model setting. 
 
 Current files:
 
