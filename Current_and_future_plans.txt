@@ -1,7 +1,7 @@
 Current and future plans for the class and the project:
 
 I. Add g1 and g2 into the cosine mixing model as parameters and not fixed quantities to see what happens (can the program do a better job with 
-those as sampled parameters, or does it fare badly?).
+those as sampled parameters, or does it fare badly?). **Done. 
 
 II. Work out a way for the class to have user-entered functions and data.
 
@@ -18,3 +18,7 @@ VI. Concerning the analysis, need to determine if another prior might work bette
 
 VII. See if we can get the mean of the PPD down to the data---any other ways to work with this model? Maybe not a linear mixture but something 
 formulated differently? Anything like that exist outside of GPs or weights, or should we try something more along those lines?
+
+VIII. Work out the cosine function issue of divide by zero if possible---may just be a sampler remnant that I cannot alter.
+
+IX. Need to combine all PPD functions into one generic function in the same way as was done with the sampler functions.

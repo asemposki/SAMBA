@@ -1,12 +1,12 @@
 import numpy as np
-from scipy import special, integrate, stats
+from scipy import special, integrate
 from cycler import cycler
-import math as math
+import math
 import time
 import emcee 
 import matplotlib.pyplot as plt
-        
-    
+
+
 class Switching:
    
     
@@ -23,7 +23,7 @@ class Switching:
         -----------
         None.
         
-        Results:
+        Returns:
         --------
         None.
         '''
@@ -31,90 +31,84 @@ class Switching:
         pass
     
     
-    def logistic(self, beta0, beta1, g):
+    def logistic(self, params, g):
         
         '''
         A basic logistic function often used in machine learning, implemented here with two free
         parameters to be determined via sampling.
         
         :Example:
-            Switching.logistic(beta0=param[0], beta1=param[1], g=0.5)
+            Switching.logistic(params=np.array(), g=0.5)
             
         Parameters:
         -----------
-        beta0          
-            One free parameter that is found by sampling---controls the location of the function's 
-            halfway point in g space.
-            
-        beta1         
-            The other free parameter found by sampling---controls the steepness of the function. 
-        
+        params
+            The array of parameters the sampler will determine (here labelled beta0 and beta1, where
+            beta0 controls the location of the function and beta1 controls the slope). 
+
         Returns:
         --------
         mixing          
             The result of the logistic function given the value g.
         '''
+        beta0, beta1 = params
     
         mixing = (1.0 + np.exp(-(beta0 + g*beta1)))**(-1.0)
     
         return mixing
     
 
-    def cdf(self, beta0, beta1, g):
+    def cdf(self, params, g):
         
         '''
         The cumulative distribution function of a standard normal distribution, with two free parameters
         determined by sampling.
         
         :Example:
-            Switching.cdf(beta0=params[0], beta1=params[1], g=0.5)
+            Switching.cdf(params=np.array(), g=0.5)
         
         Parameters:
         -----------
-        beta0        
-             One free parameter that is found by sampling---controls the location of the function's 
-            halfway point in g space.
-            
-        beta1    
-            The other free parameter found by sampling---controls the steepness of the function. 
+        params
+            The array of parameters the sampler will determine (here labelled beta0 and beta1, where
+            beta0 controls the location of the function and beta1 controls the slope). 
                    
         Returns:
         --------
         function          
             The result of the cdf function at the value of g. 
         '''
+        beta0, beta1 = params
     
         function = (1.0 + math.erf(beta0 + g*beta1)/np.sqrt(2.0)) / 2.0
     
         return function
     
     
-    #later on ---> make g1 and g2 parameters to be found via sampling as well!
-    def switchcos(self, g1, g2, g3, g):
+    def switchcos(self, params, g):
         
         '''
         A piecewise function using two constants at either end, and two cosine functions in the centre,
         to be used as a switching function. One free parameter, g3, is found by sampling. 
         
         :Example:
-            Switching.switchcos(g1=0.12, g2=0.20, g3=param[0], g=0.5)
+            Switching.switchcos(params=np.array(), g=0.5)
             
         Parameters:
         -----------
-        g1        
-            The point at which the function switches from a constant to the first cosine function. 
-        
-        g2    
-            The point at which the function switches from the second cosine function to a constant.
-        
-        g3         
-            The free parameter that will be determined by sampling that resides between the two cosine 
-            functions.
-            
+        params
+            The array of parameters to be determined by the sampler (here labelled g1, g2, and g3, where
+            g1 is the separation point between the first constant function and the first cosine function, 
+            g2 is the separation point between the second cosine function and the second constant function, 
+            and g3 is the point between the two cosine functions). 
+
         Returns:
         --------
             The value of the function at a specific point in g. 
         '''
+
+        #unpack the parameters
+        g1, g2, g3 = params 
     
         if g <= g1:
             return 1.0
@@ -127,224 +121,6 @@ class Switching:
     
         else:
             return 0.0
-        
-    
-    def log_mix(self, params, g_data, data, sigma, loworder, highorder, mu0, mu1, sig0, sig1):
-        
-        '''
-        The mixing function that will be sent to the sampler that implements Switching.logistic as 
-        the switching function.
-        
-        :Example:
-            Switching.log_mix(params, g_data=np.linspace(0.0, 0.5, 20), data=np.array(), sigma=np.array(),
-            loworder=5, highorder=23, mu0=0.16, mu1=0.5, sig0=0.02, sig1=0.1)
-            
-        Parameters:
-        -----------
-        params
-            The two parameters, beta0 and beta1, that are being determined by the sampler, in an array.
-            
-        g_data
-            The linspace used to generate the data.
-            
-        data
-            An array of data either generated or supplied by the user. 
-            
-        sigma 
-            An array of standard deviations for each data point.
-            
-        loworder
-            The order of the small-g expansion desired for the mixing calculation.
-        
-        highorder
-            The order of the large-g expansion desired for the mixing calculation.
-            
-        mu0
-            The mean given to the prior for beta0.
-            
-        mu1
-            The mean given to the prior for beta1.
-            
-        sig0 
-            The standard deviation given to the prior on beta0.
-        
-        sig1
-            The standard deviation given to the prior on beta1.
-        
-        Returns:
-        --------
-        mixed_results
-            The results of the mixing function for the entire linspace in g, in an array format.
-        '''
-        
-        #unpack parameters
-        beta0 = params[0]
-        beta1 = params[1]       
-    
-        #set up arrays
-        mixed_likelihood = np.empty([len(g_data)])
-        log_ml = np.empty([len(g_data)])
-    
-        #likelihood mixing
-        for i in range(len(g_data)):
-        
-            mixed_likelihood[i] = self.logistic(beta0, beta1, g_data[i]) * \
-                                  Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder) \
-                                  + (1.0 - self.logistic(beta0, beta1, g_data[i])) * \
-                                  Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder)
-                
-            log_ml[i] = np.log(mixed_likelihood[i])
-        
-        total_lml = np.sum(log_ml)
-    
-        #add the priors
-        mixed_results = total_lml + Mixing.prior_gauss(self, beta0, mu0, sig0) + Mixing.prior_gauss(self, beta1, mu1, sig1)
-    
-        return mixed_results
-    
-    
-    def cdf_mix(self, params, g_data, data, sigma, loworder, highorder, mu0, mu1, sig0, sig1):
-        
-        '''
-        The mixing function that will be sent to the sampler that implements Switching.cdf as 
-        the switching function.
-        
-        :Example:
-            Switching.cdf_mix(params, g_data=np.linspace(0.0, 0.5, 20), data=np.array(), sigma=np.array(),
-            loworder=5, highorder=23, mu0=0.16, mu1=0.5, sig0=0.02, sig1=0.1)
-            
-        Parameters:
-        -----------
-        params
-            The two parameters, beta0 and beta1, that are being determined by the sampler, in an array.
-            
-        g_data
-            The linspace used to generate the data.
-            
-        data
-            An array of data either generated or supplied by the user. 
-            
-        sigma 
-            An array of standard deviations for each data point.
-            
-        loworder
-            The order of the small-g expansion desired for the mixing calculation.
-        
-        highorder
-            The order of the large-g expansion desired for the mixing calculation.
-            
-        mu0
-            The mean given to the prior for beta0.
-            
-        mu1
-            The mean given to the prior for beta1.
-            
-        sig0 
-            The standard deviation given to the prior on beta0.
-        
-        sig1
-            The standard deviation given to the prior on beta1.
-        
-        Returns:
-        --------
-        mixed_results
-            The results of the mixing function for the entire linspace in g, in an array format.
-        '''
-        
-        #unpack parameters
-        beta0 = params[0]
-        beta1 = params[1]
-    
-        #set up arrays
-        mixed_likelihood = np.empty([len(g_data)])
-        log_ml = np.empty([len(g_data)])
-    
-        #likelihood mixing
-        for i in range(len(g_data)):
-        
-            mixed_likelihood[i] = self.cdf(beta0, beta1, g_data[i]) * \
-                                  Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder) \
-                                  + (1.0 - self.cdf(beta0, beta1, g_data[i])) * \
-                                  Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder)
-                
-            log_ml[i] = np.log(mixed_likelihood[i])
-        
-        total_lml = np.sum(log_ml)
-    
-        #add the priors
-        mixed_results = total_lml + Mixing.prior_gauss(self, beta0, mu0, sig0) + Mixing.prior_gauss(self, beta1, mu1, sig1)
-    
-        return mixed_results
-    
-    #later on ---> add the g1 and g2 information
-    def cosine_mix(self, params, g_data, data, sigma, loworder, highorder, g3mu, g3sig):
-        
-        '''
-        The mixing function that will be sent to the sampler that implements Switching.cosine_mix 
-        as the switching function.
-        
-        :Example:
-            Switching.cosine_mix(params=param[0], g_data=np.linspace(0.0, 0.5, 20), data=np.array(),
-            sigma=np.array(), loworder=5, highorder=23, g3mu=0.15, g3sig=0.01)
-        
-        Parameters:
-        -----------
-        params
-            The parameter g3 that is being determined by the sampler, in an array.
-            
-        g_data
-            The linspace used to generate the data.
-            
-        data
-            An array of data either generated or supplied by the user. 
-            
-        sigma 
-            An array of standard deviations for each data point.
-            
-        loworder
-            The order of the small-g expansion desired for the mixing calculation.
-        
-        highorder
-            The order of the large-g expansion desired for the mixing calculation.
-            
-        g3mu
-            The mean given to the prior for g3.
-            
-        g3sig
-            The standard deviation given to the prior for g3.
-        
-        Returns:
-        --------
-        mixed_results
-            The results of the mixing function for the entire linspace in g, in an array format.
-            
-        '''
-    
-        #unpack parameters
-        g1 = 0.12
-        g2 = 0.20
-        g3 = params
-    
-        #set up arrays
-        mixed_likelihood = np.empty([len(g_data)])
-        log_ml = np.empty([len(g_data)])
-  
-        #likelihood mixing
-        for i in range(len(g_data)):
-        
-            mixed_likelihood[i] = self.switchcos(g1, g2, g3, g_data[i]) * \
-                                  Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder) \
-                                  + (1.0 - self.switchcos(g1, g2, g3, g_data[i])) * \
-                                  Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder)
-                        
-            log_ml[i] = np.log(mixed_likelihood[i])
-        
-        total_lml = np.sum(log_ml)
-    
-        #add the priors
-        mixed_results = total_lml + Mixing.prior_gauss(self, g3, g3mu, g3sig)
-    
-        return mixed_results
     
     
     def ppd_log(self, beta0, beta1, g, loworder, highorder):
@@ -500,9 +276,12 @@ class Switching:
 
         for i in range(len(g)):
             for j in range(len(g3.T)):
+                
+                params = np.array([g1[j], g2[j], g3[j]])
             
-                result_array[i,j] = self.switchcos(g1, g2, g3[j], g[i]) * Mixing.low_g(self, g[i], loworder) \
-                                  + (1.0 - self.switchcos(g1, g2, g3[j], g[i])) * Mixing.high_g(self, g[i], highorder)
+                result_array[i,j] = self.switchcos(params, g[i]) * Mixing.low_g(self, g[i], loworder) \
+                                  + (1.0 - self.switchcos(params, g[i])) \
+                                  * Mixing.high_g(self, g[i], highorder)
             
         return result_array
     
@@ -556,7 +335,15 @@ class Switching:
     
         xmin = float(input('Enter the minimum g to plot.'))
         xmax = float(input('Enter the maximum g to plot.'))
-
+        
+        ymin = float(input('Enter the minimum for F(g).'))
+        ymax = float(input('Enter the maximum for F(g).'))
+        
+        if ymin == None:
+            ymin = 1.8
+        if ymax == None:
+            ymax = 2.6
+        
         fig = plt.figure(figsize=(8,5), dpi=100)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=14)
@@ -564,7 +351,7 @@ class Switching:
         ax.set_xlabel('g', fontsize=16)
         ax.set_ylabel('F(g)', fontsize=16)
         ax.set_xlim(xmin, xmax)
-        ax.set_ylim(1.8,2.6)
+        ax.set_ylim(ymin, ymax)
         ax.set_title('Mixed Prediction with Calibration Posteriors', fontsize=16)
 
         ax.plot(g_data, data, 'k.', label='Data set')  
@@ -1127,6 +914,71 @@ class Mixing(Switching):
     
         return prep + insidep 
 
+
+    def sampler_mix(self, params, g_data, data, sigma, loworder, highorder, mu, sig):
+
+        '''
+        The model mixing function sent to the sampler to find the values of the parameters in the 
+        selected switching function. 
+
+        :Example:
+            emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix,
+                                  args=[g_data, data, sigma, loworder, highorder, mu, sig])
+
+        Parameters:
+        -----------
+        params
+            The parameters that are being determined by the sampler, in an array (not input).
+
+        g_data
+            The linspace used to generate the data.
+
+        data
+            An array of data either generated or supplied by the user. 
+
+        sigma 
+            An array of standard deviations for each data point.
+
+        loworder
+            The order of the small-g expansion desired for the mixing calculation.
+
+        highorder
+            The order of the large-g expansion desired for the mixing calculation.
+
+        mu
+            The array of means given to the priors on the switching parameters.
+
+        sig 
+            The array of standard deviations given to the priors on the switching parameters.
+
+        Returns:
+        --------
+        mixed_results
+            The results of the mixing function for the entire linspace in g, in an array format.
+        '''
+
+        #set up arrays
+        mixed_likelihood = np.empty([len(g_data)])
+        log_ml = np.empty([len(g_data)])
+
+        #likelihood mixing
+        for i in range(len(g_data)):
+
+            mixed_likelihood[i] = self.f(params, g_data[i]) * \
+                                Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder) \
+                                + (1.0- self.f(params, g_data[i])) * \
+                                Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder)
+
+            log_ml[i] = np.log(mixed_likelihood[i])
+
+        total_lml = np.sum(log_ml)
+
+        #add the priors
+        mixed_results = total_lml + np.sum([self.prior_gauss(params[i], mu[i], sig[i]) \
+                                            for i in range(len(params))])
+
+        return mixed_results
+
         
     def mixed_model(self, g_data, data, sigma, loworder, highorder):
         
@@ -1163,139 +1015,99 @@ class Mixing(Switching):
             unknown parameter. 
             
         '''
+
+        #dictionary of switching functions
+        self.function_mappings = {
+            'logistic': self.logistic,
+            'cdf': self.cdf,
+            'cosine': self.switchcos
+        }
         
         #ask user which switching function to use
-        response = input('What switching function would you like to use: logistic, cdf, or cosine?')
+        self.f = input('What switching function would you like to use: logistic, cdf, or cosine?')
         
-        #switch statement implementation
-        if response == "logistic":
-            
-            #enter mu and sigma for both parameters
-            mu0 = float(input("Enter a guess for the mean of the parameter beta0: "))
-            sig0 = float(input("Enter a guess for the standard deviation of the parameter beta0: "))
-            mu1 = float(input("Enter a guess for the mean of the parameter beta1: "))
-            sig1 = float(input("Enter a guess for the standard deviation of the parameter beta1: "))
-            
-            #set up sampler
-            ndim = 2
-            nwalkers = 5
-            nsteps = 1000
+        #enter mu and sigma for both parameters
+        mu = []
+        sig = []
 
-            total_samples = nwalkers * nsteps
-
-            print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
-
-            starting_points = np.random.randn(nwalkers, ndim)
-
-            #call emcee
-            sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.log_mix, \
-                                                  args=[g_data, data, sigma, loworder, highorder, mu0, mu1, sig0, sig1])
-            now = time.time()
-            sampler_mixed.run_mcmc(starting_points, nsteps)
-            stop = time.time()
-  
-            print('Calculation finished!')
-    
-            #time calculation
-            elapsed = int(stop - now)
-            if elapsed / 60 < 1.0:
-                print(f"Duration = {elapsed} sec.")
-            elif elapsed / 60 >= 1.0:
-                minutes = int(elapsed / 60)
-                seconds = int(elapsed - 60*minutes)
-                print(f"Duration = {minutes} min, {seconds} sec.")
-            
-            #find the trace
-            emcee_trace_mixed = self.burnin_trace(sampler_mixed, nwalkers, ndim)
-            
-            return emcee_trace_mixed
-            
-        elif response == "cdf":
-            
-            #enter mu and sigma for both parameters
-            mu0 = float(input("Enter a guess for the mean of the parameter beta0: "))
-            sig0 = float(input("Enter a guess for the standard deviation of the parameter beta0: "))
-            mu1 = float(input("Enter a guess for the mean of the parameter beta1: "))
-            sig1 = float(input("Enter a guess for the standard deviation of the parameter beta1: "))
-            
-            #set up sampler
-            ndim = 2
-            nwalkers = 5
-            nsteps = 1000
-
-            total_samples = nwalkers * nsteps
-
-            print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
-
-            starting_points = np.random.randn(nwalkers, ndim)
-
-            #call emcee
-            sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.cdf_mix, \
-                                                  args=[g_data, data, sigma, loworder, highorder, mu0, mu1, sig0, sig1])
-            now = time.time()
-            sampler_mixed.run_mcmc(starting_points, nsteps)
-            stop = time.time()
-  
-            print('Calculation finished!')
-    
-            #time calculation
-            elapsed = int(stop - now)
-            if elapsed / 60 < 1.0:
-                print(f"Duration = {elapsed} sec.")
-            elif elapsed / 60 >= 1.0:
-                minutes = int(elapsed / 60)
-                seconds = int(elapsed - 60*minutes)
-                print(f"Duration = {minutes} min, {seconds} sec.")
-            
-            #find the trace
-            emcee_trace_mixed = self.burnin_trace(sampler_mixed, nwalkers, ndim)
-            
-            return emcee_trace_mixed     
-            
-        elif response == "cosine":
-            
-            #enter mu and sigma for the prior on g3
-            mu = float(input("Enter a guess for the mean of the parameter g3: "))
-            sig = float(input("Enter a guess for the standard deviation of the parameter g3: "))
-            
-            #set up the sampler here
-            ndim = 1
-            nwalkers = 10
-            nsteps = 1000
-
-            total_samples = nwalkers * nsteps
-
-            print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
-
-            starting_points = np.random.randn(nwalkers, ndim)
-
-            #call emcee
-            sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.cosine_mix, \
-                                                  args=[g_data, data, sigma, loworder, highorder, mu, sig])
-            now = time.time()
-            sampler_mixed.run_mcmc(starting_points, nsteps)
-            stop = time.time()
-            
-            print('Calculation finished!')
-            
-            #time calculation
-            elapsed = int(stop - now)
-            if elapsed / 60 < 1.0:
-                print(f"Duration = {elapsed} sec.")
-            elif elapsed / 60 >= 1.0:
-                minutes = int(elapsed / 60)
-                seconds = int(elapsed - 60*minutes)
-                print(f"Duration = {minutes} min, {seconds} sec.")
-            
-            #find the trace
-            emcee_trace_mixed = self.burnin_trace(sampler_mixed, nwalkers, ndim)
-            
-            return emcee_trace_mixed
-        
+        if self.f == 'logistic' or self.f == 'cdf':
+            for i in range(2):
+                mu.append( float(input(f"Enter a guess for the mean of the parameter beta_{i}: ")))
+                sig.append(float(input(f"Enter a guess for the standard deviation of the parameter beta_{i}: ")))
+        elif self.f == 'cosine':
+            for i in range(3):
+                mu.append(float(input(f"Enter a guess for the mean of the parameter g_{i+1}: ")))
+                sig.append(float(input(f"Enter a guess for the standard deviation of the parameter g_{i+1}: ")))
         else:
-            print('Please select one of the options listed above.')
-            
-            
+            raise ValueError('Switching function requested is not found. Select one of the valid options.')
+                
+        mu = np.asarray(mu)
+        sig = np.asarray(sig)
+
+        #set up sampler
+        ndim = len(mu)
+        nwalkers = int(3*ndim + 1)
+        nsteps = 1000
+
+        total_samples = nwalkers * nsteps
+
+        print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
+
+        starting_points = np.random.randn(nwalkers, ndim)
+
+        #set the switching function
+        self.f = self._select_function(self.f)
+        
+        #call emcee
+        sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix, \
+                                            args=[g_data, data, sigma, loworder, highorder, mu, sig])
+        now = time.time()
+        sampler_mixed.run_mcmc(starting_points, nsteps)
+        stop = time.time()
+        print('Calculation finished!')
+
+        #time calculation
+        elapsed = int(stop - now)
+        if elapsed / 60 < 1.0:
+            print(f"Duration = {elapsed} sec.")
+        elif elapsed / 60 >= 1.0:
+            minutes = int(elapsed / 60)
+            seconds = int(elapsed - 60*minutes)
+            print(f"Duration = {minutes} min, {seconds} sec.")
+
+        #find the trace
+        emcee_trace_mixed = self.burnin_trace(sampler_mixed, nwalkers, ndim)
+        print(np.shape(emcee_trace_mixed))
+
+        return emcee_trace_mixed
+
+
+    def _select_function(self, x):
+
+        '''
+        An internal function that selects the proper switching function given the input from the user
+        in the function 'Mixing.mixed_model'. 
+
+        :Example:
+            Mixing._select_function(x=self.f)
+        
+        Parameters:
+        -----------
+        x
+            The string that is input by the user to select one of the available switching functions. 
+        
+        Returns:
+        --------
+        self.function_mappings[x]
+            The correct function label for the chosen switching function, converted from string to object.
+        '''
+        while True:
+            try:
+                return self.function_mappings[x]
+            except KeyError:
+                print('Invalid function, try again.')
+     
+
     def burnin_trace(self, sampler_object, nwalkers, ndim):
         
         '''
@@ -1330,10 +1142,10 @@ class Mixing(Switching):
 
         #throw out the burn-in and reshape again
         emcee_trace_mixed = sampler_object.chain[:, nburnin:, :].reshape(-1, ndim).T
-        emcee_trace_mixed = emcee_trace_mixed[0]
         
         return emcee_trace_mixed
-            
-        
+
+
+
 if __name__=="__main__":
     pass
