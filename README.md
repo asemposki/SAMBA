@@ -1,5 +1,5 @@
 # BAND Bayesian Model Mixing: Expansions of Toy Models
-A repo for all of the code written involving Bayesian Model Mixing (BMM) applied to expansions of toy models (for now). 
+This repo stores the class structures and test code to perform BMM on two expansions in a toy model setting. 
 
 Current files:
 
