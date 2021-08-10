@@ -122,140 +122,21 @@ class Switching:
         else:
             return 0.0
     
-    
-    def ppd_log(self, beta0, beta1, g, loworder, highorder):
-        
-        '''
-        A function to calculate the posterior predictive distribution (PPD) when the switching function
-        is the logistic function defined above in this class. 
-        
-        :Example:
-            Switching.ppd_log(beta0=emcee_trace[0,:], beta1=emcee_trace[1,:], g=np.linspace(0.0, 0.5, 100), 
-            loworder=5, highorder=23)
-            
-        Parameters:
-        -----------
-        beta0 
-            The trace of one of the parameters determined by sampling 
-            (controls the location of the logistic function in g_data space).
-        
-        beta1
-            The trace of the other parameter determined by sampling 
-            (controls the slope of the logistic function).
-        
-        g
-            The linspace desired to calculate the PPD across.
-            
-        loworder
-            The order of the small-g expansion to be calculated in the mixing model.
-        
-        highorder
-            The order of the large-g expansion to be calculated in the mixing model. 
-        
-        Returns:
-        --------
-        result_array
-            The array of results of the PPD for each of the points in the linspace g. 
-        '''
-    
-        result_array = np.empty([len(g), len(beta0.T)])
-        gmax = max(g)
-    
-        for i in range(len(g)):
-            for j in range(len(beta0.T)):
-            
-                if (Mixing.low_g(self, g[i], loworder) - Mixing.high_g(self, g[i], highorder))\
-                > 0.1 and g[i] > (0.5*gmax):
-                    result_array[i,j] = Mixing.high_g(self, g[i], highorder)
-                
-                elif (Mixing.low_g(self, g[i], loworder) - Mixing.high_g(self, g[i], highorder)) > 0.1:
-                    result_array[i,j] = Mixing.low_g(self, g[i], loworder)
-                
-                else:
-                    result_array[i,j] = self.logistic(beta0[j], beta1[j], g[i])*Mixing.low_g(self, g[i], loworder) \
-                                      + (1.0 - self.logistic(beta0[j], beta1[j], g[i]))\
-                                      *Mixing.high_g(self, g[i], highorder)
-        
-        return result_array
 
-    
-    def ppd_cdf(self, beta0, beta1, g, loworder, highorder):
+    def ppd(self, trace, g, loworder, highorder):
         
         '''
-        A function to calculate the posterior predictive distribution (PPD) when the switching function
-        is the cdf function defined above in this class. 
+        A function to calculate the posterior predictive distribution (PPD) for any chosen switching function 
+        defined in this class. 
         
         :Example:
-            Switching.ppd_cdf(beta0=emcee_trace[0,:], beta1=emcee_trace[1,:], g=np.linspace(0.0, 0.5, 100), 
-            loworder=5, highorder=23)
-            
-        Parameters:
-        -----------
-        beta0 
-            The trace of the first parameter determined by sampling 
-            (controls the location of the cdf 
-            function in g_data space).
-        
-        beta1
-            The trace of the other parameter determined by sampling 
-            (controls the slope of the cdf function).
-        
-        g
-            The linspace desired to calculate the PPD across.
-            
-        loworder
-            The order of the small-g expansion to be calculated in the mixing model.
-        
-        highorder
-            The order of the large-g expansion to be calculated in the mixing model. 
-        
-        Returns:
-        --------
-        result_array
-            The array of results of the PPD for each of the points in the linspace g. 
-        '''
-    
-        result_array = np.empty([len(g), len(beta0.T)])
-        gmax = max(g)
-    
-        for i in range(len(g)):
-            for j in range(len(beta0.T)):
-            
-                if (Mixing.low_g(self, g[i], loworder) - Mixing.high_g(self, g[i], highorder))\
-                > 0.1 and g[i] > (0.5*gmax):
-                    result_array[i,j] = Mixing.high_g(self, g[i], highorder)
-                
-                elif (Mixing.low_g(self, g[i], loworder) - Mixing.high_g(self, g[i], highorder)) > 0.1:
-                    result_array[i,j] = Mixing.low_g(self, g[i], loworder)
-                
-                else:
-                    result_array[i,j] = self.cdf(beta0[j], beta1[j], g[i])*Mixing.low_g(self, g[i], loworder) \
-                                      + (1.0 - self.cdf(beta0[j], beta1[j], g[i])) \
-                                      *Mixing.high_g(self, g[i], highorder)
-        
-        return result_array
-    
-    
-    def ppd_cos(self, g1, g2, g3, g, loworder, highorder):
-        
-        '''
-        A function to calculate the posterior predictive distribution (PPD) when the switching function
-        is the cosine function defined in this class. 
-        
-        :Example:
-            Switching.ppd_cos(g1=0.12, g2=0.2, g3=emcee_trace, g=np.linspace(0.0, 0.5, 100), loworder=5,
+            Switching.ppd(trace, g=np.linspace(0.0, 0.5, 100), loworder=5,
             highorder=23)
             
         Parameters:
         -----------
-        g1        
-            The point at which the function switches from a constant to the first cosine function.  
-        
-        g2    
-            The point at which the function switches from the second cosine function to a constant.
-            
-        g3
-            The trace of the parameter determined by sampling. 
+        trace
+            The trace of each of the parameters from the sampler.
             
         g
             The linspace desired to calculate the PPD across.
@@ -271,19 +152,44 @@ class Switching:
         result_array
             The array of results of the PPD for each of the points in the linspace g. 
         '''
-    
-        result_array = np.empty([len(g), len(g3.T)])
 
-        for i in range(len(g)):
-            for j in range(len(g3.T)):
+        result_array = np.empty([len(g), len(trace[0].T)])
+        gmax = max(g)
+
+        #determine which switching function was used
+        if self.choice == 'logistic' or self.choice == 'cdf':
+    
+            for i in range(len(g)):
+                for j in range(len(trace[0].T)):
+            
+                    if (Mixing.low_g(self, g[i], loworder) - Mixing.high_g(self, g[i], highorder))\
+                    > 0.1 and g[i] > (0.25*gmax):
+                        result_array[i,j] = Mixing.high_g(self, g[i], highorder)
+                    
+                    elif (Mixing.low_g(self, g[i], loworder) - Mixing.high_g(self, g[i], highorder)) > 0.1:
+                        result_array[i,j] = Mixing.low_g(self, g[i], loworder)
+                    
+                    else:
+                        params = np.array([trace[0, j], trace[1, j]])
+
+                        result_array[i,j] = self.f(params, g[i])*Mixing.low_g(self, g[i], loworder) \
+                                        + (1.0 - self.f(params, g[i])) \
+                                        *Mixing.high_g(self, g[i], highorder)
+        
+            return result_array    
+
+        elif self.choice == 'cosine':
+
+            for i in range(len(g)):
+                for j in range(len(trace[0].T)):
+                    
+                    params = np.array([trace[0, j], trace[1, j], trace[2, j]])
                 
-                params = np.array([g1[j], g2[j], g3[j]])
-            
-                result_array[i,j] = self.switchcos(params, g[i]) * Mixing.low_g(self, g[i], loworder) \
-                                  + (1.0 - self.switchcos(params, g[i])) \
-                                  * Mixing.high_g(self, g[i], highorder)
-            
-        return result_array
+                    result_array[i,j] = self.switchcos(params, g[i]) * Mixing.low_g(self, g[i], loworder) \
+                                    + (1.0 - self.switchcos(params, g[i])) \
+                                    * Mixing.high_g(self, g[i], highorder)
+                
+            return result_array
     
     
     def plot_ppd(self, g_data, g_true, g_ppd, data, ppd_results, ppd_intervals, percent, loworder, highorder):
@@ -691,14 +597,15 @@ class Mixing(Switching):
         plt.show()
         
         
-    def generate_data(self, g_true, g_data):
+    def add_data(self, g_true, g_data, data=None, sigma=None):
         
         '''
         A data generation function that generates data based on the g_data linspace provided (with the number of 
-        points chosen by the user) and the error desired on each point (also input by the user).
+        points chosen by the user) and the error desired on each point (also input by the user), or accepts the
+        user's input of an array of data and standard deviations of the data points. 
         
         :Example:
-            Mixing.generate_data(g_true=np.linspace(0.0, 0.5, 100), g_data=np.linspace(0.0, 0.5, 20))
+            Mixing.add_data(g_true=np.linspace(0.0, 0.5, 100), g_data=np.linspace(0.0, 0.5, 20))
         
         Parameters:
         -----------
@@ -707,32 +614,42 @@ class Mixing(Switching):
         
         g_data    
             The linspace input for the data to be generated within. 
+
+        data
+            The data array entered by the user; if user wishes to generate data, this remains set to None.
+        
+        sigma
+            The standard deviation array entered by the user; if user wishes to generate data, this will
+            remain set to None. 
             
         Returns:
         --------
         data         
-            The array of data generated.
+            The array of data (generated or entered by the user).
             
         sigma    
-            The standard deviation at each data point.
+            The standard deviation at each data point (generated or entered by the user).
         '''
         
-        #ask for error desired
-        error = float(input('What percent error would you like on your data (please enter a decimal)?'))
+        #if user has an array of data, skip data generation
+        if data is None:
+           
+            #ask for error desired
+            error = float(input('Data will be generated. What percent error would you like on your data (please enter a decimal)?'))
         
-        #generate fake data  
-        self.data = Mixing.true_model(self, g_data)
-        rand = np.random.RandomState()
-        var = error*rand.randn(len(g_data))
-        self.data = self.data*(1 + var)
+            #generate fake data  
+            data = self.true_model(g_data)
+            rand = np.random.RandomState()
+            var = error*rand.randn(len(g_data))
+            data = data*(1 + var)
         
-        #calculate standard deviation
-        sigma = error*self.data
+            #calculate standard deviation
+            sigma = error*data
         
         #plot the data and true model
-        Mixing.plot_data(self, g_true, g_data, self.data)
+        self.plot_data(g_true, g_data, data)
     
-        return self.data, sigma
+        return data, sigma
     
     
     def plot_data(self, g_true, g_data, data):
@@ -753,7 +670,7 @@ class Mixing(Switching):
             The linspace over which the data was generated. 
             
         data
-            The array of data generated using the Mixing.generate_data function.
+            The array of data generated using the Mixing.add_data function.
             
         Returns:
         --------
@@ -1024,17 +941,17 @@ class Mixing(Switching):
         }
         
         #ask user which switching function to use
-        self.f = input('What switching function would you like to use: logistic, cdf, or cosine?')
+        self.choice = input('What switching function would you like to use: logistic, cdf, or cosine?')
         
         #enter mu and sigma for both parameters
         mu = []
         sig = []
 
-        if self.f == 'logistic' or self.f == 'cdf':
+        if self.choice == 'logistic' or self.choice == 'cdf':
             for i in range(2):
                 mu.append( float(input(f"Enter a guess for the mean of the parameter beta_{i}: ")))
                 sig.append(float(input(f"Enter a guess for the standard deviation of the parameter beta_{i}: ")))
-        elif self.f == 'cosine':
+        elif self.choice == 'cosine':
             for i in range(3):
                 mu.append(float(input(f"Enter a guess for the mean of the parameter g_{i+1}: ")))
                 sig.append(float(input(f"Enter a guess for the standard deviation of the parameter g_{i+1}: ")))
@@ -1056,7 +973,8 @@ class Mixing(Switching):
         starting_points = np.random.randn(nwalkers, ndim)
 
         #set the switching function
-        self.f = self._select_function(self.f)
+        self.f = self._select_function(self.choice)
+        print(self.f, self.choice)
         
         #call emcee
         sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix, \
@@ -1089,7 +1007,7 @@ class Mixing(Switching):
         in the function 'Mixing.mixed_model'. 
 
         :Example:
-            Mixing._select_function(x=self.f)
+            Mixing._select_function(x=self.choice)
         
         Parameters:
         -----------
