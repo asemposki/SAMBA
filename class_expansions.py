@@ -43,13 +43,13 @@ class Switching:
             
         Parameters:
         -----------
-        params
+        params : numpy.ndarray
             The array of parameters the sampler will determine (here labelled beta0 and beta1, where
             beta0 controls the location of the function and beta1 controls the slope). 
 
         Returns:
         --------
-        mixing          
+        mixing : float        
             The result of the logistic function given the value g.
         '''
         beta0, beta1 = params
@@ -70,13 +70,16 @@ class Switching:
         
         Parameters:
         -----------
-        params
+        params : numpy.ndarray
             The array of parameters the sampler will determine (here labelled beta0 and beta1, where
             beta0 controls the location of the function and beta1 controls the slope). 
-                   
+        
+        g : float
+            The value of g the cdf is calculated at.
+
         Returns:
         --------
-        function          
+        function : float         
             The result of the cdf function at the value of g. 
         '''
         beta0, beta1 = params
@@ -97,11 +100,14 @@ class Switching:
             
         Parameters:
         -----------
-        params
+        params : numpy.ndarray
             The array of parameters to be determined by the sampler (here labelled g1, g2, and g3, where
             g1 is the separation point between the first constant function and the first cosine function, 
             g2 is the separation point between the second cosine function and the second constant function, 
             and g3 is the point between the two cosine functions). 
+
+        g : float
+            The value of g that this cosine function is calculated at.
 
         Returns:
         --------
@@ -136,21 +142,21 @@ class Switching:
             
         Parameters:
         -----------
-        trace
+        trace : numpy.ndarray
             The trace of each of the parameters from the sampler.
             
-        g
+        g : linspace
             The linspace desired to calculate the PPD across.
             
-        loworder
+        loworder : int, float
             The order of the small-g expansion to be calculated in the mixing model.
         
-        highorder
+        highorder : int, float
             The order of the large-g expansion to be calculated in the mixing model. 
         
         Returns:
         --------
-        result_array
+        result_array : numpy.ndarray
             The array of results of the PPD for each of the points in the linspace g. 
         '''
 
@@ -207,32 +213,32 @@ class Switching:
             
         Parameters:
         -----------
-        g_data
+        g_data : linspace
             The linspace used to generate the data.
         
-        g_true
+        g_true : linspace
             The linspace used to calculate the true model over the input space, as well as the expansions.
         
-        g_ppd
+        g_ppd : linspace
             The linspace chosen to calculate the PPD over. 
         
-        data
+        data : numpy.ndarray
             An array of data either generated or supplied by the user.
             
-        ppd_results
+        ppd_results : numpy.ndarray
             An array of the mean of the PPD at each point in the g_ppd linspace.
         
-        ppd_intervals
+        ppd_intervals : numpy.ndarray
             A 2D array of the credibility interval calculated for the PPD (containing both bounds).
             
-        percent
+        percent : float
             The percent credibility interval calculated for the variable ppd_intervals (used in the plot
             legend). 
         
-        loworder
+        loworder : int, float
             The order of the small-g expansion used in the mixed model.
         
-        highorder
+        highorder : int, float
             The order of the large-g expansion used in the mixed model. 
         
         Returns:
@@ -322,16 +328,16 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        g  
+        g : linspace
             The linspace of the coupling constant for this calculation. 
             
-        loworder     
+        loworder : int, float 
             The array of different expansion orders to calculate. These indicate the highest power the expansions 
             are calculated up to. 
             
         Returns:
         --------
-        output
+        output : numpy.ndarray
             The array of values of the expansion in small-g at each point in g_true space, for each value of 
             loworder (highest power the expansion reaches).
         '''
@@ -390,16 +396,16 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        g         
+        g : linspace
             The linspace of the coupling constant for this calculation.
         
-        highorder   
+        highorder : int, float   
             The array of different expansions orders to calculate. These indicate the highest power the expansions
             are calculated up to. 
             
         Returns
         -------
-        output        
+        output : numpy.ndarray        
             The array of values of the expansion at large-g at each point in g_true space, for each value of highorder
             (highest power the expansion reaches).
         '''
@@ -459,13 +465,13 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        g       
+        g : linspace
             The linspace for g desired to calculate the true model. This can be the g_true linspace, g_data
             linspace, or another linspace of the user's choosing. 
             
         Returns:
         -------
-        model        
+        model : numpy.ndarray        
             The model calculated at each point in g space. 
         '''
     
@@ -495,10 +501,13 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        loworder       
+        g : linspace
+            The linspace in on which the models will be plotted here. 
+
+        loworder : int, float     
             As in Mixing.low_g, the highest powers to calculate the series to for the asymptotic small-g expansion.
         
-        highorder        
+        highorder : int, float        
             As in Mixing.high_g, the highest powers to calculate the series to for the convergent large-g expansion.
             
         Returns
@@ -549,10 +558,10 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        loworder        
+        loworder : int, float        
             The array of highest power series orders for the asymptotic, small-g expansion.
             
-        highorder        
+        highorder : int, float        
             The array of highest power series orders for the convergent, large-g expansion.
             
         Returns:
@@ -610,25 +619,25 @@ class Mixing(Switching, Priors):
         
         Parameters:
         -----------
-        g_true         
+        g_true : linspace     
             The linspace desired for the true model to be calculated.
         
-        g_data    
+        g_data : linspace    
             The linspace input for the data to be generated within. 
 
-        data
+        data : numpy.ndarray
             The data array entered by the user; if user wishes to generate data, this remains set to None.
         
-        sigma
+        sigma : numpy.ndarray
             The standard deviation array entered by the user; if user wishes to generate data, this will
             remain set to None. 
             
         Returns:
         --------
-        data         
+        data : numpy.ndarray         
             The array of data (generated or entered by the user).
             
-        sigma    
+        sigma : numpy.ndarray    
             The standard deviation at each data point (generated or entered by the user).
         '''
         
@@ -664,13 +673,13 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        g_true
+        g_true : linspace
             The linspace desired for the true model to be calculated.
             
-        g_data
+        g_data : linspace
             The linspace over which the data was generated. 
             
-        data
+        data : numpy.ndarray
             The array of data generated using the Mixing.add_data function.
             
         Returns:
@@ -706,15 +715,15 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        trace         
+        trace : numpy.ndarray         
             The trace generated by a sampler when sampling a variable to obtain its posterior distribution.
         
-        fraction    
+        fraction : float    
             The percent (in decimal form) requested by the user to set the credibility interval. 
             
         Returns:
         --------
-        interval         
+        interval : numpy.ndarray         
             The credibility interval bounds in a numpy array (format: [min, max]).
         '''
     
@@ -743,16 +752,16 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        g_data     
+        g_data : linspace     
             A linspace used to generate data points. 
             
-        data      
+        data : numpy.ndarray      
             An array of data points generated or supplied by the user.
             
-        sigma          
+        sigma : numpy.ndarray          
             An array of standard deviations at each point in 'data'. 
            
-        loworder          
+        loworder : int, float          
             The specific small-g expansion order desired for calculating the mixed model. 
             
         Returns:
@@ -779,16 +788,16 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        g_data       
+        g_data : linspace       
             A linspace used to generate data points. 
             
-        data       
+        data : numpy.ndarray       
             An array of data points generated or supplied by the user.
             
-        sigma         
+        sigma : numpy.ndarray         
             An array of standard deviations at each point in 'data'. 
            
-        highorder          
+        highorder : int, float         
             The specific large-g expansion order desired for calculating the mixed model. 
             
         Returns:
@@ -814,27 +823,27 @@ class Mixing(Switching, Priors):
 
         Parameters:
         -----------
-        params
+        params : numpy.ndarray
             The parameters that are being determined by the sampler, in an array (not input).
 
-        g_data
+        g_data : linspace
             The linspace used to generate the data.
 
-        data
+        data : numpy.ndarray
             An array of data either generated or supplied by the user. 
 
-        sigma 
+        sigma : numpy.ndarray
             An array of standard deviations for each data point.
 
-        loworder
+        loworder : int, float
             The order of the small-g expansion desired for the mixing calculation.
 
-        highorder
+        highorder : int, float
             The order of the large-g expansion desired for the mixing calculation.
 
         Returns:
         --------
-        mixed_results
+        mixed_results : numpy.ndarray
             The results of the mixing function for the entire linspace in g, in an array format.
         '''
 
@@ -874,19 +883,19 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        g_data      
+        g_data : linspace      
             The linspace over which the data was generated.
       
-        data          
+        data : numpy.ndarray          
             An array of data points, either generated or supplied by the user.
             
-        sigma     
+        sigma : numpy.ndarray     
             An array of standard deviations at each data point.
             
-        loworder          
+        loworder : int, float          
             The order of the small-g expansion desired for the mixed model to be calculated at.
             
-        highorder           
+        highorder : int, float           
             The order of the large-g expansion desired for the mixed model to be calculated at.
             
         Returns:
@@ -961,7 +970,7 @@ class Mixing(Switching, Priors):
         
         Parameters:
         -----------
-        x
+        x : string
             The string that is input by the user to select one of the available switching functions. 
         
         Returns:
@@ -987,18 +996,18 @@ class Mixing(Switching, Priors):
             
         Parameters:
         -----------
-        sampler_object         
+        sampler_object : emcee object         
             The chain sent back by the emcee sampler after it finishes running through the samples and walkers.
             
-        nwalkers          
+        nwalkers : int     
             The number of walkers for the sampler to use.
             
-        ndim            
+        ndim : int            
             The number of parameters the sampler is determining.
             
         Returns:
         ---------
-        emcee_trace_mixed            
+        emcee_trace_mixed : numpy.ndarray            
             The trace of the sampler chain with the user's desired number of burn-in samples removed.
         '''
         
