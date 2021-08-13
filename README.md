@@ -6,6 +6,8 @@ Current files:
   - A .py file (class_expansions.py) that stores the code for the classes written to implement this project in a Jupyter notebook or another .py code.
   - A bare-bones Jupyter notebook (BMM_Expansions_Project.ipynb) that runs the classes in the file above and shows the output. 
   - A Jupyter notebook containing the ongoing analysis on the mixed model results when the cosine switching function is implemented.
+  - A test Jupyter notebook which was used to fix the class and make it more flexible.
+  - A .py file containing a test case of priors, which will eventually be submitted by the user. 
 
 TO DO:
 
