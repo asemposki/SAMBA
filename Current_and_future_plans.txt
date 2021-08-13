@@ -7,7 +7,7 @@ II. Work out a way for the class to have user-entered functions.
 
 III. Develop the class so that we can have the priors in the mixed model functions (and the functions themselves if possible) switched out for 
 others given a question to the user and a selection made. This should be possible, need to look into it very soon. If I am able to do this, it 
-will cut out a lot of long functions that take up a lot of the class "space" (lines). 
+will cut out a lot of long functions that take up a lot of the class "space" (lines). **Done. 
 
 IV. Add a generic plotting function to be used with all of the plotting in the class, if possible. This would cut a LOT of functions out of 
 the class, too, and make it much more compact and versatile, which would be a step towards a package format. 
@@ -24,3 +24,5 @@ VIII. Work out the cosine function issue of divide by zero if possible---may jus
 IX. Need to combine all PPD functions into one generic function in the same way as was done with the sampler functions. **Done.
 
 X. Add user-entered data and standard deviation option. **Done. 
+
+Pending: II, IV, V, VI, VII, VIII. 
