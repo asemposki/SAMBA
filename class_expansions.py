@@ -5,6 +5,7 @@ import math
 import time
 import emcee 
 import matplotlib.pyplot as plt
+from priors import Priors 
 
 
 class Switching:
@@ -284,7 +285,7 @@ class Switching:
         return None
 
 
-class Mixing(Switching):
+class Mixing(Switching, Priors):
     
     
     def __init__(self):
@@ -799,40 +800,9 @@ class Mixing(Switching):
         insidehigh = -0.5 * ((data - Mixing.high_g(self, g_data, highorder))/(sigma))**2.0
     
         return prehigh*np.exp(insidehigh)
-    
-    
-    def prior_gauss(self, par, mean, sig):
-        
-        '''
-        A Gaussian prior that can be implemented for any parameter desired.
-        
-        :Example:
-            Mixing.prior_gauss(par, mean=0.15, sig=0.01)
-            
-        Parameters:
-        -----------
-        par         
-            The parameter that this prior distribution will be applied to.
-        
-        mean
-            The mean of the parameter (can be an educated guess).  
-            
-        sig
-            The standard deviation for the parameter (can also be a guess).
-            
-        Returns:
-        --------
-            The value of the prior distribution given the value of the parameter 'par'. 
-        '''
-    
-        insidep = -0.5 * ((par - mean)/sig)**2.0 
-    
-        prep = -np.log(np.sqrt(2.0 * np.pi) * sig)
-    
-        return prep + insidep 
 
 
-    def sampler_mix(self, params, g_data, data, sigma, loworder, highorder, mu, sig):
+    def sampler_mix(self, params, g_data, data, sigma, loworder, highorder):
 
         '''
         The model mixing function sent to the sampler to find the values of the parameters in the 
@@ -862,12 +832,6 @@ class Mixing(Switching):
         highorder
             The order of the large-g expansion desired for the mixing calculation.
 
-        mu
-            The array of means given to the priors on the switching parameters.
-
-        sig 
-            The array of standard deviations given to the priors on the switching parameters.
-
         Returns:
         --------
         mixed_results
@@ -891,8 +855,7 @@ class Mixing(Switching):
         total_lml = np.sum(log_ml)
 
         #add the priors
-        mixed_results = total_lml + np.sum([self.prior_gauss(params[i], mu[i], sig[i]) \
-                                            for i in range(len(params))])
+        mixed_results = total_lml + Priors.lpdf(self, params)
 
         return mixed_results
 
@@ -943,26 +906,14 @@ class Mixing(Switching):
         #ask user which switching function to use
         self.choice = input('What switching function would you like to use: logistic, cdf, or cosine?')
         
-        #enter mu and sigma for both parameters
-        mu = []
-        sig = []
-
         if self.choice == 'logistic' or self.choice == 'cdf':
-            for i in range(2):
-                mu.append( float(input(f"Enter a guess for the mean of the parameter beta_{i}: ")))
-                sig.append(float(input(f"Enter a guess for the standard deviation of the parameter beta_{i}: ")))
+            ndim = 2 
         elif self.choice == 'cosine':
-            for i in range(3):
-                mu.append(float(input(f"Enter a guess for the mean of the parameter g_{i+1}: ")))
-                sig.append(float(input(f"Enter a guess for the standard deviation of the parameter g_{i+1}: ")))
+            ndim = 3
         else:
             raise ValueError('Switching function requested is not found. Select one of the valid options.')
-                
-        mu = np.asarray(mu)
-        sig = np.asarray(sig)
 
         #set up sampler
-        ndim = len(mu)
         nwalkers = int(3*ndim + 1)
         nsteps = 1000
 
@@ -974,11 +925,10 @@ class Mixing(Switching):
 
         #set the switching function
         self.f = self._select_function(self.choice)
-        print(self.f, self.choice)
         
         #call emcee
         sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix, \
-                                            args=[g_data, data, sigma, loworder, highorder, mu, sig])
+                                            args=[g_data, data, sigma, loworder, highorder])
         now = time.time()
         sampler_mixed.run_mcmc(starting_points, nsteps)
         stop = time.time()
@@ -1062,7 +1012,6 @@ class Mixing(Switching):
         emcee_trace_mixed = sampler_object.chain[:, nburnin:, :].reshape(-1, ndim).T
         
         return emcee_trace_mixed
-
 
 
 if __name__=="__main__":
