@@ -18,14 +18,25 @@ class Priors:
     def lpdf(self, params):
 
         '''
-        Log pdf of the priors for the three parameters.
+        Log pdf of the priors for the parameters.
         '''
 
-        param_1 = stats.norm.logpdf(params[0], 0.11, 0.01)
-        param_2 = stats.norm.logpdf(params[1], 0.2, 0.01)
-        param_3 = stats.norm.logpdf(params[2], 0.16, 0.01)
+        if len(params) == 2:
+            param_1 = stats.norm.logpdf(params[0], 10.0, 2.0)
+            param_2 = stats.norm.logpdf(params[1], -20.0, 10.0)
 
-        return (param_1 + param_2 + param_3)
+            return (param_1 + param_2)
+
+        elif len(params) == 3:
+
+            param_1 = stats.norm.logpdf(params[0], 0.11, 0.01)
+            param_2 = stats.norm.logpdf(params[1], 0.2, 0.01)
+            param_3 = stats.norm.logpdf(params[2], 0.16, 0.01)
+
+            return (param_1 + param_2 + param_3)
+
+        else:
+            raise ValueError('The number of parameters does not match any available switching function.')
 
 
 if __name__ == "_main__":
