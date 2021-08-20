@@ -1063,13 +1063,15 @@ class Mixing(Switching, Priors):
         mean = np.asarray(mean)
         ci = np.asarray(ci)
 
-        #plot
+        #plot traces with mean and credible intervals
         fig, ax = plt.subplots(ndim,1,figsize=(7,4*ndim), dpi=100)
+
+        #TODO: Fix the labels on the parameters
 
         for irow in range(ndim):
             ax[irow].plot(trace[irow].T, 'k')
-            ax[irow].set_ylabel(r'$\beta_{0}$'.format(irow), fontsize=14)
-            ax[irow].set_title(r'Trace plot: $\beta_{0}$'.format(irow), fontsize=14)
+            ax[irow].set_ylabel('Parameter {0}'.format(irow), fontsize=14)
+            ax[irow].set_title('Trace plot: Parameter {0}'.format(irow), fontsize=14)
 
             ax[irow].axhline(y=mean[irow], color='b', linestyle='solid')
             ax[irow].axhline(y=ci[irow, 0], color='b', linestyle='dashed')
@@ -1089,8 +1091,16 @@ class Mixing(Switching, Priors):
                 ax[irow].axhline(y=med[irow], color='r', linestyle='solid')
 
         #TODO: Need to add legends to the subplots
-        
+
         plt.show()
+
+        #TODO: Fix the labels on the parameters in the corner plot
+
+        #corner plots
+        fig, axs = plt.subplots(ndim,ndim, figsize=(8,8))
+        label = ["Parameter 1", "Parameter 2", "Parameter 3"]
+        corner.corner(trace.T,labels=label, \
+            quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True)
         
         return mean, ci 
 
