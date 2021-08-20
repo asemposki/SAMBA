@@ -3,7 +3,8 @@ from scipy import special, integrate
 from cycler import cycler
 import math
 import time
-import emcee 
+import emcee
+import corner
 import matplotlib.pyplot as plt
 from priors import Priors 
 
@@ -1026,6 +1027,29 @@ class Mixing(Switching, Priors):
     def stats_trace(self, trace, ndim):
 
         '''
+        A function to calculate the mean and credible intervals corresponding to
+        each parameter. The trace plots for each parameter are plotted. 
+
+        :Example:
+            Mixing.stats_trace(trace=np.array([]), ndim=len(trace))
+
+        Parameters:
+        -----------
+        trace : numpy.ndarray
+            The trace from the sampler object that was generated when estimating the
+            parameters of the switching function.
+
+        ndim : int
+            The number of parameters in the switching function that were sampled. To
+            find this, simply use len(trace) in the main code and pass it here.
+
+        Returns:
+        --------
+        mean : numpy.ndarray
+            The array of mean values for each parameter.
+        
+        ci : numpy.ndarray
+            The array of sets of credible interval bounds for each parameter. 
         '''
 
         #calculate mean and credible intervals
@@ -1051,6 +1075,21 @@ class Mixing(Switching, Priors):
             ax[irow].axhline(y=ci[irow, 0], color='b', linestyle='dashed')
             ax[irow].axhline(y=ci[irow, 1], color='b', linestyle='dashed')
 
+        answer = input('Do you want to display the median with the mean? (yes/no)')
+
+        if answer == 'yes':
+            med = []
+
+            for i in range(ndim):
+                med.append(np.median(trace[i].T))
+
+            med = np.asarray(med)
+
+            for irow in range(ndim):
+                ax[irow].axhline(y=med[irow], color='r', linestyle='solid')
+
+        #TODO: Need to add legends to the subplots
+        
         plt.show()
         
         return mean, ci 
