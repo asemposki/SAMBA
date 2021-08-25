@@ -8,6 +8,9 @@ import corner
 import matplotlib.pyplot as plt
 from priors import Priors 
 
+#TODO: Make Mixing() into a superclass, with subclasses Switching(), 
+#Discrepancy(), Priors(), and Models().
+
 
 class Switching:
    
@@ -117,7 +120,7 @@ class Switching:
 
         #unpack the parameters
         g1, g2, g3 = params 
-    
+
         if g <= g1:
             return 1.0
     
@@ -773,7 +776,7 @@ class Mixing(Switching, Priors):
     
         prelow = (np.sqrt(2.0 * np.pi) * sigma)**(-1.0)
         insidelow = -0.5 * ((data - Mixing.low_g(self, g_data, loworder))/(sigma))**2.0
-    
+        
         return prelow*np.exp(insidelow)
 
     
@@ -852,22 +855,34 @@ class Mixing(Switching, Priors):
         mixed_likelihood = np.empty([len(g_data)])
         log_ml = np.empty([len(g_data)])
 
-        #likelihood mixing
-        for i in range(len(g_data)):
+        #test prior first
+        logprior = Priors.lpdf(self, params)
 
-            mixed_likelihood[i] = self.f(params, g_data[i]) * \
-                                Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder) \
-                                + (1.0- self.f(params, g_data[i])) * \
-                                Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder)
+        if math.isnan(logprior) == True or np.isinf(-logprior) == True:
+            return -np.inf
 
-            log_ml[i] = np.log(mixed_likelihood[i])
+        else:
 
-        total_lml = np.sum(log_ml)
+            #likelihood mixing
+            for i in range(len(g_data)):
+                # print(g_data[i], data[i], sigma[i], Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder),(1.0- self.f(params, g_data[i])), Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder))
+                mixed_likelihood[i] = self.f(params, g_data[i]) * \
+                                    Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder) \
+                                    + (1.0- self.f(params, g_data[i])) * \
+                                    Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder)
 
-        #add the priors
-        mixed_results = total_lml + Priors.lpdf(self, params)
+                if mixed_likelihood[i] <= 0.0:
+                    #print('Fail!')
+                    return -np.inf
 
-        return mixed_results
+                log_ml[i] = np.log(mixed_likelihood[i])
+
+            total_lml = np.sum(log_ml)
+
+            #add the priors
+            mixed_results = total_lml + Priors.lpdf(self, params)
+
+            return mixed_results
 
         
     def mixed_model(self, g_data, data, sigma, loworder, highorder):
@@ -931,7 +946,12 @@ class Mixing(Switching, Priors):
 
         print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
 
-        starting_points = np.random.randn(nwalkers, ndim)
+        #set starting points per parameter
+        starting_points = np.zeros((nwalkers, ndim))
+        starting_points[:,0] = np.random.uniform(0.0, 0.1, nwalkers)
+        starting_points[:,2] = np.random.uniform(0.11, 0.16, nwalkers)
+        starting_points[:,1] = np.random.uniform(0.17, 0.2, nwalkers)
+        print(starting_points, np.shape(starting_points))
 
         #set the switching function
         self.f = self._select_function(self.choice)
