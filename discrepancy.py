@@ -1,6 +1,5 @@
 import numpy as np
 from scipy import special
-from cycler import cycler
 import math
 import matplotlib.pyplot as plt
 from mixing import Mixing
@@ -91,7 +90,7 @@ class Discrepancy():
         return var2
 
 
-    def fdagger(self, g, loworder, highorder):
+    def fdagger(self, g, loworder, highorder, plot_fdagger=True, next_order=False):
 
         '''
         A function to determine the pdf of the mixed model.
@@ -113,6 +112,16 @@ class Discrepancy():
             The chosen order to which this model is calculated regarding the 
             large-g expansions. 
 
+        plot_fdagger : bool
+            If True, plot_fdagger instructs the function to plot the mean
+            and intervals of the fdagger model. If False, this step is skipped.
+            The default is set to True.
+
+        next_order : bool
+            If True, this will plot the next order in the expansion models for both
+            low and high orders. If False, this step will be skipped. Default is set
+            to False. 
+
         Returns:
         --------
         pdf : numpy.ndarray
@@ -127,7 +136,7 @@ class Discrepancy():
         v2 = self.variance_high(g, highorder[0])
 
         #mean, variance, joint pdf
-        mean = (v2 * self.low_g(g, loworder) + v1 * self.high_g(g, highorder)) / (v1 + v2)
+        mean = (v2 * Mixing.low_g(self, g, loworder) + v1 * Mixing.high_g(self, g, highorder)) / (v1 + v2)
         mean = mean[0]
         var = v1 * v2 / (v1 + v2)
         pdf = -np.log(np.sqrt(2.0 * np.pi * var)) - ((g - mean)**2.0/ (4.0 * var)) 
@@ -156,17 +165,29 @@ class Discrepancy():
         ax.set_ylabel('F(g)', fontsize=16)
         ax.set_title('F(g): discrepancy model', fontsize=16)
         ax.plot(g, Mixing.true_model(self, g), 'k', label='True model')
+
+        #plot the small-g expansions and error bands
         ax.plot(g, Mixing.low_g(self, g, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
-        ax.plot(g, Mixing.high_g(self, g, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
-        ax.plot(g, mean, 'g', label='Mean')
-        ax.plot(g, intervals[:,0], 'g--', label=r'95$\%$ credible interval')
-        ax.plot(g, intervals[:,1], 'g--')
         ax.plot(g, interval_f1[:, 0], 'r.', label=r'$f_s$ ({}) credible interval'.format(loworder[0]))
         ax.plot(g, interval_f1[:, 1], 'r.')
+
+        #plot the large-g expansions and error bands
+        ax.plot(g, Mixing.high_g(self, g, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
         ax.plot(g, interval_f2[:, 0], 'b.', label=r'$f_l$ ({}) credible interval'.format(highorder[0]))
         ax.plot(g, interval_f2[:, 1], 'b.')
+
+        if plot_fdagger == True:
+            ax.plot(g, mean, 'g', label='Mean')
+            ax.plot(g, intervals[:,0], 'g--', label=r'95$\%$ credible interval')
+            ax.plot(g, intervals[:,1], 'g--')
+
+        if next_order == True:
+            ax.plot(g, Mixing.low_g(self, g, loworder+1), 'r', linestyle='dotted', \
+                label=r'$f_s$ ({})'.format(loworder[0]+1))
+            ax.plot(g, Mixing.high_g(self, g, highorder+1), 'b', linestyle='dotted', \
+                label=r'$f_l$ ({})'.format(highorder[0]+1))
+        
         ax.legend(fontsize=12)
         plt.show()
-        fig.savefig('discrepancy_5vs5.png')
 
         return pdf
