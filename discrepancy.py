@@ -36,18 +36,20 @@ class Discrepancy():
         #find coefficients
         c = np.empty([int(loworder) + 1])
 
-        for k in range(int(loworder)+1):
+        for k in range(int(2*int(loworder) + 1)):
 
             if k % 2 == 0:
-                c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
-            else:
-                c[k] = 0
+                c[k//2] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
+
+        print(np.asarray(c))
 
         #rms value
-        cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / loworder)
+        cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 1))
+
+        print(cbar)
 
         #variance
-        var1 = (cbar)**2.0 * (math.factorial(2.0*loworder + 1.0))**2.0 * g**(4.0*loworder + 4.0)
+        var1 = (cbar)**2.0 * (math.factorial(2.0*loworder + 2.0))**2.0 * g**(4.0*loworder + 4.0)
 
         return var1
 
@@ -79,10 +81,14 @@ class Discrepancy():
 
         for k in range(int(highorder)+1):
 
-            d[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
+            d[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k * (math.factorial(k)) / (2.0 * math.factorial(k))
+
+        print(np.asarray(d))
 
         #rms value
-        dbar = np.sqrt(np.sum((np.asarray(d))**2.0) / highorder)
+        dbar = np.sqrt(np.sum((np.asarray(d))**2.0) / (highorder + 1.0))
+
+        print(dbar)
 
         #variance
         var2 = (dbar)**2.0 * (math.factorial(highorder + 1.0))**(-2.0) * g**(-2.0*highorder - 2.0)
@@ -182,9 +188,9 @@ class Discrepancy():
             ax.plot(g, intervals[:,1], 'g--')
 
         if next_order == True:
-            ax.plot(g, Mixing.low_g(self, g, loworder+1), 'r', linestyle='dotted', \
+            ax.plot(g, Mixing.low_g(self, g, loworder+1)[0,:], 'r', linestyle='dotted', \
                 label=r'$f_s$ ({})'.format(loworder[0]+1))
-            ax.plot(g, Mixing.high_g(self, g, highorder+1), 'b', linestyle='dotted', \
+            ax.plot(g, Mixing.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
                 label=r'$f_l$ ({})'.format(highorder[0]+1))
         
         ax.legend(fontsize=12)
