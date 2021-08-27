@@ -15,14 +15,14 @@ class Priors:
         pass
 
     
-    def luniform(self, theta, g):
+    def luniform(self, theta, a, b):
 
         '''
         General uniform prior to be used to truncate the normal
         distributions used in the parameter priors. 
         '''
 
-        if theta > g:
+        if theta > a and theta < b:
             return 0.0
         else:
             return -np.inf
@@ -44,13 +44,13 @@ class Priors:
         elif len(params) == 3:
 
             #g1 truncated between (0, inf)
-            g1 = self.luniform(params[0], 0.0) + stats.norm.logpdf(params[0], 0.12, 0.1)
+            g1 = self.luniform(params[0], 0.1, np.inf) + stats.norm.logpdf(params[0], 0.12, 0.5)
 
             #g3 truncated between (g1, inf)
-            g3 = self.luniform(params[2], g1) + stats.norm.logpdf(params[2], 0.16, 0.1)
+            g3 = self.luniform(params[2], params[0], np.inf) + stats.norm.logpdf(params[2], 0.16, 0.5)
 
             #g2 truncated between (g3, inf)
-            g2 = self.luniform(params[1], g3) + stats.norm.logpdf(params[1], 0.2, 0.1)
+            g2 = self.luniform(params[1], params[2], np.inf) + stats.norm.logpdf(params[1], 0.2, 0.5)
 
             return (g1 + g2 + g3)
 

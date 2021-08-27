@@ -940,7 +940,7 @@ class Mixing(Switching, Priors):
 
         #set up sampler
         nwalkers = int(3*ndim + 1)
-        nsteps = 1000
+        nsteps = 1500
 
         total_samples = nwalkers * nsteps
 
@@ -948,8 +948,8 @@ class Mixing(Switching, Priors):
 
         #set starting points per parameter
         starting_points = np.zeros((nwalkers, ndim))
-        starting_points[:,0] = np.random.uniform(0.0, 0.1, nwalkers)
-        starting_points[:,2] = np.random.uniform(0.11, 0.16, nwalkers)
+        starting_points[:,0] = np.random.uniform(0.1, 0.13, nwalkers)
+        starting_points[:,2] = np.random.uniform(0.14, 0.16, nwalkers)
         starting_points[:,1] = np.random.uniform(0.17, 0.2, nwalkers)
         print(starting_points, np.shape(starting_points))
 
