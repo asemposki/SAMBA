@@ -99,6 +99,28 @@ class Discrepancy(Mixing):
     def validation(self, g, loworder, highorder):
 
         '''
+        A function to calculate the validation variances needed by taking the last
+        coefficient in the expansion that we know and using it in the variance for
+        f_dagger. 
+
+        :Example:
+            Discrepancy.validation(g=np.linspace(1e-6, 0.5, 100), loworder=5, highorder=5)
+        
+        Parameters:
+        -----------
+        g : numpy.linspace
+            The linspace used to calculate the model in the coupling constant, g.
+
+        loworder : int
+            The highest order the small-g expansion is calculated to.
+
+        highorder : int
+            The highest order the large-g expansion is calculated to.
+        
+        Returns:
+        --------
+        v1, v2 : float
+            The two variances found for the two expansion models. 
         '''
 
         #find coefficients
