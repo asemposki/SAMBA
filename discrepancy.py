@@ -2,9 +2,9 @@ import numpy as np
 from scipy import special
 import math
 import matplotlib.pyplot as plt
-from mixing import Mixing
+from mixing import Models, Mixing
 
-class Discrepancy():
+class Discrepancy(Mixing):
 
     def __init__(self):
 
@@ -95,8 +95,35 @@ class Discrepancy():
 
         return var2
 
+    
+    def validation(self, g, loworder, highorder):
 
-    def fdagger(self, g, loworder, highorder, plot_fdagger=True, next_order=False):
+        '''
+        '''
+
+        #find coefficients
+        ctrue = np.empty([int(loworder) + 1])
+        dtrue = np.empty([int(highorder + 1)])
+
+        #loworder calculation
+        for k in range(int(2*int(loworder) + 1)):
+
+            if k % 2 == 0:
+                ctrue[k//2] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
+
+        #highorder calculation
+        for k in range(int(highorder)+1):
+
+            dtrue[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
+
+        #variance
+        v1 = (ctrue[-1])**2.0 * g**(4.0*loworder + 4.0)
+        v2 = (dtrue[-1])**2.0 * g**(-2.0*highorder - 2.0)
+
+        return v1, v2
+
+
+    def fdagger(self, g, loworder, highorder, plot_fdagger=True, next_order=False, validation=False):
 
         '''
         A function to determine the pdf of the mixed model.
@@ -138,11 +165,15 @@ class Discrepancy():
             raise ValueError('Please specify only one order per model.')
 
         #variances
-        v1 = self.variance_low(g, loworder[0])
-        v2 = self.variance_high(g, highorder[0])
+        if validation == True:
+            v1, v2 = self.validation(g, loworder[0], highorder[0])
+
+        else:
+            v1 = self.variance_low(g, loworder[0])
+            v2 = self.variance_high(g, highorder[0])
 
         #mean, variance, joint pdf
-        mean = (v2 * Mixing.low_g(self, g, loworder) + v1 * Mixing.high_g(self, g, highorder)) / (v1 + v2)
+        mean = (v2 * Models.low_g(self, g, loworder) + v1 * Models.high_g(self, g, highorder)) / (v1 + v2)
         mean = mean[0]
         var = v1 * v2 / (v1 + v2)
         pdf = -np.log(np.sqrt(2.0 * np.pi * var)) - ((g - mean)**2.0/ (4.0 * var)) 
@@ -155,10 +186,10 @@ class Discrepancy():
         for i in range(len(g)):
             intervals[i, 0] = (mean[i] - 1.96 * np.sqrt(var[i]))
             intervals[i, 1] = (mean[i] + 1.96 * np.sqrt(var[i]))
-            interval_f1[i, 0] = (Mixing.low_g(self, g[i], loworder) - 1.96 * np.sqrt(v1[i]))
-            interval_f1[i, 1] = (Mixing.low_g(self, g[i], loworder) + 1.96 * np.sqrt(v1[i]))
-            interval_f2[i, 0] = (Mixing.high_g(self, g[i], highorder) - 1.96 * np.sqrt(v2[i]))
-            interval_f2[i, 1] = (Mixing.high_g(self, g[i], highorder) + 1.96 * np.sqrt(v2[i]))
+            interval_f1[i, 0] = (Models.low_g(self, g[i], loworder) - 1.96 * np.sqrt(v1[i]))
+            interval_f1[i, 1] = (Models.low_g(self, g[i], loworder) + 1.96 * np.sqrt(v1[i]))
+            interval_f2[i, 0] = (Models.high_g(self, g[i], highorder) - 1.96 * np.sqrt(v2[i]))
+            interval_f2[i, 1] = (Models.high_g(self, g[i], highorder) + 1.96 * np.sqrt(v2[i]))
 
         #plot the pdf, expansions, and true model
         fig = plt.figure(figsize=(8,6), dpi=100)
@@ -170,15 +201,15 @@ class Discrepancy():
         ax.set_xlabel('g', fontsize=16)
         ax.set_ylabel('F(g)', fontsize=16)
         ax.set_title('F(g): discrepancy model', fontsize=16)
-        ax.plot(g, Mixing.true_model(self, g), 'k', label='True model')
+        ax.plot(g, Models.true_model(self, g), 'k', label='True model')
 
         #plot the small-g expansions and error bands
-        ax.plot(g, Mixing.low_g(self, g, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
+        ax.plot(g, Models.low_g(self, g, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
         ax.plot(g, interval_f1[:, 0], 'r.', label=r'$f_s$ ({}) credible interval'.format(loworder[0]))
         ax.plot(g, interval_f1[:, 1], 'r.')
 
         #plot the large-g expansions and error bands
-        ax.plot(g, Mixing.high_g(self, g, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
+        ax.plot(g, Models.high_g(self, g, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
         ax.plot(g, interval_f2[:, 0], 'b.', label=r'$f_l$ ({}) credible interval'.format(highorder[0]))
         ax.plot(g, interval_f2[:, 1], 'b.')
 
@@ -188,12 +219,21 @@ class Discrepancy():
             ax.plot(g, intervals[:,1], 'g--')
 
         if next_order == True:
-            ax.plot(g, Mixing.low_g(self, g, loworder+1)[0,:], 'r', linestyle='dotted', \
+            ax.plot(g, Models.low_g(self, g, loworder+1)[0,:], 'r', linestyle='dotted', \
                 label=r'$f_s$ ({})'.format(loworder[0]+1))
-            ax.plot(g, Mixing.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
+            ax.plot(g, Models.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
                 label=r'$f_l$ ({})'.format(highorder[0]+1))
         
         ax.legend(fontsize=12)
         plt.show()
+
+        #save figure option
+        response = input('Would you like to save this figure? (yes/no)')
+
+        if response == 'yes':
+            name = input('Enter a file name (include .jpg, .png, etc.)')
+            fig.savefig(name)
+        else:
+            pass
 
         return pdf
