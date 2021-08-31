@@ -186,6 +186,16 @@ class Discrepancy(Mixing):
         if loworder.ndim > 1 or highorder.ndim > 1:
             raise ValueError('Please specify only one order per model.')
 
+        #which interval to use
+        ci = float(input('Which interval do you want to use: 68 or 95?'))
+
+        if ci == 68:
+            val = 1.0
+        elif ci == 95:
+            val = 1.96 
+        else:
+            raise ValueError('Please enter either 68 or 95.')
+
         #variances
         if validation == True:
             v1, v2 = self.validation(g, loworder[0], highorder[0])
@@ -206,12 +216,12 @@ class Discrepancy(Mixing):
         interval_f2 = np.empty([len(g), 2])
 
         for i in range(len(g)):
-            intervals[i, 0] = (mean[i] - 1.96 * np.sqrt(var[i]))
-            intervals[i, 1] = (mean[i] + 1.96 * np.sqrt(var[i]))
-            interval_f1[i, 0] = (Models.low_g(self, g[i], loworder) - 1.96 * np.sqrt(v1[i]))
-            interval_f1[i, 1] = (Models.low_g(self, g[i], loworder) + 1.96 * np.sqrt(v1[i]))
-            interval_f2[i, 0] = (Models.high_g(self, g[i], highorder) - 1.96 * np.sqrt(v2[i]))
-            interval_f2[i, 1] = (Models.high_g(self, g[i], highorder) + 1.96 * np.sqrt(v2[i]))
+            intervals[i, 0] = (mean[i] - val * np.sqrt(var[i]))
+            intervals[i, 1] = (mean[i] + val * np.sqrt(var[i]))
+            interval_f1[i, 0] = (Models.low_g(self, g[i], loworder) - val * np.sqrt(v1[i]))
+            interval_f1[i, 1] = (Models.low_g(self, g[i], loworder) + val * np.sqrt(v1[i]))
+            interval_f2[i, 0] = (Models.high_g(self, g[i], highorder) - val * np.sqrt(v2[i]))
+            interval_f2[i, 1] = (Models.high_g(self, g[i], highorder) + val * np.sqrt(v2[i]))
 
         #plot the pdf, expansions, and true model
         fig = plt.figure(figsize=(8,6), dpi=100)
@@ -237,7 +247,7 @@ class Discrepancy(Mixing):
 
         if plot_fdagger == True:
             ax.plot(g, mean, 'g', label='Mean')
-            ax.plot(g, intervals[:,0], 'g--', label=r'95$\%$ credible interval')
+            ax.plot(g, intervals[:,0], 'g--', label=r'{}$\%$ credible interval'.format(ci))
             ax.plot(g, intervals[:,1], 'g--')
 
         if next_order == True:
