@@ -124,23 +124,28 @@ class Discrepancy(Mixing):
         '''
 
         #find coefficients
-        ctrue = np.empty([int(loworder) + 1])
-        dtrue = np.empty([int(highorder + 1)])
+        ctrue = np.zeros([int(loworder + 2)])
+        dtrue = np.zeros([int(highorder + 2)])
+
+        print(ctrue, dtrue)
 
         #loworder calculation
-        for k in range(int(2*int(loworder) + 1)):
+        for k in range(int(2*loworder + 3)):
 
             if k % 2 == 0:
                 ctrue[k//2] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
 
         #highorder calculation
-        for k in range(int(highorder)+1):
+        for k in range(int(highorder)+2):
 
             dtrue[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
 
-        #variance
+        #variance (with last coefficient == loworder, highorder + 1)
         v1 = (ctrue[-1])**2.0 * g**(4.0*loworder + 4.0)
         v2 = (dtrue[-1])**2.0 * g**(-2.0*highorder - 2.0)
+
+        print(ctrue, ctrue[-1])
+        print(dtrue, dtrue[-1])
 
         return v1, v2
 
