@@ -91,7 +91,8 @@ class Discrepancy(Mixing):
         print(dbar)
 
         #variance
-        var2 = (dbar)**2.0 * (math.factorial(highorder + 1.0))**(-2.0) * g**(-2.0*highorder - 2.0)
+        var2 = (dbar)**2.0 * (np.sqrt(g))**(-1.0) * (math.factorial(highorder + 1.0))**(-2.0) \
+                * g**(-2.0*highorder - 2.0)
 
         return var2
 
@@ -142,7 +143,7 @@ class Discrepancy(Mixing):
 
         #variance (with last coefficient == loworder, highorder + 1)
         v1 = (ctrue[-1])**2.0 * g**(4.0*loworder + 4.0)
-        v2 = (dtrue[-1])**2.0 * g**(-2.0*highorder - 2.0)
+        v2 = (dtrue[-1])**2.0 * np.sqrt(g)**(-1.0) * g**(-2.0*highorder - 2.0)
 
         print(ctrue, ctrue[-1])
         print(dtrue, dtrue[-1])
