@@ -91,7 +91,7 @@ class Discrepancy(Mixing):
         print(dbar)
 
         #variance
-        var2 = (dbar)**2.0 * (np.sqrt(g))**(-1.0) * (math.factorial(highorder + 1.0))**(-2.0) \
+        var2 = (dbar)**2.0 * (g)**(-1.0) * (math.factorial(highorder + 1.0))**(-2.0) \
                 * g**(-2.0*highorder - 2.0)
 
         return var2
@@ -125,16 +125,16 @@ class Discrepancy(Mixing):
         '''
 
         #find coefficients
-        ctrue = np.zeros([int(loworder + 2)])
+        ctrue = np.zeros([int(2*loworder + 3)])
         dtrue = np.zeros([int(highorder + 2)])
-
-        print(ctrue, dtrue)
 
         #loworder calculation
         for k in range(int(2*loworder + 3)):
 
             if k % 2 == 0:
-                ctrue[k//2] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
+               ctrue[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
+            else:
+               ctrue[k] = 0.0
 
         #highorder calculation
         for k in range(int(highorder)+2):
@@ -142,11 +142,8 @@ class Discrepancy(Mixing):
             dtrue[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
 
         #variance (with last coefficient == loworder, highorder + 1)
-        v1 = (ctrue[-1])**2.0 * g**(4.0*loworder + 4.0)
-        v2 = (dtrue[-1])**2.0 * np.sqrt(g)**(-1.0) * g**(-2.0*highorder - 2.0)
-
-        print(ctrue, ctrue[-1])
-        print(dtrue, dtrue[-1])
+        v1 = (ctrue[-1])**2.0 * g**(4.0*(loworder) + 4.0)
+        v2 = (dtrue[-1])**2.0 * (g)**(-1.0) * g**(-2.0*highorder - 2.0)
 
         return v1, v2
 
@@ -204,10 +201,10 @@ class Discrepancy(Mixing):
 
         #variances
         if validation == True:
-            v1, v2 = self.validation(g, loworder[0], highorder[0])
+            v1, v2 = self.validation(g, loworder[0]//2, highorder[0])
 
         else:
-            v1 = self.variance_low(g, loworder[0])
+            v1 = self.variance_low(g, loworder[0]//2)
             v2 = self.variance_high(g, highorder[0])
 
         #mean, variance, joint pdf
