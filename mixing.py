@@ -6,11 +6,321 @@ import time
 import emcee
 import corner
 import matplotlib.pyplot as plt
-from priors import Priors 
+from priors import Priors
 
-#TODO: Make Mixing() into a superclass, with subclasses Switching(), 
-#Discrepancy(), Priors(), and Models().
 
+class Models():
+
+    def __init__(self):
+
+        '''
+        The class containing the expansion models from Honda's paper
+        and the means to plot them. 
+
+        :Example:
+            Models()
+
+        Parameters:
+        -----------
+        None.
+
+        Returns:
+        --------
+        None.
+        '''
+        pass
+
+
+    def low_g(self, g, loworder):
+        
+        '''
+        A function to calculate the small-g divergent asymptotic expansion for a given range in the coupling 
+        constant, g.
+        
+        :Example:
+            Models.low_g(g=np.linspace(0.0, 0.5, 20), loworder=np.array([5, 10, 20]))
+            
+        Parameters:
+        -----------
+        g : linspace
+            The linspace of the coupling constant for this calculation. 
+            
+        loworder : int, float 
+            The array of different expansion orders to calculate. These indicate the highest power the expansions 
+            are calculated up to. 
+            
+        Returns:
+        --------
+        output : numpy.ndarray
+            The array of values of the expansion in small-g at each point in g_true space, for each value of 
+            loworder (highest power the expansion reaches).
+        '''
+        
+        if loworder.ndim == 0:
+            loworder = np.array([loworder])
+        output = []
+        
+        for order in loworder:
+            low_c = np.empty([int(order)+1])
+            low_terms = np.empty([int(order) + 1])
+            try:
+                value = np.empty([len(g)])
+       
+                #loop over array in g
+                for i in range(len(g)):      
+
+                    #loop over orders
+                    for k in range(int(order)+1):
+
+                        if k % 2 == 0:
+                            low_c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
+                        else:
+                            low_c[k] = 0
+
+                        low_terms[k] = low_c[k] * g[i]**(k)
+
+                    value[i] = np.sum(low_terms)
+
+                output.append(value)
+                data = np.array(output, dtype = np.float64)
+            
+            except:
+                value = 0.0
+                for k in range(int(order)+1):
+
+                    if k % 2 == 0:
+                        low_c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
+                    else:
+                        low_c[k] = 0
+
+                    low_terms[k] = low_c[k] * g**(k)
+
+                value = np.sum(low_terms)
+                data = value
+        return data
+
+        
+    def high_g(self, g, highorder):
+        
+        '''
+        A function to calculate the large-g convergent Taylor expansion for a given range in the coupling 
+        constant, g.
+        
+        :Example:
+            Models.high_g(highorder=np.array([5, 10, 20]))
+            
+        Parameters:
+        -----------
+        g : linspace
+            The linspace of the coupling constant for this calculation.
+        
+        highorder : int, float   
+            The array of different expansions orders to calculate. These indicate the highest power the expansions
+            are calculated up to. 
+            
+        Returns
+        -------
+        output : numpy.ndarray        
+            The array of values of the expansion at large-g at each point in g_true space, for each value of highorder
+            (highest power the expansion reaches).
+        '''
+        if highorder.ndim == 0:
+            highorder = np.array([highorder])
+  
+        output = []
+        
+        for order in highorder:
+            high_c = np.empty([int(order) + 1])
+            high_terms = np.empty([int(order) + 1])
+            
+            try:
+                value = np.empty([len(g)])
+        
+                #loop over array in g
+                for i in range(len(g)):
+
+                    #loop over orders
+                    for k in range(int(order)+1):
+
+                        high_c[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
+
+                        high_terms[k] = (high_c[k] * g[i]**(-k)) / np.sqrt(g[i])
+
+                    #sum the terms for each value of g
+                    value[i] = np.sum(high_terms)
+
+                output.append(value)
+
+                data = np.array(output, dtype = np.float64)
+        
+            except:
+                value = 0.0
+
+                #loop over orders
+                for k in range(int(order)+1):
+
+                    high_c[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
+
+                    high_terms[k] = (high_c[k] * g**(-k)) / np.sqrt(g)
+
+                #sum the terms for each value of g
+                value = np.sum(high_terms)
+                data = value
+                
+        return data 
+
+
+    def true_model(self, g):
+        
+        '''
+        The true model of the zero-dimensional phi^4 theory partition function using an input linspace.
+        
+        :Example:
+            Models.true_model(g=np.linspace(0.0, 0.5, 100))
+            
+        Parameters:
+        -----------
+        g : linspace
+            The linspace for g desired to calculate the true model. This can be the g_true linspace, g_data
+            linspace, or another linspace of the user's choosing. 
+            
+        Returns:
+        -------
+        model : numpy.ndarray        
+            The model calculated at each point in g space. 
+        '''
+    
+        #define a function for the integrand
+        def function(x,g):
+            return np.exp(-(x**2.0)/2.0 - (g**2.0 * x**4.0))
+    
+        #initialization
+        self.model = np.zeros([len(g)])
+    
+        #perform the integral for each g
+        for i in range(len(g)):
+            
+            self.model[i], self.err = integrate.quad(function, -np.inf, np.inf, args=(g[i],))
+        
+        return self.model 
+   
+
+    def plot_models(self, g, loworder, highorder):
+        
+        '''
+        A plotting function to produce a figure of the model expansions calculated in Models.low_g and Models.high_g, 
+        and including the true model calculated using Mixing.true_model.
+        
+        :Example:
+            Mixing.plot_models(g=np.linspace(0.0, 0.5, 100), lowk=np.array([5, 23]), highk=np.array([5, 23]))
+            
+        Parameters:
+        -----------
+        g : linspace
+            The linspace in on which the models will be plotted here. 
+
+        loworder : int, float     
+            As in Models.low_g, the highest powers to calculate the series to for the asymptotic small-g expansion.
+        
+        highorder : int, float        
+            As in Models.high_g, the highest powers to calculate the series to for the convergent large-g expansion.
+            
+        Returns
+        -------
+        None.
+        
+        '''
+        
+        #set up the plot
+        fig = plt.figure(figsize=(8,6), dpi=100)
+        ax = plt.axes()
+        ax.set_xlim(min(g), max(g))
+        ax.set_ylim(1.8, 2.6)
+        ax.tick_params(axis='x', labelsize=14)
+        ax.tick_params(axis='y', labelsize=14)
+        ax.set_xlabel('g', fontsize=16)
+        ax.set_ylabel('F(g)', fontsize=16)
+        ax.set_title('F(g): Expansions and true model', fontsize=16)
+        
+        #plot the true model 
+        ax.plot(g, self.true_model(g), 'k', label='True model')
+        
+        #add linestyle cycler
+        linestyle_cycler = cycler(linestyle=['dashed', 'dotted', 'dashdot', 'dashed', 'dotted', 'dashdot'])
+        ax.set_prop_cycle(linestyle_cycler)
+                
+        #for each small-g order, plot
+        for i in np.array(loworder):
+            ax.plot(g, self.low_g(g, i)[0], color='r', label=r'$f_s$ ({})'.format(i))
+        
+        #for each large-g order, plot
+        for i in np.array(highorder):
+            ax.plot(g, self.high_g(g, i)[0], color='b', label=r'$f_l$ ({})'.format(i))
+            
+        ax.legend(fontsize=12)
+        plt.show()
+        
+         
+    def residuals(self, loworder, highorder):
+        
+        '''
+        A calculation and plot of the residuals of the model expansions vs the true model values at each point in g.
+        g is set internally for this plot, as the plot must be shown in loglog format to see the power law of the
+        residuals. 
+        
+        :Example:
+            Mixing.residuals(loworder=np.array([5, 10, 20]), highorder=np.array([5, 10, 20]))
+            
+        Parameters:
+        -----------
+        loworder : int, float        
+            The array of highest power series orders for the asymptotic, small-g expansion.
+            
+        highorder : int, float        
+            The array of highest power series orders for the convergent, large-g expansion.
+            
+        Returns:
+        --------
+        None. 
+        
+        '''
+        
+        #set up the plot
+        fig = plt.figure(figsize=(8,6), dpi=100)
+        ax = plt.axes()
+        ax.tick_params(axis='x', labelsize=14)
+        ax.tick_params(axis='y', labelsize=14)
+        ax.set_xlabel('g', fontsize=16)
+        ax.set_ylabel('Residual', fontsize=16)
+        ax.set_title('F(g): residuals', fontsize=16)
+        ax.set_xlim(1e-2, 10.)
+        ax.set_ylim(1e-6,1e17)
+
+        #set range for g
+        g_ext = np.logspace(-6., 6., 800)
+        
+        #set up marker cycler
+        marker_cycler = cycler(marker=['.', '*', '+', '.', '*', '+'])
+        ax.set_prop_cycle(marker_cycler)
+
+        #calculate true model
+        value_true = self.true_model(g_ext)
+        
+        #for each small-g order, plot
+        for i in list(loworder):
+            valuelow = self.low_g(g_ext, i)
+            residlow = (valuelow - value_true)/value_true
+            ax.loglog(g_ext, abs(residlow[0,:]), 'r', linestyle="None", label=r"$F_s({})$".format(i))
+
+        #for each large-g order, plot
+        for i in list(highorder):
+            valuehi = self.high_g(g_ext, i)
+            residhi = (valuehi - value_true)/value_true
+            ax.loglog(g_ext, abs(residhi[0,:]), 'b', linestyle="None", label=r"$F_l({})$".format(i))
+        
+        ax.legend(fontsize=12)
+        plt.show()
+    
 
 class Switching:
    
@@ -173,19 +483,19 @@ class Switching:
             for i in range(len(g)):
                 for j in range(len(trace[0].T)):
             
-                    if (Mixing.low_g(self, g[i], loworder) - Mixing.high_g(self, g[i], highorder))\
+                    if (Models.low_g(self, g[i], loworder) - Models.high_g(self, g[i], highorder))\
                     > 0.1 and g[i] > (0.25*gmax):
-                        result_array[i,j] = Mixing.high_g(self, g[i], highorder)
+                        result_array[i,j] = Models.high_g(self, g[i], highorder)
                     
-                    elif (Mixing.low_g(self, g[i], loworder) - Mixing.high_g(self, g[i], highorder)) > 0.1:
-                        result_array[i,j] = Mixing.low_g(self, g[i], loworder)
+                    elif (Models.low_g(self, g[i], loworder) - Models.high_g(self, g[i], highorder)) > 0.1:
+                        result_array[i,j] = Models.low_g(self, g[i], loworder)
                     
                     else:
                         params = np.array([trace[0, j], trace[1, j]])
 
-                        result_array[i,j] = self.f(params, g[i])*Mixing.low_g(self, g[i], loworder) \
+                        result_array[i,j] = self.f(params, g[i])*Models.low_g(self, g[i], loworder) \
                                         + (1.0 - self.f(params, g[i])) \
-                                        *Mixing.high_g(self, g[i], highorder)
+                                        *Models.high_g(self, g[i], highorder)
         
             return result_array    
 
@@ -196,9 +506,9 @@ class Switching:
                     
                     params = np.array([trace[0, j], trace[1, j], trace[2, j]])
                 
-                    result_array[i,j] = self.switchcos(params, g[i]) * Mixing.low_g(self, g[i], loworder) \
+                    result_array[i,j] = self.switchcos(params, g[i]) * Models.low_g(self, g[i], loworder) \
                                     + (1.0 - self.switchcos(params, g[i])) \
-                                    * Mixing.high_g(self, g[i], highorder)
+                                    * Models.high_g(self, g[i], highorder)
                 
             return result_array
     
@@ -272,10 +582,10 @@ class Switching:
         ax.set_title('Mixed Prediction with Calibration Posteriors', fontsize=16)
 
         ax.plot(g_data, data, 'k.', label='Data set')  
-        ax.plot(g_true, Mixing.true_model(self, g_true), 'k', label='Exact')
+        ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
 
-        ax.plot(g_true, Mixing.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
-        ax.plot(g_true, Mixing.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
+        ax.plot(g_true, Models.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
+        ax.plot(g_true, Models.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
 
         ax.plot(g_ppd, ppd_results, 'g', label='Calibrated mixed model')
         ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label='{}% credible interval (HPD)'.format(percent))
@@ -295,7 +605,7 @@ class Switching:
         return None
 
 
-class Mixing(Switching, Priors):
+class Mixing(Switching, Models, Priors):
     
     
     def __init__(self):
@@ -319,296 +629,6 @@ class Mixing(Switching, Priors):
         '''
         
         print('Welcome to the BMM sandbox! Here you get to play!')
-        
-          
-    def low_g(self, g, loworder):
-        
-        '''
-        A function to calculate the small-g divergent asymptotic expansion for a given range in the coupling 
-        constant, g.
-        
-        :Example:
-            Mixing.low_g(g=np.linspace(0.0, 0.5, 20), loworder=np.array([5, 10, 20]))
-            
-        Parameters:
-        -----------
-        g : linspace
-            The linspace of the coupling constant for this calculation. 
-            
-        loworder : int, float 
-            The array of different expansion orders to calculate. These indicate the highest power the expansions 
-            are calculated up to. 
-            
-        Returns:
-        --------
-        output : numpy.ndarray
-            The array of values of the expansion in small-g at each point in g_true space, for each value of 
-            loworder (highest power the expansion reaches).
-        '''
-        
-        if loworder.ndim == 0:
-            loworder = np.array([loworder])
-        output = []
-        
-        for order in loworder:
-            low_c = np.empty([int(order)+1])
-            low_terms = np.empty([int(order) + 1])
-            try:
-                value = np.empty([len(g)])
-       
-                #loop over array in g
-                for i in range(len(g)):      
-
-                    #loop over orders
-                    for k in range(int(order)+1):
-
-                        if k % 2 == 0:
-                            low_c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
-                        else:
-                            low_c[k] = 0
-
-                        low_terms[k] = low_c[k] * g[i]**(k)
-
-                    value[i] = np.sum(low_terms)
-
-                output.append(value)
-                data = np.array(output, dtype = np.float64)
-            
-            except:
-                value = 0.0
-                for k in range(int(order)+1):
-
-                    if k % 2 == 0:
-                        low_c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
-                    else:
-                        low_c[k] = 0
-
-                    low_terms[k] = low_c[k] * g**(k)
-
-                value = np.sum(low_terms)
-                data = value
-        return data
-        
-    def high_g(self, g, highorder):
-        
-        '''
-        A function to calculate the large-g convergent Taylor expansion for a given range in the coupling 
-        constant, g.
-        
-        :Example:
-            Mixing.high_g(highorder=np.array([5, 10, 20]))
-            
-        Parameters:
-        -----------
-        g : linspace
-            The linspace of the coupling constant for this calculation.
-        
-        highorder : int, float   
-            The array of different expansions orders to calculate. These indicate the highest power the expansions
-            are calculated up to. 
-            
-        Returns
-        -------
-        output : numpy.ndarray        
-            The array of values of the expansion at large-g at each point in g_true space, for each value of highorder
-            (highest power the expansion reaches).
-        '''
-        if highorder.ndim == 0:
-            highorder = np.array([highorder])
-  
-        output = []
-        
-        for order in highorder:
-            high_c = np.empty([int(order) + 1])
-            high_terms = np.empty([int(order) + 1])
-            
-            try:
-                value = np.empty([len(g)])
-        
-                #loop over array in g
-                for i in range(len(g)):
-
-                    #loop over orders
-                    for k in range(int(order)+1):
-
-                        high_c[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
-
-                        high_terms[k] = (high_c[k] * g[i]**(-k)) / np.sqrt(g[i])
-
-                    #sum the terms for each value of g
-                    value[i] = np.sum(high_terms)
-
-                output.append(value)
-
-                data = np.array(output, dtype = np.float64)
-        
-            except:
-                value = 0.0
-
-                #loop over orders
-                for k in range(int(order)+1):
-
-                    high_c[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
-
-                    high_terms[k] = (high_c[k] * g**(-k)) / np.sqrt(g)
-
-                #sum the terms for each value of g
-                value = np.sum(high_terms)
-                data = value
-                
-        return data 
-
-
-    def true_model(self, g):
-        
-        '''
-        The true model of the zero-dimensional phi^4 theory partition function using an input linspace.
-        
-        :Example:
-            Mixing.true_model(g=np.linspace(0.0, 0.5, 100))
-            
-        Parameters:
-        -----------
-        g : linspace
-            The linspace for g desired to calculate the true model. This can be the g_true linspace, g_data
-            linspace, or another linspace of the user's choosing. 
-            
-        Returns:
-        -------
-        model : numpy.ndarray        
-            The model calculated at each point in g space. 
-        '''
-    
-        #define a function for the integrand
-        def function(x,g):
-            return np.exp(-(x**2.0)/2.0 - (g**2.0 * x**4.0))
-    
-        #initialization
-        self.model = np.zeros([len(g)])
-    
-        #perform the integral for each g
-        for i in range(len(g)):
-            
-            self.model[i], self.err = integrate.quad(function, -np.inf, np.inf, args=(g[i],))
-        
-        return self.model 
-   
-
-    def plot_models(self, g, loworder, highorder):
-        
-        '''
-        A plotting function to produce a figure of the model expansions calculated in Mixing.low_g and Mixing.high_g, 
-        and including the true model calculated using Mixing.true_model.
-        
-        :Example:
-            Mixing.plot_models(g=np.linspace(0.0, 0.5, 100), lowk=np.array([5, 23]), highk=np.array([5, 23]))
-            
-        Parameters:
-        -----------
-        g : linspace
-            The linspace in on which the models will be plotted here. 
-
-        loworder : int, float     
-            As in Mixing.low_g, the highest powers to calculate the series to for the asymptotic small-g expansion.
-        
-        highorder : int, float        
-            As in Mixing.high_g, the highest powers to calculate the series to for the convergent large-g expansion.
-            
-        Returns
-        -------
-        None.
-        
-        '''
-        
-        #set up the plot
-        fig = plt.figure(figsize=(8,6), dpi=100)
-        ax = plt.axes()
-        ax.set_xlim(min(g), max(g))
-        ax.set_ylim(1.8, 2.6)
-        ax.tick_params(axis='x', labelsize=14)
-        ax.tick_params(axis='y', labelsize=14)
-        ax.set_xlabel('g', fontsize=16)
-        ax.set_ylabel('F(g)', fontsize=16)
-        ax.set_title('F(g): Expansions and true model', fontsize=16)
-        
-        #plot the true model 
-        ax.plot(g, Mixing.true_model(self, g), 'k', label='True model')
-        
-        #add linestyle cycler
-        linestyle_cycler = cycler(linestyle=['dashed', 'dotted', 'dashdot', 'dashed', 'dotted', 'dashdot'])
-        ax.set_prop_cycle(linestyle_cycler)
-                
-        #for each small-g order, plot
-        for i in np.array(loworder):
-            ax.plot(g, Mixing.low_g(self, g, i)[0], color='r', label=r'$f_s$ ({})'.format(i))
-        
-        #for each large-g order, plot
-        for i in np.array(highorder):
-            ax.plot(g, Mixing.high_g(self, g, i)[0], color='b', label=r'$f_l$ ({})'.format(i))
-            
-        ax.legend(fontsize=12)
-        plt.show()
-        
-         
-    def residuals(self, loworder, highorder):
-        
-        '''
-        A calculation and plot of the residuals of the model expansions vs the true model values at each point in g.
-        g is set internally for this plot, as the plot must be shown in loglog format to see the power law of the
-        residuals. 
-        
-        :Example:
-            Mixing.residuals(loworder=np.array([5, 10, 20]), highorder=np.array([5, 10, 20]))
-            
-        Parameters:
-        -----------
-        loworder : int, float        
-            The array of highest power series orders for the asymptotic, small-g expansion.
-            
-        highorder : int, float        
-            The array of highest power series orders for the convergent, large-g expansion.
-            
-        Returns:
-        --------
-        None. 
-        
-        '''
-        
-        #set up the plot
-        fig = plt.figure(figsize=(8,6), dpi=100)
-        ax = plt.axes()
-        ax.tick_params(axis='x', labelsize=14)
-        ax.tick_params(axis='y', labelsize=14)
-        ax.set_xlabel('g', fontsize=16)
-        ax.set_ylabel('Residual', fontsize=16)
-        ax.set_title('F(g): residuals', fontsize=16)
-        ax.set_xlim(1e-2, 10.)
-        ax.set_ylim(1e-6,1e17)
-
-        #set range for g
-        g_ext = np.logspace(-6., 6., 800)
-        
-        #set up marker cycler
-        marker_cycler = cycler(marker=['.', '*', '+', '.', '*', '+'])
-        ax.set_prop_cycle(marker_cycler)
-
-        #calculate true model
-        value_true = Mixing.true_model(self, g_ext)
-        
-        #for each small-g order, plot
-        for i in list(loworder):
-            valuelow = Mixing.low_g(self, g_ext, i)
-            residlow = (valuelow - value_true)/value_true
-            ax.loglog(g_ext, abs(residlow[0,:]), 'r', linestyle="None", label=r"$F_s({})$".format(i))
-
-        #for each large-g order, plot
-        for i in list(highorder):
-            valuehi = Mixing.high_g(self, g_ext, i)
-            residhi = (valuehi - value_true)/value_true
-            ax.loglog(g_ext, abs(residhi[0,:]), 'b', linestyle="None", label=r"$F_l({})$".format(i))
-        
-        ax.legend(fontsize=12)
-        plt.show()
         
         
     def add_data(self, g_true, g_data, data=None, sigma=None):
@@ -775,7 +795,7 @@ class Mixing(Switching, Priors):
         '''
     
         prelow = (np.sqrt(2.0 * np.pi) * sigma)**(-1.0)
-        insidelow = -0.5 * ((data - Mixing.low_g(self, g_data, loworder))/(sigma))**2.0
+        insidelow = -0.5 * ((data - Models.low_g(self, g_data, loworder))/(sigma))**2.0
         
         return prelow*np.exp(insidelow)
 
@@ -810,7 +830,7 @@ class Mixing(Switching, Priors):
         '''
     
         prehigh = (np.sqrt(2.0 * np.pi) * sigma)**(-1.0)
-        insidehigh = -0.5 * ((data - Mixing.high_g(self, g_data, highorder))/(sigma))**2.0
+        insidehigh = -0.5 * ((data - Models.high_g(self, g_data, highorder))/(sigma))**2.0
     
         return prehigh*np.exp(insidehigh)
 
