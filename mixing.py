@@ -45,7 +45,7 @@ class Models():
         g : linspace
             The linspace of the coupling constant for this calculation. 
             
-        loworder : int, float 
+        loworder : numpy.ndarray, int, float 
             The array of different expansion orders to calculate. These indicate the highest power the expansions 
             are calculated up to. 
             
@@ -56,13 +56,16 @@ class Models():
             loworder (highest power the expansion reaches).
         '''
         
-        if loworder.ndim == 0:
+        #converts float or int to an array
+        if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
             loworder = np.array([loworder])
         output = []
         
         for order in loworder:
             low_c = np.empty([int(order)+1])
             low_terms = np.empty([int(order) + 1])
+
+            #if g is an array, execute here
             try:
                 value = np.empty([len(g)])
        
@@ -84,6 +87,7 @@ class Models():
                 output.append(value)
                 data = np.array(output, dtype = np.float64)
             
+            #if g is a single value, execute here
             except:
                 value = 0.0
                 for k in range(int(order)+1):
@@ -124,15 +128,17 @@ class Models():
             The array of values of the expansion at large-g at each point in g_true space, for each value of highorder
             (highest power the expansion reaches).
         '''
-        if highorder.ndim == 0:
+
+        #converts a float or int into an array
+        if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
             highorder = np.array([highorder])
-  
         output = []
         
         for order in highorder:
             high_c = np.empty([int(order) + 1])
             high_terms = np.empty([int(order) + 1])
             
+            #if g is an array, execute here
             try:
                 value = np.empty([len(g)])
         
@@ -153,6 +159,7 @@ class Models():
 
                 data = np.array(output, dtype = np.float64)
         
+            #if g is a single value, execute here           
             except:
                 value = 0.0
 
@@ -219,10 +226,10 @@ class Models():
         g : linspace
             The linspace in on which the models will be plotted here. 
 
-        loworder : int, float     
+        loworder : numpy.ndarray, int, float   
             As in Models.low_g, the highest powers to calculate the series to for the asymptotic small-g expansion.
         
-        highorder : int, float        
+        highorder : numpy.ndarray, int, float        
             As in Models.high_g, the highest powers to calculate the series to for the convergent large-g expansion.
             
         Returns
@@ -250,12 +257,12 @@ class Models():
         ax.set_prop_cycle(linestyle_cycler)
                 
         #for each small-g order, plot
-        for i in np.array(loworder):
-            ax.plot(g, self.low_g(g, i)[0], color='r', label=r'$f_s$ ({})'.format(i))
+        for i in np.array([loworder]):
+            ax.plot(g, self.low_g(g, i)[0], color='r', label=r'$f_s$ ({})'.format(i[0]))
         
         #for each large-g order, plot
-        for i in np.array(highorder):
-            ax.plot(g, self.high_g(g, i)[0], color='b', label=r'$f_l$ ({})'.format(i))
+        for i in np.array([highorder]):
+            ax.plot(g, self.high_g(g, i)[0], color='b', label=r'$f_l$ ({})'.format(i[0]))
             
         ax.legend(fontsize=12)
         plt.show()
@@ -307,13 +314,13 @@ class Models():
         value_true = self.true_model(g_ext)
         
         #for each small-g order, plot
-        for i in list(loworder):
+        for i in np.array([loworder]):
             valuelow = self.low_g(g_ext, i)
             residlow = (valuelow - value_true)/value_true
             ax.loglog(g_ext, abs(residlow[0,:]), 'r', linestyle="None", label=r"$F_s({})$".format(i))
 
         #for each large-g order, plot
-        for i in list(highorder):
+        for i in np.array([highorder]):
             valuehi = self.high_g(g_ext, i)
             residhi = (valuehi - value_true)/value_true
             ax.loglog(g_ext, abs(residhi[0,:]), 'b', linestyle="None", label=r"$F_l({})$".format(i))
@@ -462,10 +469,10 @@ class Switching:
         g : linspace
             The linspace desired to calculate the PPD across.
             
-        loworder : int, float
+        loworder : numpy.ndarray, int, float
             The order of the small-g expansion to be calculated in the mixing model.
         
-        highorder : int, float
+        highorder : numpy.ndarray, int, float
             The order of the large-g expansion to be calculated in the mixing model. 
         
         Returns:
@@ -549,10 +556,10 @@ class Switching:
             The percent credibility interval calculated for the variable ppd_intervals (used in the plot
             legend). 
         
-        loworder : int, float
+        loworder : numpy.ndarray, int, float
             The order of the small-g expansion used in the mixed model.
         
-        highorder : int, float
+        highorder : numpy.ndarray, int, float
             The order of the large-g expansion used in the mixed model. 
         
         Returns:
@@ -562,6 +569,11 @@ class Switching:
     
         xmin = float(input('Enter the minimum g to plot.'))
         xmax = float(input('Enter the maximum g to plot.'))
+
+        if xmin == None:
+            xmin = min(g_ppd)
+        if xmax == None:
+            xmax = max(g_ppd)
         
         ymin = float(input('Enter the minimum for F(g).'))
         ymax = float(input('Enter the maximum for F(g).'))
@@ -693,7 +705,7 @@ class Mixing(Switching, Models, Priors):
         
         :Example:
             Mixing.plot_data(g_true=np.linspace(0.0, 0.5, 100), g_data=np.linspace(0.0, 0.5, 20), 
-            data=np.array(1.8,...,2.6))
+            data=np.array([]))
             
         Parameters:
         -----------
@@ -727,7 +739,6 @@ class Mixing(Switching, Models, Priors):
         plt.show()
         
         
-    #credible interval calculation (highest posterior density method)
     def credible_intervals(self, trace, fraction):
         
         '''
@@ -785,7 +796,7 @@ class Mixing(Switching, Models, Priors):
         sigma : numpy.ndarray          
             An array of standard deviations at each point in 'data'. 
            
-        loworder : int, float          
+        loworder : numpy.ndarray, int, float          
             The specific small-g expansion order desired for calculating the mixed model. 
             
         Returns:
@@ -821,7 +832,7 @@ class Mixing(Switching, Models, Priors):
         sigma : numpy.ndarray         
             An array of standard deviations at each point in 'data'. 
            
-        highorder : int, float         
+        highorder : numpy.ndarray, int, float         
             The specific large-g expansion order desired for calculating the mixed model. 
             
         Returns:
@@ -859,10 +870,10 @@ class Mixing(Switching, Models, Priors):
         sigma : numpy.ndarray
             An array of standard deviations for each data point.
 
-        loworder : int, float
+        loworder : numpy.ndarray, int, float
             The order of the small-g expansion desired for the mixing calculation.
 
-        highorder : int, float
+        highorder : numpy.ndarray, int, float
             The order of the large-g expansion desired for the mixing calculation.
 
         Returns:
@@ -885,14 +896,12 @@ class Mixing(Switching, Models, Priors):
 
             #likelihood mixing
             for i in range(len(g_data)):
-                # print(g_data[i], data[i], sigma[i], Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder),(1.0- self.f(params, g_data[i])), Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder))
                 mixed_likelihood[i] = self.f(params, g_data[i]) * \
                                     Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder) \
                                     + (1.0- self.f(params, g_data[i])) * \
                                     Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder)
 
                 if mixed_likelihood[i] <= 0.0:
-                    #print('Fail!')
                     return -np.inf
 
                 log_ml[i] = np.log(mixed_likelihood[i])
@@ -928,10 +937,10 @@ class Mixing(Switching, Models, Priors):
         sigma : numpy.ndarray     
             An array of standard deviations at each data point.
             
-        loworder : int, float          
+        loworder : numpy.ndarray, int, float          
             The order of the small-g expansion desired for the mixed model to be calculated at.
             
-        highorder : int, float           
+        highorder : numpy.ndarray, int, float           
             The order of the large-g expansion desired for the mixed model to be calculated at.
             
         Returns:
@@ -1106,14 +1115,12 @@ class Mixing(Switching, Models, Priors):
         #plot traces with mean and credible intervals
         fig, ax = plt.subplots(ndim,1,figsize=(7,4*ndim), dpi=100)
 
-        #TODO: Fix the labels on the parameters
-
         for irow in range(ndim):
             ax[irow].plot(trace[irow].T, 'k')
-            ax[irow].set_ylabel('Parameter {0}'.format(irow), fontsize=14)
-            ax[irow].set_title('Trace plot: Parameter {0}'.format(irow), fontsize=14)
+            ax[irow].set_ylabel('Parameter {0}'.format(irow+1), fontsize=14)
+            ax[irow].set_title('Trace plot: Parameter {0}'.format(irow+1), fontsize=14)
 
-            ax[irow].axhline(y=mean[irow], color='b', linestyle='solid')
+            ax[irow].axhline(y=mean[irow], color='b', linestyle='solid', label='Mean')
             ax[irow].axhline(y=ci[irow, 0], color='b', linestyle='dashed')
             ax[irow].axhline(y=ci[irow, 1], color='b', linestyle='dashed')
 
@@ -1128,13 +1135,11 @@ class Mixing(Switching, Models, Priors):
             med = np.asarray(med)
 
             for irow in range(ndim):
-                ax[irow].axhline(y=med[irow], color='r', linestyle='solid')
+                ax[irow].axhline(y=med[irow], color='r', linestyle='solid', label='Median')
 
-        #TODO: Need to add legends to the subplots
+                ax[irow].legend(loc='upper right')
 
         plt.show()
-
-        #TODO: Fix the labels on the parameters in the corner plot
 
         #corner plots
         fig, axs = plt.subplots(ndim,ndim, figsize=(8,8))
