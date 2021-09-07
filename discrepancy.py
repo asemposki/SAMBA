@@ -33,23 +33,55 @@ class Discrepancy(Mixing):
             The array of variance values corresponding to each value in the linspace of g. 
         '''
 
-        #find coefficients
-        c = np.empty([int(loworder) + 1])
+        if loworder % 2 == 0:
+            
+            #tell user error term used
+            print(f'\nError will be on the order of g^{loworder+2}.')
 
-        for k in range(int(2*int(loworder) + 1)):
+            #find coefficients
+            c = np.empty([int(loworder + 3)])
 
-            if k % 2 == 0:
-                c[k//2] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
+            for k in range(int(loworder + 3)):
 
-        print(np.asarray(c))
+                print(k)
 
-        #rms value
-        cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 1))
+                if k % 2 == 0:
+                    c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
+                else:
+                    c[k] = 0.0
 
-        print(cbar)
+            #rms value
+            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 3))
 
-        #variance
-        var1 = (cbar)**2.0 * (math.factorial(2.0*loworder + 2.0))**2.0 * g**(4.0*loworder + 4.0)
+            print(cbar)
+
+            #variance 
+            var1 = (cbar)**2.0 * (math.factorial(loworder + 3))**2.0 * g**(2.0*(loworder + 3))
+
+        else:
+
+            #tell user error term used
+            print(r'Error will be on the order of g^{}'.format(loworder+1))
+
+            #find coefficients
+            c = np.empty([int(loworder + 2)])
+
+            for k in range(int(loworder + 2)):
+
+                print(k)
+
+                if k % 2 == 0:
+                    c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
+                else:
+                    c[k] = 0.0
+
+            #rms value
+            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 2))
+
+            print(cbar)
+
+            #variance
+            var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
 
         return var1
 
@@ -125,12 +157,12 @@ class Discrepancy(Mixing):
         '''
 
         #find coefficients
-      #  ctrue = np.zeros([int(2*loworder + 3)])
         ctrue = np.zeros([int(loworder + 2)])
         dtrue = np.zeros([int(highorder + 2)])
 
+        print('Orders: ', loworder+1, highorder+1)
+
         #loworder calculation
-      #  for k in range(int(2*loworder + 3)):
         for k in range(int(loworder + 2)):
 
             print(k)
@@ -211,7 +243,7 @@ class Discrepancy(Mixing):
             v1, v2 = self.validation(g, loworder[0], highorder[0])
 
         else:
-            v1 = self.variance_low(g, loworder[0]//2)
+            v1 = self.variance_low(g, loworder[0])
             v2 = self.variance_high(g, highorder[0])
 
         #mean, variance, joint pdf
