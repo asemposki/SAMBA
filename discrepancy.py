@@ -39,31 +39,6 @@ class Discrepancy(Mixing):
             print(f'\nError will be on the order of g^{loworder+2}.')
 
             #find coefficients
-            c = np.empty([int(loworder + 3)])
-
-            for k in range(int(loworder + 3)):
-
-                print(k)
-
-                if k % 2 == 0:
-                    c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
-                else:
-                    c[k] = 0.0
-
-            #rms value
-            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 2))
-
-            print(cbar)
-
-            #variance 
-            var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
-
-        else:
-
-            #tell user error term used
-            print(r'Error will be on the order of g^{}'.format(loworder+1))
-
-            #find coefficients
             c = np.empty([int(loworder + 2)])
 
             for k in range(int(loworder + 2)):
@@ -77,6 +52,31 @@ class Discrepancy(Mixing):
 
             #rms value
             cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 1))
+
+            print(cbar)
+
+            #variance 
+            var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
+
+        else:
+
+            #tell user error term used
+            print(r'Error will be on the order of g^{}'.format(loworder+1))
+
+            #find coefficients
+            c = np.empty([int(loworder + 1)])
+
+            for k in range(int(loworder + 1)):
+
+                print(k)
+
+                if k % 2 == 0:
+                    c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
+                else:
+                    c[k] = 0.0
+
+            #rms value
+            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder))
 
             print(cbar)
 
@@ -111,9 +111,9 @@ class Discrepancy(Mixing):
         print(f'Error will be of the order g^{highorder+1}.')
 
         #find coefficients
-        d = np.zeros([int(highorder) + 2])
+        d = np.zeros([int(highorder) + 1])
 
-        for k in range(int(highorder)+2):
+        for k in range(int(highorder) + 1):
 
             print(k)
 
@@ -122,13 +122,13 @@ class Discrepancy(Mixing):
         print(np.asarray(d))
 
         #rms value
-        dbar = np.sqrt(np.sum((np.asarray(d))**2.0) / (highorder + 1.0))
+        dbar = np.sqrt(np.sum((np.asarray(d))**2.0) / (highorder))
 
         print(dbar)
 
         #variance
-        var2 = (dbar)**2.0 * (g)**(-1.0) * (math.factorial(highorder + 1.0))**(-2.0) \
-                * g**(-2.0*highorder - 2.0)
+        var2 = (dbar)**2.0 * (g)**(-1.0) * (math.factorial(highorder + 1))**(-2.0) \
+                * g**(-2.0*highorder - 2)
 
         return var2
 
