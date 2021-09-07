@@ -51,12 +51,12 @@ class Discrepancy(Mixing):
                     c[k] = 0.0
 
             #rms value
-            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 3))
+            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 2))
 
             print(cbar)
 
             #variance 
-            var1 = (cbar)**2.0 * (math.factorial(loworder + 3))**2.0 * g**(2.0*(loworder + 3))
+            var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
 
         else:
 
@@ -76,12 +76,12 @@ class Discrepancy(Mixing):
                     c[k] = 0.0
 
             #rms value
-            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 2))
+            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 1))
 
             print(cbar)
 
             #variance
-            var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
+            var1 = (cbar)**2.0 * (math.factorial(loworder + 1))**2.0 * g**(2.0*(loworder + 1))
 
         return var1
 
@@ -108,10 +108,14 @@ class Discrepancy(Mixing):
             The array of variance values corresponding to each value in the linspace of g. 
         '''
 
-        #find coefficients
-        d = np.empty([int(highorder) + 1])
+        print(f'Error will be of the order g^{highorder+1}.')
 
-        for k in range(int(highorder)+1):
+        #find coefficients
+        d = np.zeros([int(highorder) + 2])
+
+        for k in range(int(highorder)+2):
+
+            print(k)
 
             d[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k * (math.factorial(k)) / (2.0 * math.factorial(k))
 
