@@ -33,6 +33,7 @@ class Discrepancy(Mixing):
             The array of variance values corresponding to each value in the linspace of g. 
         '''
 
+        #even order 
         if loworder % 2 == 0:
             
             #tell user error term used
@@ -51,13 +52,14 @@ class Discrepancy(Mixing):
                     c[k] = 0.0
 
             #rms value
-            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder + 1))
+            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
 
-            print(cbar)
+            print('RMS: ', c, cbar)
 
             #variance 
             var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
 
+        #odd order
         else:
 
             #tell user error term used
@@ -76,9 +78,9 @@ class Discrepancy(Mixing):
                     c[k] = 0.0
 
             #rms value
-            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder))
+            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
 
-            print(cbar)
+            print('RMS: ', c, cbar)
 
             #variance
             var1 = (cbar)**2.0 * (math.factorial(loworder + 1))**2.0 * g**(2.0*(loworder + 1))
@@ -121,10 +123,10 @@ class Discrepancy(Mixing):
 
         print(np.asarray(d))
 
-        #rms value
-        dbar = np.sqrt(np.sum((np.asarray(d))**2.0) / (highorder))
+        #rms value (ignore first two coefficients in this model)
+        dbar = np.sqrt(np.sum((np.asarray(d)[2:])**2.0) / (highorder-1))
 
-        print(dbar)
+        print('RMS (d): ', d, dbar)
 
         #variance
         var2 = (dbar)**2.0 * (g)**(-1.0) * (math.factorial(highorder + 1))**(-2.0) \
