@@ -11,7 +11,7 @@ class Discrepancy(Mixing):
         pass
 
 
-    def variance_low(self, g, loworder):
+    def variance_low(self, g, loworder, error_model):
 
         '''
         A function to calculate the variance corresponding to the small-g expansion model.
@@ -27,6 +27,9 @@ class Discrepancy(Mixing):
         loworder : int
             The order to which we know our expansion model. This must be a single value. 
 
+        error_model : int
+            The model that the variance will be calculated from. 
+
         Returns:
         --------
         var1 : numpy.ndarray
@@ -37,58 +40,108 @@ class Discrepancy(Mixing):
         if loworder % 2 == 0:
             
             #tell user error term used
-            print(f'\nError will be on the order of g^{loworder+2}.')
+            print(f'\nSmall-g expansion: error will be on the order of g^{loworder+2}.')
 
             #find coefficients
             c = np.empty([int(loworder + 2)])
 
-            for k in range(int(loworder + 2)):
+            #model 1 for even orders
+            if error_model == 1:
 
-                print(k)
+                for k in range(int(loworder + 2)):
 
-                if k % 2 == 0:
-                    c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
-                else:
-                    c[k] = 0.0
+                    if k % 2 == 0:
+                        c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
+                    else:
+                        c[k] = 0.0
 
-            #rms value
-            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
+                print(c)
 
-            print('RMS: ', c, cbar)
+                #rms value
+                cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
 
-            #variance 
-            var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
+                #variance 
+                var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
+
+            #model 2 for even orders
+            elif error_model == 2:
+
+                for k in range(int(loworder + 2)):
+
+                    if k % 2 == 0:
+
+                        #skip first coefficient
+                        if k == 0:
+                            c[k] = 0.0
+                        else:
+                            c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2) \
+                                   * math.factorial(k//2 - 1) * 4.0**(k))
+                    else:
+                        c[k] = 0.0
+
+                print(c)
+
+                #rms value
+                cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
+
+                #variance
+                var1 = (cbar)**2.0 * (math.factorial(loworder//2))**2.0 * (4.0 * g)**(2.0*(loworder + 2))
 
         #odd order
         else:
 
             #tell user error term used
-            print(r'Error will be on the order of g^{}'.format(loworder+1))
+            print(f'Small-g expansion: error will be on the order of g^{loworder+1}.')
 
             #find coefficients
             c = np.empty([int(loworder + 1)])
 
-            for k in range(int(loworder + 1)):
+            #model 1 for odd orders
+            if error_model == 1:
 
-                print(k)
+                for k in range(int(loworder + 1)):
 
-                if k % 2 == 0:
-                    c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
-                else:
-                    c[k] = 0.0
+                    if k % 2 == 0:
+                        c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k) * math.factorial(k//2))
+                    else:
+                        c[k] = 0.0
 
-            #rms value
-            cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
+                print(c)
 
-            print('RMS: ', c, cbar)
+                #rms value
+                cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
 
-            #variance
-            var1 = (cbar)**2.0 * (math.factorial(loworder + 1))**2.0 * g**(2.0*(loworder + 1))
+                #variance
+                var1 = (cbar)**2.0 * (math.factorial(loworder + 1))**2.0 * g**(2.0*(loworder + 1))
+
+            #model 2 for odd orders
+            elif error_model == 2:
+
+                for k in range(int(loworder + 1)):
+
+                    if k % 2 == 0:
+
+                        #skip first coefficient
+                        if k == 0:
+                            c[k] = 0.0
+                        else:
+                            c[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2) \
+                                    * math.factorial(k//2 - 1) * 4.0**(k))
+                    else:
+                        c[k] = 0.0
+
+                print(c)
+
+                #rms value
+                cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
+
+                #variance
+                var1 = (cbar)**2.0 * (math.factorial((loworder-1)//2))**2.0 * (4.0 * g)**(2.0*(loworder + 1))
 
         return var1
 
 
-    def variance_high(self, g, highorder):
+    def variance_high(self, g, highorder, error_model):
 
         '''
         A function to calculate the variance corresponding to the large-g expansion model.
@@ -102,7 +155,10 @@ class Discrepancy(Mixing):
             The linspace over which this calculation is performed.
 
         highorder : int
-            The order to which we know our expansion model. This must be a single value. 
+            The order to which we know our expansion model. This must be a single value.
+
+        error_model : int
+            The error model that the variance will be calculated from.  
             
         Returns:
         --------
@@ -110,27 +166,43 @@ class Discrepancy(Mixing):
             The array of variance values corresponding to each value in the linspace of g. 
         '''
 
-        print(f'Error will be of the order g^{highorder+1}.')
+        print(f'Large-g expansion: error will be of the order g^{highorder+1}.')
 
         #find coefficients
         d = np.zeros([int(highorder) + 1])
 
-        for k in range(int(highorder) + 1):
+        #model 1
+        if error_model == 1:
 
-            print(k)
+            for k in range(int(highorder) + 1):
 
-            d[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k * (math.factorial(k)) / (2.0 * math.factorial(k))
+                d[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k * (math.factorial(k)) / (2.0 * math.factorial(k))
 
-        print(np.asarray(d))
+            print(d)
 
-        #rms value (ignore first two coefficients in this model)
-        dbar = np.sqrt(np.sum((np.asarray(d)[2:])**2.0) / (highorder-1))
+            #rms value (ignore first two coefficients in this model)
+            dbar = np.sqrt(np.sum((np.asarray(d)[2:])**2.0) / (highorder-1))
 
-        print('RMS (d): ', d, dbar)
+            #variance
+            var2 = (dbar)**2.0 * (g)**(-1.0) * (math.factorial(highorder + 1))**(-2.0) \
+                    * g**(-2.0*highorder - 2)
 
-        #variance
-        var2 = (dbar)**2.0 * (g)**(-1.0) * (math.factorial(highorder + 1))**(-2.0) \
-                * g**(-2.0*highorder - 2)
+        #model 2
+        elif error_model == 2:
+
+            for k in range(int(highorder) + 1):
+
+                d[k] = special.gamma(k/2.0 + 0.25) * special.gamma(k/2.0 + 1.0) * 4.0**(k) \
+                       * (-0.5)**k / (2.0 * math.factorial(k))
+
+            print(d)
+
+            #rms value
+            dbar = np.sqrt(np.sum((np.asarray(d))**2.0) / (highorder + 1))
+
+            #variance
+            var2 = (dbar)**2.0 * g**(-1.0) * (special.gamma((highorder + 3)/2.0))**(-2.0) \
+                    * (4.0 * g)**(-2.0*highorder - 2.0)
 
         return var2
 
@@ -171,7 +243,7 @@ class Discrepancy(Mixing):
         #loworder calculation
         for k in range(int(loworder + 2)):
 
-            print(k)
+            #print(k)
 
             if k % 2 == 0:
                ctrue[k] = np.sqrt(2.0) * special.gamma(k + 0.5) * (-4.0)**(k//2) / (math.factorial(k//2))
@@ -186,9 +258,6 @@ class Discrepancy(Mixing):
         #variance (with last coefficient == loworder, highorder + 1)
         v1 = (ctrue[-1])**2.0 * g**(2.0*(loworder + 1.0))
         v2 = (dtrue[-1])**2.0 * (g)**(-1.0) * g**(-2.0*highorder - 2.0)
-
-        print(ctrue)
-        print(v1)
 
         return v1, v2
 
@@ -231,9 +300,14 @@ class Discrepancy(Mixing):
             The log pdf result of this mixed model. 
         '''
 
-        if loworder.ndim > 1 or highorder.ndim > 1:
+        #check orders comply with function formatting
+        if isinstance(loworder, np.ndarray) != True:
+            loworder = np.array([loworder])
+        if isinstance(highorder, np.ndarray) != True:
+            highorder = np.array([highorder])
+        if len(loworder) > 1 or len(highorder) > 1:
             raise ValueError('Please specify only one order per model.')
-
+           
         #which interval to use
         ci = float(input('Which interval do you want to use: 68 or 95?'))
 
@@ -244,13 +318,19 @@ class Discrepancy(Mixing):
         else:
             raise ValueError('Please enter either 68 or 95.')
 
-        #variances
+        #select the proper variances
         if validation == True:
             v1, v2 = self.validation(g, loworder[0], highorder[0])
-
         else:
-            v1 = self.variance_low(g, loworder[0])
-            v2 = self.variance_high(g, highorder[0])
+            model = input('Which error model do you want to use, uninformative or informative?')
+            if model == 'uninformative':
+                v1 = self.variance_low(g, loworder[0], error_model=1)
+                v2 = self.variance_high(g, highorder[0], error_model=1)
+            elif model == 'informative':
+                v1 = self.variance_low(g, loworder[0], error_model=2)
+                v2 = self.variance_high(g, highorder[0], error_model=2)
+            else:
+                raise ValueError('Please select one of the options listed.')
 
         #mean, variance, joint pdf
         mean = (v2 * Models.low_g(self, g, loworder) + v1 * Models.high_g(self, g, highorder)) / (v1 + v2)
@@ -277,7 +357,7 @@ class Discrepancy(Mixing):
         ax.tick_params(axis='x', labelsize=14)
         ax.tick_params(axis='y', labelsize=14)
         ax.set_xlim(0.0, 0.5)
-        ax.set_ylim(-5.0, 5.0)
+        ax.set_ylim(0.0, 4.0)
         ax.set_xlabel('g', fontsize=16)
         ax.set_ylabel('F(g)', fontsize=16)
         ax.set_title('F(g): discrepancy model', fontsize=16)
