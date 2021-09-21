@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import special
 import math
+#from matplotlib import rc 
+#rc('text', usetex=True)
 import matplotlib.pyplot as plt
 from mixing import Models, Mixing
 
@@ -25,7 +27,8 @@ class Discrepancy(Mixing):
             The linspace over which this calculation is performed.
 
         loworder : int
-            The order to which we know our expansion model. This must be a single value. 
+            The order to which we know our expansion model. Must be passed one at a time if
+            more than one model is to be calculated.
 
         error_model : int
             The model that the variance will be calculated from. 
@@ -305,8 +308,6 @@ class Discrepancy(Mixing):
             loworder = np.array([loworder])
         if isinstance(highorder, np.ndarray) != True:
             highorder = np.array([highorder])
-        if len(loworder) > 1 or len(highorder) > 1:
-            raise ValueError('Please specify only one order per model.')
            
         #which interval to use
         ci = float(input('Which interval do you want to use: 68 or 95?'))
@@ -317,6 +318,10 @@ class Discrepancy(Mixing):
             val = 1.96 
         else:
             raise ValueError('Please enter either 68 or 95.')
+
+        #for mixing 3 models; will be changed later when we accomodate N models
+        if len(loworder) > 1 or len(highorder) > 1:
+            print('Mixing of 3 models will commence.')
 
         #select the proper variances
         if validation == True:
@@ -365,18 +370,19 @@ class Discrepancy(Mixing):
 
         #plot the small-g expansions and error bands
         ax.plot(g, Models.low_g(self, g, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
-        ax.plot(g, interval_f1[:, 0], 'r.', label=r'$f_s$ ({}) credible interval'.format(loworder[0]))
+        ax.plot(g, interval_f1[:, 0], 'r.', label=r'$f_s$ ({}) interval'.format(loworder[0]))
         ax.plot(g, interval_f1[:, 1], 'r.')
 
         #plot the large-g expansions and error bands
         ax.plot(g, Models.high_g(self, g, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
-        ax.plot(g, interval_f2[:, 0], 'b.', label=r'$f_l$ ({}) credible interval'.format(highorder[0]))
+        ax.plot(g, interval_f2[:, 0], 'b.', label=r'$f_l$ ({}) interval'.format(highorder[0]))
         ax.plot(g, interval_f2[:, 1], 'b.')
 
         if plot_fdagger == True:
             ax.plot(g, mean, 'g', label='Mean')
-            ax.plot(g, intervals[:,0], 'g--', label=r'{}$\%$ credible interval'.format(ci))
+            ax.plot(g, intervals[:,0], 'g--', label=r'{}$\%$ interval'.format(ci))
             ax.plot(g, intervals[:,1], 'g--')
+            ax.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
 
         if next_order == True:
             ax.plot(g, Models.low_g(self, g, loworder+1)[0,:], 'r', linestyle='dotted', \
@@ -384,7 +390,7 @@ class Discrepancy(Mixing):
             ax.plot(g, Models.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
                 label=r'$f_l$ ({})'.format(highorder[0]+1))
         
-        ax.legend(fontsize=12)
+        ax.legend(fontsize=11, loc='lower right')
         plt.show()
 
         #save figure option
