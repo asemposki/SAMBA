@@ -210,7 +210,7 @@ class Discrepancy(Mixing):
         return var2
 
     
-    def validation(self, g, loworder, highorder):
+    def validation(self, g, loworder, highorder): #this has been written for only two expansions; needs serious overhaul
 
         '''
         A function to calculate the validation variances needed by taking the last
@@ -265,7 +265,7 @@ class Discrepancy(Mixing):
         return v1, v2
 
 
-    def fdagger(self, g, loworder, highorder, plot_fdagger=True, next_order=False, validation=False):
+    def fdagger(self, g, loworder, highorder, plot_fdagger=True, next_order=False, validation=False): 
 
         '''
         A function to determine the pdf of the mixed model.
@@ -308,10 +308,56 @@ class Discrepancy(Mixing):
             loworder = np.array([loworder])
         if isinstance(highorder, np.ndarray) != True:
             highorder = np.array([highorder])
-           
-        #which interval to use
-        ci = float(input('Which interval do you want to use: 68 or 95?'))
 
+        #TODO: Fix the validation code to work for N models
+
+        #select the proper variances -> need to fix the validation function later, so DO NOT USE NOW
+        if validation == True:
+            v1, v2 = self.validation(g, loworder[0], highorder[0])
+        else:
+            model = input('Which error model do you want to use, uninformative or informative?')
+
+            if model == 'uninformative':
+                v_low = np.asarray([self.variance_low(g, loworder[i], error_model=1) for i in range(len(loworder))])
+                v_high = np.asarray([self.variance_high(g, highorder[i], error_model=1) for i in range(len(highorder))])
+
+            elif model == 'informative':
+                v_low = np.asarray([self.variance_low(g, loworder[i], error_model=2) for i in range(len(loworder))])
+                v_high = np.asarray([self.variance_high(g, highorder[i], error_model=2) for i in range(len(highorder))])
+
+            else:
+                raise ValueError('Please select one of the options listed.')
+
+        #calculating models
+        f_low = [Models.low_g(self, g, i) for i in np.array([loworder])][0]
+        f_high = [Models.high_g(self, g, i) for i in np.array([highorder])][0]
+
+        #concatenate models and variances
+        f = np.concatenate((f_low, f_high), axis=0) 
+        v = np.concatenate((v_low, v_high), axis=0)
+
+        #initialise arrays
+        mean_n = np.zeros([len(f), len(g)])
+        mean_d = np.zeros([len(f), len(g)])
+        mean = np.zeros([len(g)])
+        var = np.zeros([len(f), len(g)])
+            
+        #create fdagger for each value of g
+        for i in range(len(f)):
+            mean_n[i] = f[i]/v[i]
+            mean_d[i] = 1.0/v[i]
+            var[i] = 1.0/v[i]
+        
+        mean_n = np.sum(mean_n, axis=0)
+        mean_d = np.sum(mean_d, axis=0)
+
+        #mean, variance calculation
+        mean = mean_n/mean_d
+        var = 1.0/np.sum(var, axis=0)
+        pdf = -np.log(np.sqrt(2.0 * np.pi * var)) - ((g - mean)**2.0/ (4.0 * var)) 
+
+        #which credibility interval to use
+        ci = float(input('Which interval do you want to use: 68 or 95?'))
         if ci == 68:
             val = 1.0
         elif ci == 95:
@@ -319,64 +365,64 @@ class Discrepancy(Mixing):
         else:
             raise ValueError('Please enter either 68 or 95.')
 
-        #for mixing 3 models; will be changed later when we accomodate N models
-        if len(loworder) > 1 or len(highorder) > 1:
-            print('Mixing of 3 models will commence.')
+        #initialise credibility intervals
+        intervals = np.zeros([len(g), 2])
+        interval_low = np.zeros([len(loworder), len(g), 2])
+        interval_high = np.zeros([len(highorder), len(g), 2])
 
-        #select the proper variances
-        if validation == True:
-            v1, v2 = self.validation(g, loworder[0], highorder[0])
-        else:
-            model = input('Which error model do you want to use, uninformative or informative?')
-            if model == 'uninformative':
-                v1 = self.variance_low(g, loworder[0], error_model=1)
-                v2 = self.variance_high(g, highorder[0], error_model=1)
-            elif model == 'informative':
-                v1 = self.variance_low(g, loworder[0], error_model=2)
-                v2 = self.variance_high(g, highorder[0], error_model=2)
-            else:
-                raise ValueError('Please select one of the options listed.')
+        #calculate credibility intervals 
+        intervals[:, 0] = (mean - val * np.sqrt(var))
+        intervals[:, 1] = (mean + val * np.sqrt(var))
 
-        #mean, variance, joint pdf
-        mean = (v2 * Models.low_g(self, g, loworder) + v1 * Models.high_g(self, g, highorder)) / (v1 + v2)
-        mean = mean[0]
-        var = v1 * v2 / (v1 + v2)
-        pdf = -np.log(np.sqrt(2.0 * np.pi * var)) - ((g - mean)**2.0/ (4.0 * var)) 
+        #index
+        i = 0
+        print(np.shape(v_low))
+        for j in loworder:
+            interval_low[i,:,0] = (Models.low_g(self, g, j.item())[0,:] - val * np.sqrt(v_low[i,:]))
+            interval_low[i,:,1] = (Models.low_g(self, g, j.item())[0,:] + val * np.sqrt(v_low[i,:]))
+            i += 1
 
-        #credible intervals -> 95% (confidence interval?)
-        intervals = np.empty([len(g), 2])
-        interval_f1 = np.empty([len(g), 2])
-        interval_f2 = np.empty([len(g), 2])
+        #index
+        i = 0
+          
+        for j in highorder:
+            interval_high[i,:,0] = (Models.high_g(self, g, j.item())[0,:] - val * np.sqrt(v_high[i,:]))
+            interval_high[i,:,1] = (Models.high_g(self, g, j.item())[0,:] + val * np.sqrt(v_high[i,:]))
+            i += 1
 
-        for i in range(len(g)):
-            intervals[i, 0] = (mean[i] - val * np.sqrt(var[i]))
-            intervals[i, 1] = (mean[i] + val * np.sqrt(var[i]))
-            interval_f1[i, 0] = (Models.low_g(self, g[i], loworder) - val * np.sqrt(v1[i]))
-            interval_f1[i, 1] = (Models.low_g(self, g[i], loworder) + val * np.sqrt(v1[i]))
-            interval_f2[i, 0] = (Models.high_g(self, g[i], highorder) - val * np.sqrt(v2[i]))
-            interval_f2[i, 1] = (Models.high_g(self, g[i], highorder) + val * np.sqrt(v2[i]))
+        ### HERE IS WHERE THE PLOTTING FUNCTION BEGINS ###
+
+        #TODO: Remove the plotting function from fdagger and create its own space
 
         #plot the pdf, expansions, and true model
         fig = plt.figure(figsize=(8,6), dpi=100)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=14)
         ax.tick_params(axis='y', labelsize=14)
-        ax.set_xlim(0.0, 0.5)
-        ax.set_ylim(0.0, 4.0)
+        ax.set_xlim(0.1, 0.3)
+        ax.set_ylim(2.0, 3.0)
         ax.set_xlabel('g', fontsize=16)
         ax.set_ylabel('F(g)', fontsize=16)
         ax.set_title('F(g): discrepancy model', fontsize=16)
         ax.plot(g, Models.true_model(self, g), 'k', label='True model')
 
+        #TODO: Figure out a better labelling/colour/linestyle procedure
+
         #plot the small-g expansions and error bands
-        ax.plot(g, Models.low_g(self, g, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
-        ax.plot(g, interval_f1[:, 0], 'r.', label=r'$f_s$ ({}) interval'.format(loworder[0]))
-        ax.plot(g, interval_f1[:, 1], 'r.')
+        for j in loworder:
+            ax.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ({})'.format(j))
+        
+        for i in range(len(loworder)):
+            ax.plot(g, interval_low[i, :, 0], 'r', linestyle='dotted', label=r'$f_s$ ({}) interval'.format(loworder[i]))
+            ax.plot(g, interval_low[i, :, 1], 'r', linestyle='dotted')
 
         #plot the large-g expansions and error bands
-        ax.plot(g, Models.high_g(self, g, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
-        ax.plot(g, interval_f2[:, 0], 'b.', label=r'$f_l$ ({}) interval'.format(highorder[0]))
-        ax.plot(g, interval_f2[:, 1], 'b.')
+        for j in highorder:
+            ax.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ({})'.format(j))
+            
+        for i in range(len(highorder)):
+            ax.plot(g, interval_high[i, :, 0], 'b', linestyle='dotted', label=r'$f_l$ ({}) interval'.format(highorder[i]))
+            ax.plot(g, interval_high[i, :, 1], 'b', linestyle='dotted')
 
         if plot_fdagger == True:
             ax.plot(g, mean, 'g', label='Mean')
@@ -384,11 +430,13 @@ class Discrepancy(Mixing):
             ax.plot(g, intervals[:,1], 'g--')
             ax.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
 
-        if next_order == True:
-            ax.plot(g, Models.low_g(self, g, loworder+1)[0,:], 'r', linestyle='dotted', \
-                label=r'$f_s$ ({})'.format(loworder[0]+1))
-            ax.plot(g, Models.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
-                label=r'$f_l$ ({})'.format(highorder[0]+1))
+        #TODO: Reinstate next order variable; however, this will be very confusing if I do not change labelling and colours first
+
+        # if next_order == True:
+        #     ax.plot(g, Models.low_g(self, g, loworder+1)[0,:], 'r', linestyle='dotted', \
+        #         label=r'$f_s$ ({})'.format(loworder[0]+1))
+        #     ax.plot(g, Models.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
+        #         label=r'$f_l$ ({})'.format(highorder[0]+1))
         
         ax.legend(fontsize=11, loc='lower right')
         plt.show()
