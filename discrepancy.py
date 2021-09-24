@@ -265,7 +265,7 @@ class Discrepancy(Mixing):
         return v1, v2
 
 
-    def fdagger(self, g, loworder, highorder, plot_fdagger=True, next_order=False, validation=False): 
+    def fdagger(self, g, loworder, highorder, validation=False): 
 
         '''
         A function to determine the pdf of the mixed model.
@@ -287,15 +287,9 @@ class Discrepancy(Mixing):
             The chosen order to which this model is calculated regarding the 
             large-g expansions. 
 
-        plot_fdagger : bool
-            If True, plot_fdagger instructs the function to plot the mean
-            and intervals of the fdagger model. If False, this step is skipped.
-            The default is set to True.
-
-        next_order : bool
-            If True, this will plot the next order in the expansion models for both
-            low and high orders. If False, this step will be skipped. Default is set
-            to False. 
+        validation : bool
+            If True, this parameter will allow for fdagger to calculate the
+            validation step of this mixed model.
 
         Returns:
         --------
@@ -354,13 +348,12 @@ class Discrepancy(Mixing):
         #mean, variance calculation
         mean = mean_n/mean_d
         var = 1.0/np.sum(var, axis=0)
-        pdf = -np.log(np.sqrt(2.0 * np.pi * var)) - ((g - mean)**2.0/ (4.0 * var)) 
 
         #which credibility interval to use
-        ci = float(input('Which interval do you want to use: 68 or 95?'))
-        if ci == 68:
+        self.ci = float(input('Which interval do you want to use: 68 or 95?'))
+        if self.ci == 68:
             val = 1.0
-        elif ci == 95:
+        elif self.ci == 95:
             val = 1.96 
         else:
             raise ValueError('Please enter either 68 or 95.')
@@ -390,23 +383,81 @@ class Discrepancy(Mixing):
             interval_high[i,:,1] = (Models.high_g(self, g, j.item())[0,:] + val * np.sqrt(v_high[i,:]))
             i += 1
 
-        ### HERE IS WHERE THE PLOTTING FUNCTION BEGINS ###
+        return mean, intervals, interval_low, interval_high
 
-        #TODO: Remove the plotting function from fdagger and create its own space
+    
+    def plot_mix(self, g, loworder, highorder, plot_fdagger=True, next_order=False, validation=False):
 
-        #plot the pdf, expansions, and true model
+        '''
+        An all-in-one plotting function that will plot the results of fdagger for N numbers
+        of models, the next orders of the expansion models, and the validation step of the 
+        model mixing in fdagger to test fdagger results.
+
+        :Example:
+            Discrepancy.plot_mix(g=np.linspace(1e-6, 0.5, 100), loworder=np.array([5, 8]), 
+            highorder=5, plot_fdagger=True, next_order=False, validation=True)
+
+        Parameters:
+        -----------
+        g : numpy.linspace
+            The space over which the models are calculated.
+        
+        loworder : int, float, numpy.ndarray
+            The highest orders to which the small-g expansion will be calculated.
+
+        highorder : int, float, numpy.ndarray
+            The highest orders to which the large-g expansion will be calculated.
+
+        plot_fdagger : bool
+            If True, this parameter will allow for the plotting of fdagger. 
+
+        next_order : bool
+            If True, the plotting function will show the next orders of each 
+            expansion on the plot. 
+
+        validation : bool
+            If True, this parameter allows the plotting function to calculate the
+            validation step and plot it. 
+
+        Returns:
+        --------
+        None.
+        '''
+
+        #check orders comply with function formatting
+        if isinstance(loworder, np.ndarray) != True:
+            loworder = np.array([loworder])
+        if isinstance(highorder, np.ndarray) != True:
+            highorder = np.array([highorder])
+
+        #set up plot configuration
         fig = plt.figure(figsize=(8,6), dpi=100)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=14)
         ax.tick_params(axis='y', labelsize=14)
-        ax.set_xlim(0.1, 0.3)
-        ax.set_ylim(2.0, 3.0)
+
+        #set up x and y limits
+        xlim = input('\nx-limits (enter "auto" if unknown): ')
+        ylim = input('\ny-limits (enter "auto" if unknown): ')
+        if xlim == "auto":
+            ax.set_xlim(0.0,0.5)
+        else:
+            ax.set_xlim(tuple(map(float, xlim.split(','))))
+        if ylim == "auto":
+            ax.set_ylim(-4.0,4.0)
+        else:
+            ax.set_ylim(tuple(map(float, ylim.split(','))))
+
+        #labels and true model
         ax.set_xlabel('g', fontsize=16)
         ax.set_ylabel('F(g)', fontsize=16)
         ax.set_title('F(g): discrepancy model', fontsize=16)
         ax.plot(g, Models.true_model(self, g), 'k', label='True model')
 
         #TODO: Figure out a better labelling/colour/linestyle procedure
+
+        #call fdagger to calculate results
+        mean, intervals, interval_low, interval_high = self.fdagger(g, loworder, highorder)
 
         #plot the small-g expansions and error bands
         for j in loworder:
@@ -426,7 +477,7 @@ class Discrepancy(Mixing):
 
         if plot_fdagger == True:
             ax.plot(g, mean, 'g', label='Mean')
-            ax.plot(g, intervals[:,0], 'g--', label=r'{}$\%$ interval'.format(ci))
+            ax.plot(g, intervals[:,0], 'g--', label=r'{}$\%$ interval'.format(self.ci))
             ax.plot(g, intervals[:,1], 'g--')
             ax.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
 
@@ -450,4 +501,4 @@ class Discrepancy(Mixing):
         else:
             pass
 
-        return pdf
+        return None
