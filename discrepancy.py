@@ -1,8 +1,6 @@
 import numpy as np
 from scipy import special
 import math
-#from matplotlib import rc 
-#rc('text', usetex=True)
 import matplotlib.pyplot as plt
 from mixing import Models, Mixing
 
@@ -430,8 +428,11 @@ class Discrepancy(Mixing):
         if isinstance(highorder, np.ndarray) != True:
             highorder = np.array([highorder])
 
+        #set the dpi
+        dpi = int(input('Set a dpi for the figure.'))
+
         #set up plot configuration
-        fig = plt.figure(figsize=(8,6), dpi=100)
+        fig = plt.figure(figsize=(8,6), dpi=dpi)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=14)
         ax.tick_params(axis='y', labelsize=14)
@@ -449,9 +450,9 @@ class Discrepancy(Mixing):
             ax.set_ylim(tuple(map(float, ylim.split(','))))
 
         #labels and true model
-        ax.set_xlabel('g', fontsize=16)
-        ax.set_ylabel('F(g)', fontsize=16)
-        ax.set_title('F(g): discrepancy model', fontsize=16)
+        ax.set_xlabel('g', fontsize=22)
+        ax.set_ylabel('F(g)', fontsize=22)
+        ax.set_title('F(g): discrepancy model', fontsize=22)
         ax.plot(g, Models.true_model(self, g), 'k', label='True model')
 
         #TODO: Figure out a better labelling/colour/linestyle procedure
@@ -489,7 +490,7 @@ class Discrepancy(Mixing):
         #     ax.plot(g, Models.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
         #         label=r'$f_l$ ({})'.format(highorder[0]+1))
         
-        ax.legend(fontsize=11, loc='lower right')
+        ax.legend(fontsize=14, loc='lower right')
         plt.show()
 
         #save figure option
