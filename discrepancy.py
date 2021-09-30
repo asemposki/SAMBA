@@ -2,6 +2,7 @@ import numpy as np
 from scipy import special
 import math
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 from mixing import Models, Mixing
 
 class Discrepancy(Mixing):
@@ -434,8 +435,10 @@ class Discrepancy(Mixing):
         #set up plot configuration
         fig = plt.figure(figsize=(8,6), dpi=dpi)
         ax = plt.axes()
-        ax.tick_params(axis='x', labelsize=14)
-        ax.tick_params(axis='y', labelsize=14)
+        ax.tick_params(axis='x', labelsize=18)
+        ax.tick_params(axis='y', labelsize=18)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
 
         #set up x and y limits
         xlim = input('\nx-limits (enter "auto" if unknown): ')

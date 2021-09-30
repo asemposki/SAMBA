@@ -6,6 +6,7 @@ import time
 import emcee
 import corner
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 from priors import Priors
 
 
@@ -238,16 +239,21 @@ class Models():
         
         '''
         
+        #dpi settings
+        dpi = int(input('Select a dpi for the figure.'))
+
         #set up the plot
-        fig = plt.figure(figsize=(8,6), dpi=100)
+        fig = plt.figure(figsize=(8,6), dpi=dpi)
         ax = plt.axes()
         ax.set_xlim(min(g), max(g))
         ax.set_ylim(1.8, 2.6)
-        ax.tick_params(axis='x', labelsize=14)
-        ax.tick_params(axis='y', labelsize=14)
-        ax.set_xlabel('g', fontsize=16)
-        ax.set_ylabel('F(g)', fontsize=16)
-        ax.set_title('F(g): Expansions and true model', fontsize=16)
+        ax.tick_params(axis='x', labelsize=18)
+        ax.tick_params(axis='y', labelsize=18)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.set_xlabel('g', fontsize=22)
+        ax.set_ylabel('F(g)', fontsize=22)
+        ax.set_title('F(g): Expansions and true model', fontsize=22)
         
         #plot the true model 
         ax.plot(g, self.true_model(g), 'k', label='True model')
@@ -295,11 +301,13 @@ class Models():
         #set up the plot
         fig = plt.figure(figsize=(8,6), dpi=100)
         ax = plt.axes()
-        ax.tick_params(axis='x', labelsize=14)
-        ax.tick_params(axis='y', labelsize=14)
-        ax.set_xlabel('g', fontsize=16)
-        ax.set_ylabel('Residual', fontsize=16)
-        ax.set_title('F(g): residuals', fontsize=16)
+        ax.tick_params(axis='x', labelsize=18)
+        ax.tick_params(axis='y', labelsize=18)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.set_xlabel('g', fontsize=22)
+        ax.set_ylabel('Residual', fontsize=22)
+        ax.set_title('F(g): residuals', fontsize=22)
         ax.set_xlim(1e-2, 10.)
         ax.set_ylim(1e-6,1e17)
 
@@ -566,6 +574,8 @@ class Switching:
         --------
         None.
         '''
+
+        dpi = int(input('Set a dpi for the figure.'))
     
         xmin = float(input('Enter the minimum g to plot.'))
         xmax = float(input('Enter the maximum g to plot.'))
@@ -583,15 +593,17 @@ class Switching:
         if ymax == None:
             ymax = 2.6
         
-        fig = plt.figure(figsize=(8,5), dpi=100)
+        fig = plt.figure(figsize=(8,5), dpi=dpi)
         ax = plt.axes()
-        ax.tick_params(axis='x', labelsize=14)
-        ax.tick_params(axis='y', labelsize=14)
-        ax.set_xlabel('g', fontsize=16)
-        ax.set_ylabel('F(g)', fontsize=16)
+        ax.tick_params(axis='x', labelsize=18)
+        ax.tick_params(axis='y', labelsize=18)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.set_xlabel('g', fontsize=22)
+        ax.set_ylabel('F(g)', fontsize=22)
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
-        ax.set_title('Mixed Prediction with Calibration Posteriors', fontsize=16)
+        ax.set_title('Mixed Prediction with Calibration Posteriors', fontsize=22)
 
         ax.plot(g_data, data, 'k.', label='Data set')  
         ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
@@ -723,15 +735,19 @@ class Mixing(Switching, Models, Priors):
         None.
         
         '''
+
+        dpi = int(input('Set a dpi for the figure.'))
         
         #set up the plot
-        fig = plt.figure(figsize=(8,6), dpi=100)
+        fig = plt.figure(figsize=(8,6), dpi=dpi)
         ax = plt.axes()
-        ax.tick_params(axis='x', labelsize=14)
-        ax.tick_params(axis='y', labelsize=14)
+        ax.tick_params(axis='x', labelsize=18)
+        ax.tick_params(axis='y', labelsize=18)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(min(g_true), max(g_true))
         ax.set_ylim(1.8, 2.6)
-        ax.set_title('Generated data and true model', fontsize=16)
+        ax.set_title('Generated data and true model', fontsize=22)
         ax.plot(g_data, data, 'k.', label='Data set')
         ax.plot(g_true, Mixing.true_model(self, g_true), 'k', label='True model')
         
@@ -1112,13 +1128,16 @@ class Mixing(Switching, Models, Priors):
         mean = np.asarray(mean)
         ci = np.asarray(ci)
 
+        #dpi setting
+        dpi = int(input('Set a dpi for the figure.'))
+
         #plot traces with mean and credible intervals
-        fig, ax = plt.subplots(ndim,1,figsize=(7,4*ndim), dpi=100)
+        fig, ax = plt.subplots(ndim,1,figsize=(7,4*ndim), dpi=dpi)
 
         for irow in range(ndim):
             ax[irow].plot(trace[irow].T, 'k')
-            ax[irow].set_ylabel('Parameter {0}'.format(irow+1), fontsize=14)
-            ax[irow].set_title('Trace plot: Parameter {0}'.format(irow+1), fontsize=14)
+            ax[irow].set_ylabel('Parameter {0}'.format(irow+1), fontsize=22)
+            ax[irow].set_title('Trace plot: Parameter {0}'.format(irow+1), fontsize=22)
 
             ax[irow].axhline(y=mean[irow], color='b', linestyle='solid', label='Mean')
             ax[irow].axhline(y=ci[irow, 0], color='b', linestyle='dashed')
