@@ -245,10 +245,14 @@ class Models():
         #set up the plot
         fig = plt.figure(figsize=(8,6), dpi=dpi)
         ax = plt.axes()
-        ax.set_xlim(min(g), max(g))
+        if min(g) == 1e-6:
+            ax.set_xlim(0.0, max(g))
+        else:
+            ax.set_xlim(min(g), max(g))
         ax.set_ylim(1.8, 2.6)
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
+        ax.locator_params(nbins=6)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlabel('g', fontsize=22)
@@ -263,15 +267,26 @@ class Models():
         ax.set_prop_cycle(linestyle_cycler)
                 
         #for each small-g order, plot
-        for i in np.array([loworder]):
-            ax.plot(g, self.low_g(g, i)[0], color='r', label=r'$f_s$ ({})'.format(i[0]))
+        for i in loworder:
+            ax.plot(g, self.low_g(g, i.item())[0], color='r', label=r'$f_s$ ({})'.format(i))
         
         #for each large-g order, plot
-        for i in np.array([highorder]):
-            ax.plot(g, self.high_g(g, i)[0], color='b', label=r'$f_l$ ({})'.format(i[0]))
+        for i in highorder:
+            ax.plot(g, self.high_g(g, i.item())[0], color='b', label=r'$f_l$ ({})'.format(i))
             
-        ax.legend(fontsize=12)
+        ax.legend(fontsize=16)
         plt.show()
+
+        #save figure option
+        response = input('Would you like to save this figure? (yes/no)')
+
+        if response == 'yes':
+            name = input('Enter a file name (include .jpg, .png, etc.)')
+            fig.savefig(name)
+        else:
+            pass
+
+        return None
         
          
     def residuals(self, loworder, highorder):
@@ -444,7 +459,10 @@ class Switching:
         '''
 
         #unpack the parameters
-        g1, g2, g3 = params 
+        g1, g2, g3 = params
+
+        if g1 > g2 or g2 < g3 or g1 > g3:
+            return -np.inf
 
         if g <= g1:
             return 1.0
@@ -516,6 +534,8 @@ class Switching:
 
         elif self.choice == 'cosine':
 
+            params = np.array([np.mean(trace[0,:]), np.mean(trace[1,:]), np.mean(trace[2,:])])
+
             for i in range(len(g)):
                 for j in range(len(trace[0].T)):
                     
@@ -524,11 +544,11 @@ class Switching:
                     result_array[i,j] = self.switchcos(params, g[i]) * Models.low_g(self, g[i], loworder) \
                                     + (1.0 - self.switchcos(params, g[i])) \
                                     * Models.high_g(self, g[i], highorder)
-                
+
             return result_array
     
     
-    def plot_ppd(self, g_data, g_true, g_ppd, data, ppd_results, ppd_intervals, percent, loworder, highorder):
+    def plot_ppd(self, results, g_data, g_true, g_ppd, data, ppd_results, ppd_intervals, percent, loworder, highorder):
         
         '''
         A plotting function that can be used to plot the posterior predictive distribution (PPD) results (mean and 
@@ -542,6 +562,9 @@ class Switching:
             
         Parameters:
         -----------
+        results : numpy.ndarray
+            The mean or the median of the estimated parameters from the posterior draws. 
+
         g_data : linspace
             The linspace used to generate the data.
         
@@ -593,29 +616,41 @@ class Switching:
         if ymax == None:
             ymax = 2.6
         
-        fig = plt.figure(figsize=(8,5), dpi=dpi)
+        fig = plt.figure(figsize=(8,6), dpi=dpi)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
+        ax.locator_params(nbins=6)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
-        ax.set_title('Mixed Prediction with Calibration Posteriors', fontsize=22)
+        ax.set_title('Mixed prediction with calibrated posteriors', fontsize=22)
 
         ax.plot(g_data, data, 'k.', label='Data set')  
-        ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
+        # ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
 
         ax.plot(g_true, Models.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
         ax.plot(g_true, Models.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
 
-        ax.plot(g_ppd, ppd_results, 'g', label='Calibrated mixed model')
-        ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label='{}% credible interval (HPD)'.format(percent))
-        ax.plot(g_ppd, ppd_intervals[:, 1], 'g', linestyle='dotted')
+        # ax.plot(g_ppd, ppd_results, 'g', label='Mixed model')
+        # ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% interval (HPD)'.format(percent))
+        # ax.plot(g_ppd, ppd_intervals[:,1], 'g', linestyle='dotted')
 
-        ax.legend(fontsize=12)
+        # ax.fill_between(g_ppd, ppd_intervals[:,0], ppd_intervals[:,1], color='green', alpha=0.2)
+
+        # #parameter results
+        # ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{3}$, $\theta_{2}$")
+        # ax.axvline(x=results[1], color='darkviolet', alpha=0.35)
+        # ax.axvline(x=results[2], color='darkviolet', alpha=0.35)
+
+        ax.axvline(x=0.16, color='darkviolet', linewidth= 30, alpha=0.15)
+        ax.axvline(x=0.23, color='darkviolet', linewidth= 30, alpha=0.15)
+        ax.axvline(x=0.30, color='darkviolet', linewidth= 30, alpha=0.15)
+
+        ax.legend(fontsize=13, loc='upper right')
         plt.show()
 
         answer = input('Would you like to save the plot to a file (yes/no)?')
@@ -743,6 +778,7 @@ class Mixing(Switching, Models, Priors):
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
+        ax.locator_params(nbins=6)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(min(g_true), max(g_true))
@@ -751,8 +787,19 @@ class Mixing(Switching, Models, Priors):
         ax.plot(g_data, data, 'k.', label='Data set')
         ax.plot(g_true, Mixing.true_model(self, g_true), 'k', label='True model')
         
-        ax.legend(fontsize=12)
+        ax.legend(fontsize=16)
         plt.show()
+
+        #save figure option
+        response = input('Would you like to save this figure? (yes/no)')
+
+        if response == 'yes':
+            name = input('Enter a file name (include .jpg, .png, etc.)')
+            fig.savefig(name)
+        else:
+            pass
+
+        return None
         
         
     def credible_intervals(self, trace, fraction):
@@ -984,8 +1031,8 @@ class Mixing(Switching, Models, Priors):
             raise ValueError('Switching function requested is not found. Select one of the valid options.')
 
         #set up sampler
-        nwalkers = int(3*ndim + 1)
-        nsteps = 1500
+        nwalkers = 2*int(3*ndim + 1)
+        nsteps = int(input('Enter the number of steps per walker.'))
 
         total_samples = nwalkers * nsteps
 
@@ -993,9 +1040,9 @@ class Mixing(Switching, Models, Priors):
 
         #set starting points per parameter
         starting_points = np.zeros((nwalkers, ndim))
-        starting_points[:,0] = np.random.uniform(0.1, 0.13, nwalkers)
-        starting_points[:,2] = np.random.uniform(0.14, 0.16, nwalkers)
-        starting_points[:,1] = np.random.uniform(0.17, 0.2, nwalkers)
+        starting_points[:,0] = np.random.uniform(0.12, 0.18, nwalkers)
+        starting_points[:,2] = np.random.uniform(0.19, 0.24, nwalkers)
+        starting_points[:,1] = np.random.uniform(0.25, 0.30, nwalkers)
         print(starting_points, np.shape(starting_points))
 
         #set the switching function
@@ -1022,7 +1069,7 @@ class Mixing(Switching, Models, Priors):
         emcee_trace_mixed = self.burnin_trace(sampler_mixed, nwalkers, ndim)
         print(np.shape(emcee_trace_mixed))
 
-        return emcee_trace_mixed
+        return sampler_mixed, emcee_trace_mixed
 
 
     def _select_function(self, x):
@@ -1160,11 +1207,18 @@ class Mixing(Switching, Models, Priors):
 
         plt.show()
 
+        #save figure option
+        response = input('Would you like to save this figure? (yes/no)')
+
+        if response == 'yes':
+            name = input('Enter a file name (include .jpg, .png, etc.)')
+            fig.savefig(name)
+
         #corner plots
-        fig, axs = plt.subplots(ndim,ndim, figsize=(8,8))
+        fig, axs = plt.subplots(ndim,ndim, figsize=(8,8), dpi=600)
         label = ["Parameter 1", "Parameter 2", "Parameter 3"]
         corner.corner(trace.T,labels=label, \
-            quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True)
+            quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True, label_kwargs=dict(fontsize=16))
         
         return mean, ci 
 
