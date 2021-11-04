@@ -509,11 +509,12 @@ class Discrepancy(Mixing):
             #only label outer plot axes
             ax.label_outer()
 
-        #set log scale option
+        #set log scale option (overwrite axes if yes)
         ans = input('Log scale? (yes/no)')
         if ans == 'yes':
             for ax in fig.get_axes():
                 ax.set_yscale('log')
+                ax.set_ylim(1e-2, 10.0)
 
         #titles
         total = int(len(loworder) + len(highorder))
