@@ -321,7 +321,133 @@ class Discrepancy(Mixing):
         return mean, intervals, interval_low, interval_high
 
     
-    def plot_mix(self, g, loworder, highorder, plot_fdagger=True, next_order=False):
+    def fdagger_GP(self, g, loworder, highorder, GP_mean=np.zeros([2]), GP_var=np.zeros([2])): 
+
+        '''
+        A function to determine the pdf of the mixed model. Can use models 
+        indicated by inputting arrays into the loworder and highorder variables,
+        and accept GP mean and variance arrays in the GP_mean and GP_var options.
+
+        :Example:
+            Discrepancy.fdagger_GP(g=np.linspace(1e-6, 0.5, 100), loworder=np.array([5]), 
+            highorder=np.array([23]), GP_mean=np.array([]), GP_var=np.array([]))
+
+        Parameters:
+        -----------
+        g : numpy.linspace
+            The linspace over which this calculation is performed.
+        
+        loworder : numpy.ndarray
+            The chosen order to which this model is calculated regarding the 
+            small-g expansions.
+
+        highorder : numpy.ndarray
+            The chosen order to which this model is calculated regarding the 
+            large-g expansions. 
+
+        GP_mean : numpy.ndarray
+            An array of mean values from a Gaussian process to be mixed in
+            as a third model. Default is None. 
+
+        GP_var : numpy.ndarray
+            An array of variances from a Gaussian process to be mixed in as
+            a third model. Default is None. 
+
+        Returns:
+        --------
+        #TODO: Add return info here 
+        '''
+
+        #check orders comply with function formatting
+        if isinstance(loworder, np.ndarray) != True:
+            loworder = np.array([loworder])
+        if isinstance(highorder, np.ndarray) != True:
+            highorder = np.array([highorder])
+
+        #select the proper variances
+        model = input('Which error model do you want to use, uninformative or informative?')
+
+        if model == 'uninformative':
+            v_low = np.asarray([self.variance_low(g, loworder[i], error_model=1) for i in range(len(loworder))])
+            v_high = np.asarray([self.variance_high(g, highorder[i], error_model=1) for i in range(len(highorder))])
+
+        elif model == 'informative':
+            v_low = np.asarray([self.variance_low(g, loworder[i], error_model=2) for i in range(len(loworder))])
+            v_high = np.asarray([self.variance_high(g, highorder[i], error_model=2) for i in range(len(highorder))])
+
+        else:
+            raise ValueError('Please select one of the options listed.')
+
+        #calculating models
+        f_low = [Models.low_g(self, g, i) for i in np.array([loworder])][0]
+        f_high = [Models.high_g(self, g, i) for i in np.array([highorder])][0]
+
+        #concatenate models and variances
+        if GP_mean.any() and GP_var.any() != 0:
+            f = np.concatenate((f_low, f_high, GP_mean.reshape(-1,1).T), axis=0) 
+            v = np.concatenate((v_low, v_high, GP_var.reshape(-1,1).T), axis=0)
+        else:
+            f = np.concatenate((f_low, f_high), axis=0) 
+            v = np.concatenate((v_low, v_high), axis=0)
+
+        #initialise arrays
+        mean_n = np.zeros([len(f), len(g)])
+        mean_d = np.zeros([len(f), len(g)])
+        mean = np.zeros([len(g)])
+        var = np.zeros([len(f), len(g)])
+            
+        #create fdagger for each value of g
+        for i in range(len(f)):
+            mean_n[i] = f[i]/v[i]
+            mean_d[i] = 1.0/v[i]
+            var[i] = 1.0/v[i]
+        
+        mean_n = np.sum(mean_n, axis=0)
+        mean_d = np.sum(mean_d, axis=0)
+
+        #mean, variance calculation
+        mean = mean_n/mean_d
+        var = 1.0/np.sum(var, axis=0)
+
+        #which credibility interval to use
+        self.ci = float(input('Which interval do you want to use: 68 or 95?'))
+        if self.ci == 68:
+            val = 1.0
+        elif self.ci == 95:
+            val = 1.96 
+        else:
+            raise ValueError('Please enter either 68 or 95.')
+
+        #initialise credibility intervals
+        intervals = np.zeros([len(g), 2])
+        interval_low = np.zeros([len(loworder), len(g), 2])
+        interval_high = np.zeros([len(highorder), len(g), 2])
+
+        #calculate credibility intervals 
+        intervals[:, 0] = (mean - val * np.sqrt(var))
+        intervals[:, 1] = (mean + val * np.sqrt(var))
+
+        #index
+        i = 0
+        print(np.shape(v_low))
+        for j in loworder:
+            interval_low[i,:,0] = (Models.low_g(self, g, j.item())[0,:] - val * np.sqrt(v_low[i,:]))
+            interval_low[i,:,1] = (Models.low_g(self, g, j.item())[0,:] + val * np.sqrt(v_low[i,:]))
+            i += 1
+
+        #index
+        i = 0
+          
+        for j in highorder:
+            interval_high[i,:,0] = (Models.high_g(self, g, j.item())[0,:] - val * np.sqrt(v_high[i,:]))
+            interval_high[i,:,1] = (Models.high_g(self, g, j.item())[0,:] + val * np.sqrt(v_high[i,:]))
+            i += 1
+
+        return mean, intervals, interval_low, interval_high
+
+
+    
+    def plot_mix(self, g, loworder, highorder, plot_fdagger=True, GP_mean=np.zeros([2]), GP_var=np.zeros([2]), next_order=False):
 
         '''
         An all-in-one plotting function that will plot the results of fdagger for N numbers
@@ -346,6 +472,12 @@ class Discrepancy(Mixing):
         plot_fdagger : bool
             If True, this parameter will allow for the plotting of fdagger and
             its credibility interval. 
+
+        GP_mean : numpy.ndarray
+            The mean array from the GP being included. 
+
+        GP_var : numpy.ndarray
+            The variance array from the GP being included.
 
         next_order : bool
             If True, the plotting function will show the next orders of each 
@@ -395,7 +527,11 @@ class Discrepancy(Mixing):
         #TODO: Figure out a better labelling/colour/linestyle procedure
 
         #call fdagger to calculate results
-        mean, intervals, interval_low, interval_high = self.fdagger(g, loworder, highorder)
+        if GP_mean.any() and GP_var.any() != 0:
+            mean, intervals, interval_low, interval_high = self.fdagger_GP(g, loworder, highorder, GP_mean, GP_var)
+
+        else:
+            mean, intervals, interval_low, interval_high = self.fdagger(g, loworder, highorder)
 
         # #plot the small-g expansions and error bands
         for j in loworder:
