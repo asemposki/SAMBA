@@ -8,7 +8,7 @@ from discrepancy import Discrepancy
 class GP(Mixing):
 
 
-    def __init__(self, g):
+    def __init__(self, g, kernel="RBF"):
 
         '''
         A class that will pull from the Models, Mixing, and Discrepancy classes
@@ -22,19 +22,12 @@ class GP(Mixing):
 
         Parameters:
         -----------
-        dim : int
-            The number of dimensions of the input parameters. This sets up the
-            dimension of the kernel to be used. Default is 1. 
-
-        lengthscale : float, numpy.ndarray
-            The lengthscale of the kernel that will initially be set. If dim > 1, 
-            an array can be sent in to this variable with values corresponding to 
-            the desired lengthscales of each dimension. Default is 1. 
+        g : numpy linspace
+            The linspace across the coupling constant space used for the GP.
         
-        variance : float, numpy.ndarray
-            The variance of the kernel that will be initially set. If dim > 1, an
-            array can be sent in with values corresponding to the desired variances
-            of each dimension. Default is 1.      
+        kernel : str
+            The type of kernel the user wishes to use. Default is the RBF kernel;
+            possible choices are RBF and Matern. 
 
         Returns:
         -------
@@ -46,9 +39,17 @@ class GP(Mixing):
 
         #kernel set-up for the rest of the class (one-dimensional)
         kconstant = kernels.ConstantKernel(1.0)
-        krbf = kernels.RBF(length_scale=0.10, length_scale_bounds=(1e-5,1e5))
-        self.kern = kconstant * krbf
-        print('Initializing standard Constant * RBF kernel.')
+        
+        if kernel == "RBF":
+            k = kernels.RBF(length_scale=0.10, length_scale_bounds=(1e-5,1e5))
+        elif kernel == "Matern":
+            k = kernels.Matern(length_scale=1.0, nu=0.5)
+        else:
+            raise ValueError('Please choose an available kernel.')
+        
+        self.kern = kconstant * k
+
+        print('Initializing standard Constant * {} kernel.'.format(kernel))
 
         return None
 
@@ -90,19 +91,36 @@ class GP(Mixing):
         midpoint = (self.gpredict[1] - self.gpredict[0]) / 2.0
         gtrainingset = np.linspace(min(self.gpredict)+midpoint, max(self.gpredict)+midpoint, len(self.gpredict))
 
-        #stop the training set before large values are obtained
-        for i in range(len(gtrainingset)):
-            if Mixing.low_g(self, gtrainingset[i], loworder) > 2.6:
-               # lowmax = gtrainingset[i-1]
-                lowindex = i-1
-                break
-
-        for i in range(len(gtrainingset)):
-            if Mixing.high_g(self, gtrainingset[i], highorder) < 1.8:
-               # highmin = gtrainingset[i+1]
-                highindex = i+1
-            else:
-                break
+        #stop the training set, negative curvature
+        if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
+            for i in range(len(gtrainingset)):
+                if Mixing.low_g(self, gtrainingset[i], loworder) < 1.0:
+                # lowmax = gtrainingset[i-1]
+                    lowindex = i-1
+                    break
+        #stop the training set, positive curvature
+        elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
+            for i in range(len(gtrainingset)):
+                if Mixing.low_g(self, gtrainingset[i], loworder) > 3.0:
+                # lowmax = gtrainingset[i-1]
+                    lowindex = i-1
+                    break
+        #stop the training set, even orders (positive curvature)
+        if highorder[0] % 2 == 0:
+            for i in range(len(gtrainingset)):
+                if Mixing.high_g(self, gtrainingset[i], highorder) > 3.0:
+                # highmin = gtrainingset[i+1]
+                    highindex = i+1
+                else:
+                    break
+        #stop the training set, odd orders (negative curvature)
+        else:
+            for i in range(len(gtrainingset)):
+                if Mixing.high_g(self, gtrainingset[i], highorder) < 1.0:
+                # highmin = gtrainingset[i+1]
+                    highindex = i+1
+                else:
+                    break
 
         #slice the training set for the two models
         self.gtrlow = gtrainingset[:lowindex]
@@ -132,16 +150,21 @@ class GP(Mixing):
         sigmatr = np.concatenate((self.lowsigma, self.highsigma))
 
         #choose a place to stop training around the gap
-        index = int(0.33*len(gtr))
-        gs = np.concatenate((gtr[0:index+1], gtr[int(2.5*(index)+1):]))
-        datas = np.concatenate((datatr[0:index+1], datatr[int(2.5*(index)+1):]))
-        sigmas = np.concatenate((sigmatr[0:index+1], sigmatr[int(2.5*(index)+1):]))
+        index = int(0.30*len(gtr))
+        gs = np.concatenate((gtr[0:index+1], gtr[int(2.2*(index)+1):]))
+        datas = np.concatenate((datatr[0:index+1], datatr[int(2.2*(index)+1):]))
+        sigmas = np.concatenate((sigmatr[0:index+1], sigmatr[int(2.2*(index)+1):]))
+
+        #TESTING: choose specific points
+        gs = np.array([gtr[int(0.1*len(gtr))], gtr[int(0.2*len(gtr))], gtr[int(0.8*len(gtr))], gtr[int(0.9*len(gtr))]])
+        datas = np.array([datatr[int(0.1*len(gtr))], datatr[int(0.2*len(gtr))], datatr[int(0.8*len(gtr))], datatr[int(0.9*len(gtr))]])
+        sigmas = np.array([sigmatr[int(0.1*len(gtr))], sigmatr[int(0.2*len(gtr))], sigmatr[int(0.8*len(gtr))], sigmatr[int(0.9*len(gtr))]])
 
         #set up the proper format
-        self.n_skip = 18
-        gs = gs[::self.n_skip]
-        datas = datas[::self.n_skip]
-        sigmas = sigmas[::self.n_skip]
+        # self.n_skip = 8
+        # gs = gs[::self.n_skip]
+        # datas = datas[::self.n_skip]
+        # sigmas = sigmas[::self.n_skip]
 
         #take out specific points
         # gs = np.concatenate((gs[0:2], gs[-2:]))
@@ -176,7 +199,7 @@ class GP(Mixing):
         ax.locator_params(nbins=5)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.set_xlim(0.0, 0.5)
+        ax.set_xlim(0.0, max(self.gpredict))
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): mixed model', fontsize=22)
@@ -247,7 +270,12 @@ class GP(Mixing):
         '''
 
         #make the prediction values into a column vector
-        gpred = self.gpredict.reshape(-1,1)
+        #gpred = self.gpredict.reshape(-1,1)
+
+        #TESTING: Handwrite eight testing points
+        gpred = np.array([self.gpredict[3], self.gpredict[7], self.gpredict[30], self.gpredict[35], \
+            self.gpredict[70], self.gpredict[75], self.gpredict[93], self.gpredict[97]])
+        gpred = gpred.reshape(-1,1)
 
         #predict the results for the validation data (vp = std)
         meanp, sigp = sk.predict(gpred, return_std=True)
@@ -262,6 +290,14 @@ class GP(Mixing):
         intervals[:,0] = meanp - factor*sigp
         intervals[:,1] = meanp + factor*sigp
 
+        #compare standard deviations for testing set and model values
+        test_lowg = gpred[:4]
+        test_highg = gpred[4:]
+        var_low = Discrepancy.variance_low(self, test_lowg, loworder[0], error_model=2)[:,0]
+        self.stdev_low = np.sqrt(var_low)
+        var_high = Discrepancy.variance_high(self, test_highg, highorder[0], error_model=2)[:,0]
+        self.stdev_high = np.sqrt(var_high)
+
         #plot the results
         dpi = int(input('Set a dpi for the figure.'))
         fig = plt.figure(figsize=(8,6), dpi=dpi)
@@ -271,7 +307,7 @@ class GP(Mixing):
         ax.locator_params(nbins=8)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.set_xlim(0.0, 0.5)
+        ax.set_xlim(0.0, max(self.gpredict))
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): mixed model', fontsize=22)
@@ -280,10 +316,11 @@ class GP(Mixing):
         #plot the data
         ax.errorbar(self.gtrlow, self.datatrlow, self.lowsigma, fmt="r.", markersize=4, capsize=4, alpha = 0.4, label=r"$f_s$ ({})".format(loworder[0]), zorder=1)
         ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, fmt="b.", markersize=4, capsize=4, alpha=0.4, label=r"$f_l$ ({})".format(highorder[0]), zorder=1)
-        ax.plot(self.gpredict, meanp, 'g', label='Predictions', zorder=2)
-        ax.plot(self.gpredict, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ interval'.format(interval), zorder=2)
-        ax.plot(self.gpredict, intervals[:,1], color='green', linestyle='dotted', zorder=2)
-        ax.fill_between(self.gpredict, intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
+        #ax.plot(gpred, meanp, 'g.', label='Predictions', zorder=2)
+        ax.errorbar(gpred, meanp, yerr=sigp, fmt='g.', markersize=4, capsize=4, label='Testing set')
+        # ax.plot(gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ interval'.format(interval), zorder=2)
+        # ax.plot(gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
+        # ax.fill_between(gpred[:,0], intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
 
         ax.legend(fontsize=14)
         plt.show()

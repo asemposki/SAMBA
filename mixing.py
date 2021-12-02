@@ -249,7 +249,13 @@ class Models():
             ax.set_xlim(0.0, max(g))
         else:
             ax.set_xlim(min(g), max(g))
-        ax.set_ylim(1.8, 2.6)
+
+        #ylim settings
+        ylim = input('\ny-limits (enter "auto" if unknown): ')
+        if ylim == "auto":
+            ax.set_ylim(1.8,2.6)
+        else:
+            ax.set_ylim(tuple(map(float, ylim.split(','))))
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
         ax.locator_params(nbins=6)
@@ -324,7 +330,7 @@ class Models():
         ax.set_ylabel('Residual', fontsize=22)
         ax.set_title('F(g): residuals', fontsize=22)
         ax.set_xlim(1e-2, 10.)
-        ax.set_ylim(1e-6,1e17)
+        ax.set_ylim(1e-6, 1e17)
 
         #set range for g
         g_ext = np.logspace(-6., 6., 800)

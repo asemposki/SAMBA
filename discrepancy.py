@@ -14,6 +14,7 @@ class Discrepancy(Mixing):
 
     def variance_low(self, g, loworder, error_model):
 
+
         '''
         A function to calculate the variance corresponding to the small-g expansion model.
 
