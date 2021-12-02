@@ -95,21 +95,18 @@ class GP(Mixing):
         if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
             for i in range(len(gtrainingset)):
                 if Mixing.low_g(self, gtrainingset[i], loworder) < 1.0:
-                # lowmax = gtrainingset[i-1]
                     lowindex = i-1
                     break
         #stop the training set, positive curvature
         elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
             for i in range(len(gtrainingset)):
                 if Mixing.low_g(self, gtrainingset[i], loworder) > 3.0:
-                # lowmax = gtrainingset[i-1]
                     lowindex = i-1
                     break
         #stop the training set, even orders (positive curvature)
         if highorder[0] % 2 == 0:
             for i in range(len(gtrainingset)):
                 if Mixing.high_g(self, gtrainingset[i], highorder) > 3.0:
-                # highmin = gtrainingset[i+1]
                     highindex = i+1
                 else:
                     break
@@ -117,7 +114,6 @@ class GP(Mixing):
         else:
             for i in range(len(gtrainingset)):
                 if Mixing.high_g(self, gtrainingset[i], highorder) < 1.0:
-                # highmin = gtrainingset[i+1]
                     highindex = i+1
                 else:
                     break
@@ -149,27 +145,35 @@ class GP(Mixing):
         datatr = np.concatenate((self.datatrlow, self.datatrhigh))
         sigmatr = np.concatenate((self.lowsigma, self.highsigma))
 
-        #choose a place to stop training around the gap
-        index = int(0.30*len(gtr))
-        gs = np.concatenate((gtr[0:index+1], gtr[int(2.2*(index)+1):]))
-        datas = np.concatenate((datatr[0:index+1], datatr[int(2.2*(index)+1):]))
-        sigmas = np.concatenate((sigmatr[0:index+1], sigmatr[int(2.2*(index)+1):]))
+        #stop training around the gap
+        for i in range(len(gtr)):
+            if gtr[i+1] < gtr[i]:
+                index_low = i+1
+                index_high = i
+                break
+        for i in range(len(gtr), -1, -1):
+            if gtr[i-1] <= gtr[index_high]:
+                index_end = i
+                break
+
+        #find left end of the gap
+        all_indices = np.where(gtr == gtr[index_low])[0]
+
+        #set up the new arrays
+        gs = np.concatenate((gtr[0:all_indices[0]], gtr[index_end:]))
+        datas = np.concatenate((datatr[0:all_indices[0]], datatr[index_end:]))
+        sigmas = np.concatenate((sigmatr[0:all_indices[0]], sigmatr[index_end:]))
 
         #TESTING: choose specific points
-        gs = np.array([gtr[int(0.1*len(gtr))], gtr[int(0.2*len(gtr))], gtr[int(0.8*len(gtr))], gtr[int(0.9*len(gtr))]])
-        datas = np.array([datatr[int(0.1*len(gtr))], datatr[int(0.2*len(gtr))], datatr[int(0.8*len(gtr))], datatr[int(0.9*len(gtr))]])
-        sigmas = np.array([sigmatr[int(0.1*len(gtr))], sigmatr[int(0.2*len(gtr))], sigmatr[int(0.8*len(gtr))], sigmatr[int(0.9*len(gtr))]])
+        gs = np.array([gs[4], gs[11], gs[60], gs[70]])
+        datas = np.array([datas[4], datas[11], datas[60], datas[70]])
+        sigmas = np.array([sigmas[4], sigmas[11], sigmas[60], sigmas[70]])
 
         #set up the proper format
         # self.n_skip = 8
         # gs = gs[::self.n_skip]
         # datas = datas[::self.n_skip]
         # sigmas = sigmas[::self.n_skip]
-
-        #take out specific points
-        # gs = np.concatenate((gs[0:2], gs[-2:]))
-        # datas = np.concatenate((datas[0:2], datas[-2:]))
-        # sigmas = np.concatenate((sigmas[0:2], sigmas[-2:]))
 
         #make column vectors for the regressor
         gc = gs.reshape(-1,1)
@@ -273,7 +277,7 @@ class GP(Mixing):
         #gpred = self.gpredict.reshape(-1,1)
 
         #TESTING: Handwrite eight testing points
-        gpred = np.array([self.gpredict[3], self.gpredict[7], self.gpredict[30], self.gpredict[35], \
+        gpred = np.array([self.gpredict[1], self.gpredict[3], self.gpredict[18], self.gpredict[22], \
             self.gpredict[70], self.gpredict[75], self.gpredict[93], self.gpredict[97]])
         gpred = gpred.reshape(-1,1)
 
