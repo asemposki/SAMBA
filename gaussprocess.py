@@ -165,15 +165,9 @@ class GP(Mixing):
         sigmas = np.concatenate((sigmatr[0:all_indices[0]], sigmatr[index_end:]))
 
         #TESTING: choose specific points
-        gs = np.array([gs[4], gs[11], gs[60], gs[70]])
-        datas = np.array([datas[4], datas[11], datas[60], datas[70]])
-        sigmas = np.array([sigmas[4], sigmas[11], sigmas[60], sigmas[70]])
-
-        #set up the proper format
-        # self.n_skip = 8
-        # gs = gs[::self.n_skip]
-        # datas = datas[::self.n_skip]
-        # sigmas = sigmas[::self.n_skip]
+        gs = np.array([gs[6], gs[15], gs[58], gs[65]])
+        datas = np.array([datas[6], datas[15], datas[58], datas[65]])
+        sigmas = np.array([sigmas[6], sigmas[15], sigmas[58], sigmas[65]])
 
         #make column vectors for the regressor
         gc = gs.reshape(-1,1)
@@ -200,25 +194,26 @@ class GP(Mixing):
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
-        ax.locator_params(nbins=5)
+        ax.locator_params(nbins=8)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(0.0, max(self.gpredict))
+        ax.set_ylim(-2.0,5.0)
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
-        ax.set_title('F(g): mixed model', fontsize=22)
+        ax.set_title('F(g): training set', fontsize=22)
         ax.plot(self.gpredict, Models.true_model(self, self.gpredict), 'k', label='True model')
 
         #plot the data
         ax.errorbar(self.gtrlow, self.datatrlow, yerr=self.lowsigma, color='red', fmt='o', markersize=4, \
-                    capsize=4, label=r'$f_s$ ({}) data'.format(loworder[0]))
+                    capsize=4, label=r'$f_s$ ($N_s$ = {}) data'.format(loworder[0]))
         ax.errorbar(self.gtrhigh, self.datatrhigh, yerr=self.highsigma, color='blue', fmt='o', markersize=4, \
-                    capsize=4, label=r'$f_l$ ({}) data'.format(highorder[0]))
+                    capsize=4, label=r'$f_l$ ($N_l$ = {}) data'.format(highorder[0]))
 
         #plot the chosen training points over the whole training set
         ax.errorbar(gs, datas, yerr=sigmas, color='black', fmt='o', markersize=4, capsize=4, label='Training data')
 
-        ax.legend(fontsize=14, loc='lower left')
+        ax.legend(fontsize=14, loc='upper right')
         plt.show()
 
         #save figure option
@@ -274,15 +269,16 @@ class GP(Mixing):
         '''
 
         #make the prediction values into a column vector
-        #gpred = self.gpredict.reshape(-1,1)
+        self.gpred = self.gpredict.reshape(-1,1)
 
         #TESTING: Handwrite eight testing points
-        gpred = np.array([self.gpredict[1], self.gpredict[3], self.gpredict[18], self.gpredict[22], \
-            self.gpredict[70], self.gpredict[75], self.gpredict[93], self.gpredict[97]])
-        gpred = gpred.reshape(-1,1)
+        #gpred = np.array([self.gpredict[1], self.gpredict[3], self.gpredict[18], self.gpredict[22], \
+            #self.gpredict[70], self.gpredict[75], self.gpredict[93], self.gpredict[97]])
+        #self.gpred = gpred.reshape(-1,1)
 
         #predict the results for the validation data (vp = std)
-        meanp, sigp = sk.predict(gpred, return_std=True)
+        meanp, sigp = sk.predict(self.gpred, return_std=True)
+        meanc, cov = sk.predict(self.gpred, return_cov=True)
         meanp = meanp[:,0]
 
         #calculate the interval for the predictions
@@ -295,8 +291,8 @@ class GP(Mixing):
         intervals[:,1] = meanp + factor*sigp
 
         #compare standard deviations for testing set and model values
-        test_lowg = gpred[:4]
-        test_highg = gpred[4:]
+        test_lowg = self.gpred[:4]
+        test_highg = self.gpred[4:]
         var_low = Discrepancy.variance_low(self, test_lowg, loworder[0], error_model=2)[:,0]
         self.stdev_low = np.sqrt(var_low)
         var_high = Discrepancy.variance_high(self, test_highg, highorder[0], error_model=2)[:,0]
@@ -312,21 +308,24 @@ class GP(Mixing):
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(0.0, max(self.gpredict))
+        ax.set_ylim(-2.0,5.0)
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
-        ax.set_title('F(g): mixed model', fontsize=22)
+        ax.set_title('F(g): GP predictions', fontsize=22)
         ax.plot(self.gpredict, Models.true_model(self, self.gpredict), 'k', label='True model')
 
         #plot the data
-        ax.errorbar(self.gtrlow, self.datatrlow, self.lowsigma, fmt="r.", markersize=4, capsize=4, alpha = 0.4, label=r"$f_s$ ({})".format(loworder[0]), zorder=1)
-        ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, fmt="b.", markersize=4, capsize=4, alpha=0.4, label=r"$f_l$ ({})".format(highorder[0]), zorder=1)
-        #ax.plot(gpred, meanp, 'g.', label='Predictions', zorder=2)
-        ax.errorbar(gpred, meanp, yerr=sigp, fmt='g.', markersize=4, capsize=4, label='Testing set')
-        # ax.plot(gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ interval'.format(interval), zorder=2)
-        # ax.plot(gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
-        # ax.fill_between(gpred[:,0], intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
+        ax.errorbar(self.gtrlow, self.datatrlow, self.lowsigma, color="red", fmt='o', markersize=4, \
+            capsize=4, alpha = 0.4, label=r"$f_s$ ($N_s$ = {})".format(loworder[0]), zorder=1)
+        ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, color="blue", fmt='o', markersize=4, \
+             capsize=4, alpha=0.4, label=r"$f_l$ ($N_l$ = {})".format(highorder[0]), zorder=1)
+        ax.plot(self.gpred, meanp, 'g', label='Predictions', zorder=2)
+        #ax.errorbar(gpred, meanp, yerr=sigp, fmt='g.', markersize=4, capsize=4, label='Testing set')
+        ax.plot(self.gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ interval'.format(interval), zorder=2)
+        ax.plot(self.gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
+        ax.fill_between(self.gpred[:,0], intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
 
-        ax.legend(fontsize=14)
+        ax.legend(fontsize=14, loc='upper right')
         plt.show()
 
         #save figure option
@@ -336,4 +335,36 @@ class GP(Mixing):
             name = input('Enter a file name (include .jpg, .png, etc.)')
             fig.savefig(name)
 
-        return meanp, sigp 
+        return meanp, sigp, cov
+
+
+    def MD(self, fval, mean, cov):
+
+        '''
+        A diagnostic testing function that calculates the Mahalanobis
+        distance of the predictions from the GP. 
+
+        :Example:
+            GP.MD(fval=np.array([]), mean=np.array([]), cov=np.array([2,2]))
+
+        Parameters:
+        -----------
+        fval : numpy.ndarray
+            An array of predicted values from the emulator.
+
+        mean : numpy.ndarray
+            An array of true values from the true model (simulator).
+
+        cov : numpy.ndarray 
+            A 2D covariance matrix from the emulator. 
+
+        Returns:
+        --------
+        md : float
+            The Mahalanobis distance. 
+        '''
+
+        md = (fval - mean).T @ np.linalg.inv(cov) @ (fval - mean)
+        md = np.sqrt(md)
+
+        return md

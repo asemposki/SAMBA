@@ -258,12 +258,12 @@ class Models():
             ax.set_ylim(tuple(map(float, ylim.split(','))))
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
-        ax.locator_params(nbins=6)
+        ax.locator_params(nbins=8)
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
-        ax.set_title('F(g): Expansions and true model', fontsize=22)
+        ax.set_title('F(g): expansions and true model', fontsize=22)
         
         #plot the true model 
         ax.plot(g, self.true_model(g), 'k', label='True model')
@@ -274,13 +274,13 @@ class Models():
                 
         #for each small-g order, plot
         for i in loworder:
-            ax.plot(g, self.low_g(g, i.item())[0], color='r', label=r'$f_s$ ({})'.format(i))
+            ax.plot(g, self.low_g(g, i.item())[0], color='r', label=r'$f_s$ ($N_s$ = {})'.format(i))
         
         #for each large-g order, plot
         for i in highorder:
-            ax.plot(g, self.high_g(g, i.item())[0], color='b', label=r'$f_l$ ({})'.format(i))
+            ax.plot(g, self.high_g(g, i.item())[0], color='b', label=r'$f_l$ ($N_l$ = {})'.format(i))
             
-        ax.legend(fontsize=16)
+        ax.legend(fontsize=14, loc='upper right')
         plt.show()
 
         #save figure option
@@ -636,25 +636,25 @@ class Switching:
         ax.set_title('Mixed prediction with calibrated posteriors', fontsize=22)
 
         ax.plot(g_data, data, 'k.', label='Data set')  
-        # ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
+        ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
 
         ax.plot(g_true, Models.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
         ax.plot(g_true, Models.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
 
-        # ax.plot(g_ppd, ppd_results, 'g', label='Mixed model')
-        # ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% interval (HPD)'.format(percent))
-        # ax.plot(g_ppd, ppd_intervals[:,1], 'g', linestyle='dotted')
+        ax.plot(g_ppd, ppd_results, 'g', label='Mixed model')
+        ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% interval (HPD)'.format(percent))
+        ax.plot(g_ppd, ppd_intervals[:,1], 'g', linestyle='dotted')
 
-        # ax.fill_between(g_ppd, ppd_intervals[:,0], ppd_intervals[:,1], color='green', alpha=0.2)
+        ax.fill_between(g_ppd, ppd_intervals[:,0], ppd_intervals[:,1], color='green', alpha=0.2)
 
-        # #parameter results
-        # ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{3}$, $\theta_{2}$")
-        # ax.axvline(x=results[1], color='darkviolet', alpha=0.35)
-        # ax.axvline(x=results[2], color='darkviolet', alpha=0.35)
+        #parameter results
+        ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{3}$, $\theta_{2}$")
+        ax.axvline(x=results[1], color='darkviolet', alpha=0.35)
+        ax.axvline(x=results[2], color='darkviolet', alpha=0.35)
 
-        ax.axvline(x=0.16, color='darkviolet', linewidth= 30, alpha=0.15)
-        ax.axvline(x=0.23, color='darkviolet', linewidth= 30, alpha=0.15)
-        ax.axvline(x=0.30, color='darkviolet', linewidth= 30, alpha=0.15)
+        # ax.axvline(x=0.16, color='darkviolet', linewidth= 30, alpha=0.15)
+        # ax.axvline(x=0.23, color='darkviolet', linewidth= 30, alpha=0.15)
+        # ax.axvline(x=0.30, color='darkviolet', linewidth= 30, alpha=0.15)
 
         ax.legend(fontsize=13, loc='upper right')
         plt.show()
