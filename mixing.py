@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from priors import Priors
 
+__all__ = ['Models', 'Switching', 'Mixing']
+
 
 class Models():
 
@@ -788,7 +790,14 @@ class Mixing(Switching, Models, Priors):
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(min(g_true), max(g_true))
-        ax.set_ylim(1.8, 2.6)
+
+        #ylim settings
+        ylim = input('\ny-limits (enter "auto" if unknown): ')
+        if ylim == "auto":
+            ax.set_ylim(1.8,2.6)
+        else:
+            ax.set_ylim(tuple(map(float, ylim.split(','))))
+
         ax.set_title('Generated data and true model', fontsize=22)
         ax.plot(g_data, data, 'k.', label='Data set')
         ax.plot(g_true, Mixing.true_model(self, g_true), 'k', label='True model')

@@ -348,11 +348,11 @@ class Discrepancy(Mixing):
 
         GP_mean : numpy.ndarray
             An array of mean values from a Gaussian process to be mixed in
-            as a third model. Default is None. 
+            as a third model (optional).  
 
         GP_var : numpy.ndarray
             An array of variances from a Gaussian process to be mixed in as
-            a third model. Default is None. 
+            a third model (optional).  
 
         Returns:
         --------
@@ -448,7 +448,7 @@ class Discrepancy(Mixing):
 
 
     
-    def plot_mix(self, g, loworder, highorder, plot_fdagger=True, GP_mean=np.zeros([2]), GP_var=np.zeros([2]), next_order=False):
+    def plot_mix(self, g, loworder, highorder, plot_fdagger=True, GP_mean=np.zeros([2]), GP_var=np.zeros([2])):
 
         '''
         An all-in-one plotting function that will plot the results of fdagger for N numbers
@@ -479,10 +479,6 @@ class Discrepancy(Mixing):
 
         GP_var : numpy.ndarray
             The variance array from the GP being included.
-
-        next_order : bool
-            If True, the plotting function will show the next orders of each 
-            expansion on the plot. 
 
         Returns:
         --------
@@ -566,7 +562,7 @@ class Discrepancy(Mixing):
         #     ax.plot(g, Models.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
         #         label=r'$f_l$ ({})'.format(highorder[0]+1))
         
-        ax.legend(fontsize=14, loc='lower right')
+        ax.legend(fontsize=14, loc='upper right')
         plt.show()
 
         #save figure option

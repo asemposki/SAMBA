@@ -8,7 +8,7 @@ from discrepancy import Discrepancy
 class GP(Mixing):
 
 
-    def __init__(self, g, kernel="RBF"):
+    def __init__(self, g, kernel="RBF", fix_length=False):
 
         '''
         A class that will pull from the Models, Mixing, and Discrepancy classes
@@ -29,6 +29,10 @@ class GP(Mixing):
             The type of kernel the user wishes to use. Default is the RBF kernel;
             possible choices are RBF and Matern. 
 
+        fix_length : bool
+            If True, will fix the lengthscale to a specific value entered. 
+            If False, will optimize the lengthscale (default). 
+
         Returns:
         -------
         None.
@@ -39,14 +43,32 @@ class GP(Mixing):
 
         #kernel set-up for the rest of the class (one-dimensional)
         kconstant = kernels.ConstantKernel(1.0)
-        
-        if kernel == "RBF":
-            k = kernels.RBF(length_scale=0.10, length_scale_bounds=(1e-5,1e5))
-        elif kernel == "Matern":
-            k = kernels.Matern(length_scale=1.0, nu=0.5)
+
+        #fix lengthscale option
+        if fix_length == True:
+            lsc = float(input('Enter the lengthscale value.'))
+
+            if kernel == "RBF":
+                k = kernels.RBF(length_scale=lsc, length_scale_bounds=(lsc,lsc))
+            elif kernel == "Matern":
+                nu = float(input('Enter a value for nu (standard: 0.5, 1.5, 2.5).'))
+                k = kernels.Matern(length_scale=lsc, length_scale_bounds=(lsc,lsc), nu=nu)
+            elif kernel == "Rational Quadratic":
+                k = kernels.RationalQuadratic(length_scale=lsc, length_scale_bounds=(lsc,lsc), alpha=1)
+            else:
+                raise ValueError('Please choose an available kernel.')
+
         else:
-            raise ValueError('Please choose an available kernel.')
-        
+            if kernel == "RBF":
+                k = kernels.RBF(length_scale=0.10, length_scale_bounds=(1e-5,1e5))
+            elif kernel == "Matern":
+                nu = float(input('Enter a value for nu (standard: 0.5, 1.5, 2.5).'))
+                k = kernels.Matern(length_scale=0.4, length_scale_bounds=(1e-5,1e5), nu=nu)
+            elif kernel == "Rational Quadratic":
+                k = kernels.RationalQuadratic(length_scale=1.0, alpha=1)
+            else:
+                raise ValueError('Please choose an available kernel.')
+            
         self.kern = kconstant * k
 
         print('Initializing standard Constant * {} kernel.'.format(kernel))
@@ -175,12 +197,12 @@ class GP(Mixing):
 
         #take the data point uncertainty into the kernel 
         if error == True:
-            alpha = np.square(sigmas)
+            self.alpha = np.square(sigmas)
         else:
-            alpha = 1e-12
+            self.alpha = 1e-12
 
         #use GPR and kernel to train
-        m = GaussianProcessRegressor(kernel=self.kern, alpha=alpha, n_restarts_optimizer=20, normalize_y=True)
+        m = GaussianProcessRegressor(kernel=self.kern, alpha=self.alpha, n_restarts_optimizer=20, normalize_y=True)
 
         #fit the GP to the training data
         sk = m.fit(gc, datac)
@@ -271,11 +293,6 @@ class GP(Mixing):
         #make the prediction values into a column vector
         self.gpred = self.gpredict.reshape(-1,1)
 
-        #TESTING: Handwrite eight testing points
-        #gpred = np.array([self.gpredict[1], self.gpredict[3], self.gpredict[18], self.gpredict[22], \
-            #self.gpredict[70], self.gpredict[75], self.gpredict[93], self.gpredict[97]])
-        #self.gpred = gpred.reshape(-1,1)
-
         #predict the results for the validation data (vp = std)
         meanp, sigp = sk.predict(self.gpred, return_std=True)
         meanc, cov = sk.predict(self.gpred, return_cov=True)
@@ -308,7 +325,7 @@ class GP(Mixing):
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(0.0, max(self.gpredict))
-        ax.set_ylim(-2.0,5.0)
+        ax.set_ylim(1.0,3.0)
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): GP predictions', fontsize=22)
@@ -320,7 +337,6 @@ class GP(Mixing):
         ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, color="blue", fmt='o', markersize=4, \
              capsize=4, alpha=0.4, label=r"$f_l$ ($N_l$ = {})".format(highorder[0]), zorder=1)
         ax.plot(self.gpred, meanp, 'g', label='Predictions', zorder=2)
-        #ax.errorbar(gpred, meanp, yerr=sigp, fmt='g.', markersize=4, capsize=4, label='Testing set')
         ax.plot(self.gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ interval'.format(interval), zorder=2)
         ax.plot(self.gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
         ax.fill_between(self.gpred[:,0], intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
@@ -364,7 +380,60 @@ class GP(Mixing):
             The Mahalanobis distance. 
         '''
 
+        #reduce the number of points used in the MD
+        thin = 20
+        fval = fval[::thin]
+        mean = mean[::thin]
+        print(np.shape(cov), np.shape(mean), cov)
+        cov = cov[::thin,::thin]
+        print(np.shape(cov), cov)
+
+        #calculate the reference distribution
+        m = GaussianProcessRegressor(kernel=self.kern, alpha=self.alpha, n_restarts_optimizer=20, normalize_y=True)
+        toy_data_full = m.sample_y(self.gpred, n_samples=4, random_state=2).T
+        mean_full, cov_full = m.predict(self.gpred, return_cov=True)
+
+        # toy_data_full *= (ratio**orders)[:, None]
+        mask = np.array([i % 5 == 0 for i in range(len(self.gpred))])
+        toy_data = toy_data_full[:, mask]
+        meanplt = mean_full[mask]
+        covplt = cov_full[mask][:, mask]
+        X = self.gpred[mask]
+
+        plt.plot(self.gpred.ravel(), toy_data_full.T)
+        plt.plot(X.ravel(), toy_data.T, ls='', marker='o', fillstyle='none', markersize=10, c='gray')
+
+        #calculate the Mahalanobis distance
         md = (fval - mean).T @ np.linalg.inv(cov) @ (fval - mean)
+        print(fval-mean)
         md = np.sqrt(md)
 
         return md
+
+
+    def plotter(self, x_label, y_label, title, y_lim, *args, show_true=True, **kwargs):
+
+        #set up the simple bits
+        dpi = int(input('Set a dpi for the figure.'))
+        fig = plt.figure(figsize=(8,6), dpi=dpi)
+        ax = plt.axes()
+        ax.tick_params(axis='x', labelsize=18)
+        ax.tick_params(axis='y', labelsize=18)
+        ax.locator_params(nbins=8)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.set_xlim(0.0, max(self.gpredict))
+        #ax.set_ylim(-2.0,5.0)
+        ax.set_ylim(y_lim)
+        ax.set_xlabel(x_label, fontsize=22)
+        ax.set_ylabel(y_label, fontsize=22)
+        ax.set_title(title, fontsize=22)
+
+        #plot true model if indicated
+        if (show_true):
+            ax.plot(self.gpredict, Models.true_model(self, self.gpredict), 'k', label='True model')
+
+        #plot the rest
+
+
+        return None
