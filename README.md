@@ -1,15 +1,8 @@
-# BAND Bayesian Model Mixing: Expansions of Toy Models
-This repo stores the class structures and test code to perform BMM on two expansions in a toy model setting. 
+# SAMBA package: SAndbox for Mixing using Bayesian Analysis
 
-Current files:
-
-  - A .py file (class_expansions.py) that stores the code for the classes written to implement this project in a Jupyter notebook or another .py code.
-  - A bare-bones Jupyter notebook (BMM_Expansions_Project.ipynb) that runs the classes in the file above and shows the output. 
-  - A Jupyter notebook containing the ongoing analysis on the mixed model results when the cosine switching function is implemented.
-  - A test Jupyter notebook which was used to fix the class and make it more flexible.
-  - A .py file containing a test case of priors, which will eventually be submitted by the user. 
+Description: Bayesian model mixing is a novel concept that surpasses the more widely used Bayesian model averaging (BMA) in its use of location-dependent weights, allowing multiple models to dominate in regions where they are the most accurate model known, instead of averaging over all of the models in the space. In this repo, we store the preliminary code and tests of three model mixing techniques studied on a test case meant to symbolise the type of nuclear physics problem we want to apply these methods to in the future. This will, in the next few months, be compiled into a package to be released this spring/summer (2022) under the name of SAMBA---SAndbox for Mixing using Bayesian Analysis. This will accompany the paper we will also be releasing soon where we detail our work using these techniques on our toy problem (the zero-dimensional $\phi^{4}$ theory partition function). 
 
 TO DO:
 
   - Include unit tests (not yet implemented)
-  - Organize, fix, edit, add, etc.
+  - Design package style, widget (?), make class structure evident and correct
