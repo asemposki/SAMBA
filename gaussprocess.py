@@ -87,20 +87,15 @@ class GP(Mixing):
 
         Parameters:
         -----------
-        gdata : numpy.linspace
-            An array of the coupling constant values corresponding to the data
-            array points.
+        loworder : numpy.ndarray, float, int
+            The truncation order for the low-g expansion.
 
-        data : numpy.ndarray
-            An array of data points taken from the two expansion models to be
-            emulated. 
-
-        sigma : numpy.ndarray
-            An array of the data point uncertainty from the two expansion models.
+        highorder : numpy.ndarray, float, int
+            The truncation order for the high-g expansion.
 
         error : bool
             A boolean variable to toggle use of the data uncertainty in the 
-            kernel during training. 
+            kernel during training. Default is False. 
 
         Returns:
         --------
@@ -109,84 +104,10 @@ class GP(Mixing):
             performed on the data.
         '''
 
-        #set up the training set from the prediction set (offset by midpoint)
-        midpoint = (self.gpredict[1] - self.gpredict[0]) / 2.0
-        gtrainingset = np.linspace(min(self.gpredict)+midpoint, max(self.gpredict)+midpoint, len(self.gpredict))
+        #call the training set generator function
+        gs, datas, sigmas = self.training_set(loworder, highorder)
 
-        #stop the training set, negative curvature
-        if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
-            for i in range(len(gtrainingset)):
-                if Mixing.low_g(self, gtrainingset[i], loworder) < 1.0:
-                    lowindex = i-1
-                    break
-        #stop the training set, positive curvature
-        elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
-            for i in range(len(gtrainingset)):
-                if Mixing.low_g(self, gtrainingset[i], loworder) > 3.0:
-                    lowindex = i-1
-                    break
-        #stop the training set, even orders (positive curvature)
-        if highorder[0] % 2 == 0:
-            for i in range(len(gtrainingset)):
-                if Mixing.high_g(self, gtrainingset[i], highorder) > 3.0:
-                    highindex = i+1
-                else:
-                    break
-        #stop the training set, odd orders (negative curvature)
-        else:
-            for i in range(len(gtrainingset)):
-                if Mixing.high_g(self, gtrainingset[i], highorder) < 1.0:
-                    highindex = i+1
-                else:
-                    break
-
-        #slice the training set for the two models
-        self.gtrlow = gtrainingset[:lowindex]
-        self.gtrhigh = gtrainingset[highindex:]
-
-        #calculate the data at each point
-        self.datatrlow = Mixing.low_g(self, self.gtrlow, loworder)[0,:]
-        self.datatrhigh = Mixing.high_g(self, self.gtrhigh, highorder)[0,:]
-
-        #calculate the variance at each point from the next term
-        response = input('Which error model do you want to use? (uninformative/informative)')
-        if response == 'uninformative':
-            error_model = 1
-        elif response == 'informative':
-            error_model = 2
-        else:
-            raise ValueError('Please choose a valid error model.')
-
-        lowvariance = Discrepancy.variance_low(self, self.gtrlow, loworder[0], error_model)
-        self.lowsigma = np.sqrt(lowvariance)
-        highvariance = Discrepancy.variance_high(self, self.gtrhigh, highorder[0], error_model)
-        self.highsigma = np.sqrt(highvariance)
-
-        #concatenate the arrays for use in the GP
-        gtr = np.concatenate((self.gtrlow, self.gtrhigh))
-        datatr = np.concatenate((self.datatrlow, self.datatrhigh))
-        sigmatr = np.concatenate((self.lowsigma, self.highsigma))
-
-        #stop training around the gap
-        for i in range(len(gtr)):
-            if gtr[i+1] < gtr[i]:
-                index_low = i+1
-                index_high = i
-                break
-        for i in range(len(gtr), -1, -1):
-            if gtr[i-1] <= gtr[index_high]:
-                index_end = i
-                break
-
-        #find left end of the gap
-        all_indices = np.where(gtr == gtr[index_low])[0]
-
-        #set up the new arrays
-        gs = np.concatenate((gtr[0:all_indices[0]], gtr[index_end:]))
-        datas = np.concatenate((datatr[0:all_indices[0]], datatr[index_end:]))
-        sigmas = np.concatenate((sigmatr[0:all_indices[0]], sigmatr[index_end:]))
-
-        #TESTING: choose specific points
+        #choose specific training points
         gs = np.array([gs[6], gs[15], gs[58], gs[65]])
         datas = np.array([datas[6], datas[15], datas[58], datas[65]])
         sigmas = np.array([sigmas[6], sigmas[15], sigmas[58], sigmas[65]])
@@ -262,15 +183,6 @@ class GP(Mixing):
         -----------
         sk : scikit learn object
             The GP object created from training the GP on the data. 
-
-        g : numpy.linspace
-            The full range of g used in the investigation.
-
-        gdata : numpy.linspace
-            The range over which the data set exists.
-        
-        data : numpy.ndarray
-            The data set formed from the model expansions.
 
         loworder : int
             The order at which the small-g expansion data was generated.
@@ -352,6 +264,95 @@ class GP(Mixing):
             fig.savefig(name)
 
         return meanp, sigp, cov
+
+    
+    def training_set(self, loworder, highorder):
+
+        '''
+        An internal function to calculate the necessary training data set from
+        the input prediction set. 
+
+        ***FINISH DOCUMENTATION***  
+        '''
+
+        #set up the training set from the prediction set (offset by midpoint)
+        midpoint = (self.gpredict[1] - self.gpredict[0]) / 2.0
+        gtrainingset = np.linspace(min(self.gpredict)+midpoint, max(self.gpredict)+midpoint, len(self.gpredict))
+
+        #stop the training set, negative curvature
+        if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
+            for i in range(len(gtrainingset)):
+                if Mixing.low_g(self, gtrainingset[i], loworder) < 1.0:
+                    lowindex = i-1
+                    break
+        #stop the training set, positive curvature
+        elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
+            for i in range(len(gtrainingset)):
+                if Mixing.low_g(self, gtrainingset[i], loworder) > 3.0:
+                    lowindex = i-1
+                    break
+        #stop the training set, even orders (positive curvature)
+        if highorder[0] % 2 == 0:
+            for i in range(len(gtrainingset)):
+                if Mixing.high_g(self, gtrainingset[i], highorder) > 3.0:
+                    highindex = i+1
+                else:
+                    break
+        #stop the training set, odd orders (negative curvature)
+        else:
+            for i in range(len(gtrainingset)):
+                if Mixing.high_g(self, gtrainingset[i], highorder) < 1.0:
+                    highindex = i+1
+                else:
+                    break
+
+        #slice the training set for the two models
+        self.gtrlow = gtrainingset[:lowindex]
+        self.gtrhigh = gtrainingset[highindex:]
+
+        #calculate the data at each point
+        self.datatrlow = Mixing.low_g(self, self.gtrlow, loworder)[0,:]
+        self.datatrhigh = Mixing.high_g(self, self.gtrhigh, highorder)[0,:]
+
+        #calculate the variance at each point from the next term
+        response = input('Which error model do you want to use? (uninformative/informative)')
+        if response == 'uninformative':
+            error_model = 1
+        elif response == 'informative':
+            error_model = 2
+        else:
+            raise ValueError('Please choose a valid error model.')
+
+        lowvariance = Discrepancy.variance_low(self, self.gtrlow, loworder[0], error_model)
+        self.lowsigma = np.sqrt(lowvariance)
+        highvariance = Discrepancy.variance_high(self, self.gtrhigh, highorder[0], error_model)
+        self.highsigma = np.sqrt(highvariance)
+
+        #concatenate the arrays for use in the GP
+        gtr = np.concatenate((self.gtrlow, self.gtrhigh))
+        datatr = np.concatenate((self.datatrlow, self.datatrhigh))
+        sigmatr = np.concatenate((self.lowsigma, self.highsigma))
+
+        #stop training around the gap
+        for i in range(len(gtr)):
+            if gtr[i+1] < gtr[i]:
+                index_low = i+1
+                index_high = i
+                break
+        for i in range(len(gtr), -1, -1):
+            if gtr[i-1] <= gtr[index_high]:
+                index_end = i
+                break
+
+        #find left end of the gap
+        all_indices = np.where(gtr == gtr[index_low])[0]
+
+        #set up the new arrays
+        gs = np.concatenate((gtr[0:all_indices[0]], gtr[index_end:]))
+        datas = np.concatenate((datatr[0:all_indices[0]], datatr[index_end:]))
+        sigmas = np.concatenate((sigmatr[0:all_indices[0]], sigmatr[index_end:]))
+
+        return gs, datas, sigmas 
 
 
     def MD(self, fval, mean, cov):
