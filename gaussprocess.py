@@ -2,16 +2,18 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-from mixing import Mixing, Models
+from mixing import Models
 from discrepancy import Discrepancy 
 
-class GP(Mixing):
+__all__ = ['GP']
+
+class GP(Models):
 
 
     def __init__(self, g, kernel="RBF", fix_length=False):
 
         '''
-        A class that will pull from the Models, Mixing, and Discrepancy classes
+        A class that will pull from the Models and Discrepancy classes
         to perform GP emulation on two models from the small-g expansion region
         to the large-g expansion region. The parameter settings of the kernel
         will be set by the user in this initial function. This class 'wraps' the
@@ -27,7 +29,7 @@ class GP(Mixing):
         
         kernel : str
             The type of kernel the user wishes to use. Default is the RBF kernel;
-            possible choices are RBF and Matern. 
+            possible choices are RBF, Matern, and Rational Quadratic. 
 
         fix_length : bool
             If True, will fix the lengthscale to a specific value entered. 
@@ -176,8 +178,7 @@ class GP(Mixing):
         predict the GP results with an interval and plot against the expansions.
 
         :Example:
-            GP.validate(sk, g=np.linspace(1e-6,0.5,100), gdata=np.linspace(), 
-            data=np.array([]), loworder=5, highorder=5)
+            GP.validate(sk, loworder=5, highorder=5)
 
         Parameters:
         -----------
@@ -200,12 +201,15 @@ class GP(Mixing):
 
         sigp : numpy.ndarray
             The standard deviation array of the GP prediction results. 
+        
+        cov : numpy.ndarray
+            The covariance matrix of the GP prediction results. 
         '''
 
         #make the prediction values into a column vector
         self.gpred = self.gpredict.reshape(-1,1)
 
-        #predict the results for the validation data (vp = std)
+        #predict the results for the validation data
         meanp, sigp = sk.predict(self.gpred, return_std=True)
         meanc, cov = sk.predict(self.gpred, return_cov=True)
         meanp = meanp[:,0]
@@ -272,7 +276,22 @@ class GP(Mixing):
         An internal function to calculate the necessary training data set from
         the input prediction set. 
 
-        ***FINISH DOCUMENTATION***  
+        :Example:
+            GP.training_set(loworder=np.array([2]), highorder=np.array([2])) 
+
+        Parameters:
+        -----------
+
+        Returns:
+        -------
+        gs : numpy.ndarray
+            The modified array of input values for the training. 
+
+        datas : numpy.ndarray
+            The modified array of data values for the training. 
+
+        sigmas : numpy.ndarray 
+            The modified array of the truncation errors for the training. 
         '''
 
         #set up the training set from the prediction set (offset by midpoint)
@@ -282,26 +301,26 @@ class GP(Mixing):
         #stop the training set, negative curvature
         if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
             for i in range(len(gtrainingset)):
-                if Mixing.low_g(self, gtrainingset[i], loworder) < 1.0:
+                if Models.low_g(self, gtrainingset[i], loworder) < 1.0:
                     lowindex = i-1
                     break
         #stop the training set, positive curvature
         elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
             for i in range(len(gtrainingset)):
-                if Mixing.low_g(self, gtrainingset[i], loworder) > 3.0:
+                if Models.low_g(self, gtrainingset[i], loworder) > 3.0:
                     lowindex = i-1
                     break
         #stop the training set, even orders (positive curvature)
         if highorder[0] % 2 == 0:
             for i in range(len(gtrainingset)):
-                if Mixing.high_g(self, gtrainingset[i], highorder) > 3.0:
+                if Models.high_g(self, gtrainingset[i], highorder) > 3.0:
                     highindex = i+1
                 else:
                     break
         #stop the training set, odd orders (negative curvature)
         else:
             for i in range(len(gtrainingset)):
-                if Mixing.high_g(self, gtrainingset[i], highorder) < 1.0:
+                if Models.high_g(self, gtrainingset[i], highorder) < 1.0:
                     highindex = i+1
                 else:
                     break
@@ -311,8 +330,8 @@ class GP(Mixing):
         self.gtrhigh = gtrainingset[highindex:]
 
         #calculate the data at each point
-        self.datatrlow = Mixing.low_g(self, self.gtrlow, loworder)[0,:]
-        self.datatrhigh = Mixing.high_g(self, self.gtrhigh, highorder)[0,:]
+        self.datatrlow = Models.low_g(self, self.gtrlow, loworder)[0,:]
+        self.datatrhigh = Models.high_g(self, self.gtrhigh, highorder)[0,:]
 
         #calculate the variance at each point from the next term
         response = input('Which error model do you want to use? (uninformative/informative)')
@@ -353,6 +372,28 @@ class GP(Mixing):
         sigmas = np.concatenate((sigmatr[0:all_indices[0]], sigmatr[index_end:]))
 
         return gs, datas, sigmas 
+
+    
+    def MD_set(self, sigmas):
+
+        #select the gap by checking variances
+        for i in range(len(sigmas)):
+            if sigmas[i+3]/sigmas[i] >= 0.1:
+                first_index = i
+                break 
+        
+        # for i in range(len(sigmas), -1, -1):
+        #     if sigmas[i+3]/sigmas[i] >= 0.1:
+        #         second_index = i
+        #         break
+
+        #reduce the prediction set to the gap 
+        md_data = self.gpredict[first_index:]
+
+        #plot the result to check
+        plt.plot(md_data, np.ones(len(md_data)), 'k.')
+
+        return md_data
 
 
     def MD(self, fval, mean, cov):
@@ -435,6 +476,5 @@ class GP(Mixing):
             ax.plot(self.gpredict, Models.true_model(self, self.gpredict), 'k', label='True model')
 
         #plot the rest
-
 
         return None

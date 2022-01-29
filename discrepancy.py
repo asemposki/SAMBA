@@ -3,9 +3,11 @@ from scipy import special
 import math
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-from mixing import Models, Mixing
+from mixing import Models
 
-class Discrepancy(Mixing):
+__all__ = ['Discrepancy']
+
+class Discrepancy(Models):
 
     def __init__(self):
 
