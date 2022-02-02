@@ -1,4 +1,5 @@
 import numpy as np 
+import math
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
@@ -110,9 +111,20 @@ class GP(Models):
         gs, datas, sigmas = self.training_set(loworder, highorder)
 
         #choose specific training points
+        #2 vs 2 perfect points
         gs = np.array([gs[6], gs[15], gs[58], gs[65]])
         datas = np.array([datas[6], datas[15], datas[58], datas[65]])
         sigmas = np.array([sigmas[6], sigmas[15], sigmas[58], sigmas[65]])
+        #5 vs 10 perfect points
+        # gs = np.array([gs[6], gs[9], gs[17], gs[20]])
+        # datas = np.array([datas[6], datas[9], datas[17], datas[20]])
+        # sigmas = np.array([sigmas[6], sigmas[9], sigmas[17], sigmas[20]])
+        #5 vs 5 perfect points
+        # gs = np.array([gs[6], gs[9], gs[25], gs[30]])
+        # datas = np.array([datas[6], datas[9], datas[25], datas[30]])
+        # sigmas = np.array([sigmas[6], sigmas[9], sigmas[25], sigmas[30]])
+
+        print(gs)
 
         #make column vectors for the regressor
         gc = gs.reshape(-1,1)
@@ -210,18 +222,18 @@ class GP(Models):
         self.gpred = self.gpredict.reshape(-1,1)
 
         #predict the results for the validation data
-        meanp, sigp = sk.predict(self.gpred, return_std=True)
-        meanc, cov = sk.predict(self.gpred, return_cov=True)
-        meanp = meanp[:,0]
+        self.meanp, self.sigp = sk.predict(self.gpred, return_std=True)
+        meanc, self.cov = sk.predict(self.gpred, return_cov=True)
+        self.meanp = self.meanp[:,0]
 
         #calculate the interval for the predictions
         if interval == 68:
             factor = 1.0
         elif interval == 95:
             factor = 1.96
-        intervals = np.zeros([len(meanp), 2])
-        intervals[:,0] = meanp - factor*sigp
-        intervals[:,1] = meanp + factor*sigp
+        intervals = np.zeros([len(self.meanp), 2])
+        intervals[:,0] = self.meanp - factor*self.sigp
+        intervals[:,1] = self.meanp + factor*self.sigp
 
         #compare standard deviations for testing set and model values
         test_lowg = self.gpred[:4]
@@ -252,7 +264,7 @@ class GP(Models):
             capsize=4, alpha = 0.4, label=r"$f_s$ ($N_s$ = {})".format(loworder[0]), zorder=1)
         ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, color="blue", fmt='o', markersize=4, \
              capsize=4, alpha=0.4, label=r"$f_l$ ($N_l$ = {})".format(highorder[0]), zorder=1)
-        ax.plot(self.gpred, meanp, 'g', label='Predictions', zorder=2)
+        ax.plot(self.gpred, self.meanp, 'g', label='Predictions', zorder=2)
         ax.plot(self.gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ interval'.format(interval), zorder=2)
         ax.plot(self.gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
         ax.fill_between(self.gpred[:,0], intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
@@ -267,7 +279,7 @@ class GP(Models):
             name = input('Enter a file name (include .jpg, .png, etc.)')
             fig.savefig(name)
 
-        return meanp, sigp, cov
+        return self.meanp, self.sigp, self.cov
 
     
     def training_set(self, loworder, highorder):
@@ -373,27 +385,51 @@ class GP(Models):
 
         return gs, datas, sigmas 
 
-    
+
     def MD_set(self, sigmas):
 
-        #select the gap by checking variances
-        for i in range(len(sigmas)):
-            if sigmas[i+3]/sigmas[i] >= 0.1:
-                first_index = i
-                break 
-        
-        # for i in range(len(sigmas), -1, -1):
-        #     if sigmas[i+3]/sigmas[i] >= 0.1:
-        #         second_index = i
-        #         break
+        '''
+        ***FINISH DOCUMENTATION & SPLIT CLASS***
+        '''
 
-        #reduce the prediction set to the gap 
-        md_data = self.gpredict[first_index:]
+        #select the lhs of the gap
+        logsigl = np.zeros([len(sigmas)])
+        for i in range(len(sigmas)):
+            logsigl[i] = math.floor(math.log10(sigmas[i]))
+            if logsigl[i] >= -2.:
+                index = i
+                if sigmas[index+1]/sigmas[index] <= abs(1.5):
+                    first_index = index+1
+                    print(first_index)
+                    break 
+
+        #select the rhs of the gap
+        logsigr = np.zeros([len(sigmas)])
+        for i in range(len(sigmas)-1, -1, -1):
+            logsigr[i] = math.floor(math.log10(sigmas[i]))
+            if logsigr[i] >= -2.:
+                index = i
+                if sigmas[index-1]/sigmas[index] >= abs(0.01):
+                    second_index = index-1
+                    print(second_index)
+                    break
+
+        #reduce the prediction set (g) to the gap 
+        md_g = self.gpredict[first_index:second_index]
+        print(self.gpredict[first_index], self.gpredict[second_index])
+
+        #reduce the GP mean, sig, cov to the gap
+        md_mean = self.meanp[first_index:second_index]
+        md_sig = self.sigp[first_index:second_index]
+        md_cov = self.cov[first_index:second_index, first_index:second_index]   #check this later!
 
         #plot the result to check
-        plt.plot(md_data, np.ones(len(md_data)), 'k.')
+        plt.xlim(0.,1.)
+        plt.plot(md_g, np.ones(len(md_g)), 'k.')
 
-        return md_data
+        print(np.shape(md_cov))
+
+        return md_g, md_mean, md_sig, md_cov
 
 
     def MD(self, fval, mean, cov):
@@ -452,7 +488,7 @@ class GP(Models):
 
         return md
 
-
+'''
     def plotter(self, x_label, y_label, title, y_lim, *args, show_true=True, **kwargs):
 
         #set up the simple bits
@@ -478,3 +514,4 @@ class GP(Models):
         #plot the rest
 
         return None
+'''
