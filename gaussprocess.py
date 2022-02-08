@@ -1,6 +1,7 @@
 import numpy as np 
 import math
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
+from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
@@ -386,10 +387,74 @@ class GP(Models):
         return gs, datas, sigmas 
 
 
+    def ref_dist(self, mean, cov):
+
+        '''
+        Constructs a multivariate normal distribution to act
+        as a reference distribution for the Mahalanobis distance
+        calculation. 
+
+        :Example:
+            Diagnostics.ref_dist(mean=np.array([]), cov=np.array([]))
+
+        Parameters:
+        -----------
+        mean : numpy.ndarray
+            The mean of the GP (given by the prediction set). 
+        
+        cov : numpy.ndarray
+            The covariance matrix of the GP (given by the prediction
+            set). 
+
+        Returns:
+        --------
+        dist : stats object
+            A multivariate normal distribution that can be used to 
+            generate samples for the reference distribution. 
+        '''
+
+        dist = stats.multivariate_normal(mean=mean, cov=cov)
+
+        return dist
+
+    
+    def sample_ref(self, dist, n_curves):
+
+        '''
+        Generate some sample curves from the reference distribution.
+
+        :Example:
+            Diagnostics.sample_ref(dist, n_curves=10)
+
+        Parameters:
+        -----------
+        dist : stats object
+            The reference distribution object. 
+
+        n_curves : int
+            The number of draws from the reference distribution.
+
+        Returns:
+        --------
+        samples : numpy.ndarray
+            The array of curves from the distribution. 
+        '''
+
+        samples = dist.rvs(n_curves).T
+
+        return samples
+
+
     def MD_set(self, sigmas):
 
         '''
         ***FINISH DOCUMENTATION & SPLIT CLASS***
+        A function that takes in the errors from the training set and 
+        uses them to cut the prediction set from GP.validate() to the 
+        approximate region of the gap where the GP is most important. 
+
+        Example:
+            GP.MD_set(sigmas=np.array([]))
         '''
 
         #select the lhs of the gap
@@ -416,34 +481,38 @@ class GP(Models):
 
         #reduce the prediction set (g) to the gap 
         md_g = self.gpredict[first_index:second_index]
-        print(self.gpredict[first_index], self.gpredict[second_index])
+#        print(self.gpredict[first_index], self.gpredict[second_index])
 
         #reduce the GP mean, sig, cov to the gap
         md_mean = self.meanp[first_index:second_index]
         md_sig = self.sigp[first_index:second_index]
-        md_cov = self.cov[first_index:second_index, first_index:second_index]   #check this later!
+        md_cov = self.cov[first_index:second_index, first_index:second_index]  
 
         #plot the result to check
         plt.xlim(0.,1.)
         plt.plot(md_g, np.ones(len(md_g)), 'k.')
 
-        print(np.shape(md_cov))
+#        print(np.shape(md_cov))
 
         return md_g, md_mean, md_sig, md_cov
 
 
-    def MD(self, fval, mean, cov):
+    def Mahalanobis(self, y, mean, cov):
 
         '''
-        A diagnostic testing function that calculates the Mahalanobis
-        distance of the predictions from the GP. 
+        A diagnostic testing function that can calculate the Mahalanobis 
+        distance for a given set of mean, covariance data and a vector. 
+
+        Uses: 1). Calculate the MD of the predictions of the GP;
+              2). Calculate the MD of the predictions to construct a 
+                  reference distribution. 
 
         :Example:
-            GP.MD(fval=np.array([]), mean=np.array([]), cov=np.array([2,2]))
+            GP.MD(y=np.array([]), mean=np.array([]), cov=np.array([2,2]))
 
         Parameters:
         -----------
-        fval : numpy.ndarray
+        y : numpy.ndarray
             An array of predicted values from the emulator.
 
         mean : numpy.ndarray
@@ -458,35 +527,73 @@ class GP(Models):
             The Mahalanobis distance. 
         '''
 
-        #reduce the number of points used in the MD
-        thin = 20
-        fval = fval[::thin]
-        mean = mean[::thin]
-        print(np.shape(cov), np.shape(mean), cov)
-        cov = cov[::thin,::thin]
-        print(np.shape(cov), cov)
+        y = np.atleast_2d(y)
 
-        #calculate the reference distribution
-        m = GaussianProcessRegressor(kernel=self.kern, alpha=self.alpha, n_restarts_optimizer=20, normalize_y=True)
-        toy_data_full = m.sample_y(self.gpred, n_samples=4, random_state=2).T
-        mean_full, cov_full = m.predict(self.gpred, return_cov=True)
-
-        # toy_data_full *= (ratio**orders)[:, None]
-        mask = np.array([i % 5 == 0 for i in range(len(self.gpred))])
-        toy_data = toy_data_full[:, mask]
-        meanplt = mean_full[mask]
-        covplt = cov_full[mask][:, mask]
-        X = self.gpred[mask]
-
-        plt.plot(self.gpred.ravel(), toy_data_full.T)
-        plt.plot(X.ravel(), toy_data.T, ls='', marker='o', fillstyle='none', markersize=10, c='gray')
-
-        #calculate the Mahalanobis distance
-        md = (fval - mean).T @ np.linalg.inv(cov) @ (fval - mean)
-        print(fval-mean)
-        md = np.sqrt(md)
+        md = np.squeeze(np.sqrt(np.diag((y - mean) @ np.linalg.inv(cov) @ (y - mean).T)))
 
         return md
+
+
+    def md_plot(self, g, mean, cov):
+
+        '''
+        Histogram plotter for the Mahalanobis distance and the GP's
+        reference distribution. 
+
+        :Example:
+            Diagnostics.md_plot(g=np.linspace(), mean=np.array([]), cov=np.array([]))
+
+        Parameters:
+        -----------
+        g : numpy.ndarray
+            The input prediction set to the GP. 
+
+        mean : numpy.ndarray
+            The array of the mean values from the prediction
+            set of the GP. 
+
+        cov : numpy.ndarray
+            The covariance matrix from the prediction set of 
+            the GP. 
+
+        Returns:
+        --------
+        None. 
+        '''
+
+        #call the reference distribution functions
+        n_curves = 500
+        dist = self.ref_dist(mean, cov)
+        samples = self.sample_ref(dist, n_curves)
+
+        #calculate MD^2 for the reference distribution
+        md_ref = np.ones([n_curves])
+        for i in range(n_curves):
+            md_ref[i] = self.Mahalanobis(samples[:,i].T, mean, cov)
+
+        #MD^2 for the true value and the GP  
+        ftrue = Models.true_model(g)
+        md_true = self.Mahalanobis(ftrue, mean, cov)**2.0
+
+        #histogram plot
+        fig = plt.figure(figsize=(8,6), dpi=200)
+        ax = plt.axes()
+        ax.set_xlabel('MD', fontsize=14)
+        ax.set_title('Mahalanobis distance: reference distribution', fontsize=14)
+        ax.set_xlim(0.0, max(md_ref))
+        ax.hist(md_ref, bins=50, histtype='bar', facecolor='black', ec='white', label='Reference distribution')
+
+        #check the value of md_true
+        if md_true - md_ref <= 100:
+            ax.plot(md_true, 0.0, 'r', marker='o', markersize=10)
+
+        #plot the chi-squared distribution over this histogram
+        ax.plot(np.linspace(0.0,max(md_ref),200), 250*stats.chi2.pdf(np.linspace(0.0,max(md_ref),200), df=int(len(g))), \
+            'r', linewidth=2, label=r'$\chi^2$ (df={})'.format(len(g)))
+        ax.legend(loc='upper right', fontsize=12)
+        plt.show()
+
+        return None
 
 '''
     def plotter(self, x_label, y_label, title, y_lim, *args, show_true=True, **kwargs):
