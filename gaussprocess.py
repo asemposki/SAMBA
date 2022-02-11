@@ -1,5 +1,6 @@
 import numpy as np 
 import math
+import docrep
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -7,7 +8,9 @@ from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
 from discrepancy import Discrepancy 
 
-__all__ = ['GP']
+__all__ = ['GP', 'Diagnostics']
+
+docstrings = docrep.DocstringProcessor()
 
 class GP(Models):
 
@@ -111,12 +114,14 @@ class GP(Models):
         #call the training set generator function
         gs, datas, sigmas = self.training_set(loworder, highorder)
 
+        print(np.shape(gs))
+
         #choose specific training points
         #2 vs 2 perfect points
-        gs = np.array([gs[6], gs[15], gs[58], gs[65]])
-        datas = np.array([datas[6], datas[15], datas[58], datas[65]])
-        sigmas = np.array([sigmas[6], sigmas[15], sigmas[58], sigmas[65]])
-        #5 vs 10 perfect points
+        # gs = np.array([gs[6], gs[15], gs[58], gs[65]])
+        # datas = np.array([datas[6], datas[15], datas[58], datas[65]])
+        # sigmas = np.array([sigmas[6], sigmas[15], sigmas[58], sigmas[65]])
+        # #5 vs 10 perfect points
         # gs = np.array([gs[6], gs[9], gs[17], gs[20]])
         # datas = np.array([datas[6], datas[9], datas[17], datas[20]])
         # sigmas = np.array([sigmas[6], sigmas[9], sigmas[17], sigmas[20]])
@@ -143,12 +148,14 @@ class GP(Models):
         #fit the GP to the training data
         sk = m.fit(gc, datac)
 
+        #get the covariance matrix of the unconditional GP
+        uncov = sk.kernel_(gc)
+
         #print the optimized parameters for the user
         print('Optimized parameters: {}, {}'.format(m.kernel_.k1, m.kernel_.k2))
 
         #plot the results
-        dpi = int(input('Set a dpi for the figure.'))
-        fig = plt.figure(figsize=(8,6), dpi=dpi)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
@@ -181,7 +188,7 @@ class GP(Models):
             name = input('Enter a file name (include .jpg, .png, etc.)')
             fig.savefig(name)
 
-        return sk
+        return sk, uncov
 
 
     def validate(self, sk, loworder, highorder, interval=68):
@@ -236,7 +243,7 @@ class GP(Models):
         intervals[:,0] = self.meanp - factor*self.sigp
         intervals[:,1] = self.meanp + factor*self.sigp
 
-        #compare standard deviations for testing set and model values
+        #compare standard deviations for testing set and model values ---> WHAT THE HELL IS THIS DOING HERE
         test_lowg = self.gpred[:4]
         test_highg = self.gpred[4:]
         var_low = Discrepancy.variance_low(self, test_lowg, loworder[0], error_model=2)[:,0]
@@ -245,8 +252,7 @@ class GP(Models):
         self.stdev_high = np.sqrt(var_high)
 
         #plot the results
-        dpi = int(input('Set a dpi for the figure.'))
-        fig = plt.figure(figsize=(8,6), dpi=dpi)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
@@ -294,6 +300,11 @@ class GP(Models):
 
         Parameters:
         -----------
+        loworder : numpy.ndarray
+            The truncation order of the small-g expansion.
+
+        highorder : numpy.ndarray
+            The truncation order of the large-g expansion. 
 
         Returns:
         -------
@@ -360,6 +371,31 @@ class GP(Models):
         highvariance = Discrepancy.variance_high(self, self.gtrhigh, highorder[0], error_model)
         self.highsigma = np.sqrt(highvariance)
 
+        #find the values of g in the other set to determine location of points
+        index_ghigh = (np.where(self.gtrhigh == self.gtrlow[-1])[0])[0]
+
+        #create two points on either side
+        glowtr = np.array([self.gtrlow[6], self.gtrlow[11]])
+        ghightr = np.array([self.gtrhigh[index_ghigh+18], self.gtrhigh[index_ghigh+25]])
+        datalowtr = np.array([self.datatrlow[6], self.datatrlow[11]])
+        datahightr = np.array([self.datatrhigh[index_ghigh+18], self.datatrhigh[index_ghigh+25]])
+        sigmalowtr = np.array([self.lowsigma[6], self.lowsigma[11]])
+        sigmahightr = np.array([self.highsigma[index_ghigh+18], self.highsigma[index_ghigh+25]])
+
+        #concatenate these arrays and send back
+        gtr = np.concatenate((glowtr, ghightr))
+        datatr = np.concatenate((datalowtr, datahightr))
+        sigmatr = np.concatenate((sigmalowtr, sigmahightr))
+
+        return gtr, datatr, sigmatr 
+
+
+    def training_arrays(self):
+
+        '''
+        ***FINISH DOCUMENTATION***
+        '''
+
         #concatenate the arrays for use in the GP
         gtr = np.concatenate((self.gtrlow, self.gtrhigh))
         datatr = np.concatenate((self.datatrlow, self.datatrhigh))
@@ -385,6 +421,19 @@ class GP(Models):
         sigmas = np.concatenate((sigmatr[0:all_indices[0]], sigmatr[index_end:]))
 
         return gs, datas, sigmas 
+
+
+# class Diagnostics(GP):
+
+
+#     def __init__(self):
+
+#         super
+        
+#         #***GET GPREDICT PASSED HERE***
+#         print('Available diagnostic tests: Mahalanobis distance.')
+
+#         return None
 
 
     def ref_dist(self, mean, cov):
@@ -445,17 +494,20 @@ class GP(Models):
         return samples
 
 
-    def MD_set(self, sigmas):
+    def MD_set(self):
 
         '''
         ***FINISH DOCUMENTATION & SPLIT CLASS***
-        A function that takes in the errors from the training set and 
+        A function that takes the errors from the total training set and 
         uses them to cut the prediction set from GP.validate() to the 
         approximate region of the gap where the GP is most important. 
 
         Example:
-            GP.MD_set(sigmas=np.array([]))
+            GP.MD_set()
         '''
+
+        #call the training array function to create the sigma array
+        gs, datas, sigmas = self.training_arrays()
 
         #select the lhs of the gap
         logsigl = np.zeros([len(sigmas)])
@@ -491,8 +543,6 @@ class GP(Models):
         #plot the result to check
         plt.xlim(0.,1.)
         plt.plot(md_g, np.ones(len(md_g)), 'k.')
-
-#        print(np.shape(md_cov))
 
         return md_g, md_mean, md_sig, md_cov
 
@@ -576,19 +626,19 @@ class GP(Models):
         md_true = self.Mahalanobis(ftrue, mean, cov)**2.0
 
         #histogram plot
-        fig = plt.figure(figsize=(8,6), dpi=200)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         ax.set_xlabel('MD', fontsize=14)
         ax.set_title('Mahalanobis distance: reference distribution', fontsize=14)
         ax.set_xlim(0.0, max(md_ref))
-        ax.hist(md_ref, bins=50, histtype='bar', facecolor='black', ec='white', label='Reference distribution')
+        ax.hist(md_ref, bins=50, density=True, histtype='bar', facecolor='black', ec='white', label='Reference distribution')
 
         #check the value of md_true
         if md_true - md_ref <= 100:
             ax.plot(md_true, 0.0, 'r', marker='o', markersize=10)
 
         #plot the chi-squared distribution over this histogram
-        ax.plot(np.linspace(0.0,max(md_ref),200), 250*stats.chi2.pdf(np.linspace(0.0,max(md_ref),200), df=int(len(g))), \
+        ax.plot(np.linspace(0.0,max(md_ref),200), stats.chi2.pdf(np.linspace(0.0,max(md_ref),200), df=int(len(g))), \
             'r', linewidth=2, label=r'$\chi^2$ (df={})'.format(len(g)))
         ax.legend(loc='upper right', fontsize=12)
         plt.show()
@@ -599,8 +649,7 @@ class GP(Models):
     def plotter(self, x_label, y_label, title, y_lim, *args, show_true=True, **kwargs):
 
         #set up the simple bits
-        dpi = int(input('Set a dpi for the figure.'))
-        fig = plt.figure(figsize=(8,6), dpi=dpi)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
