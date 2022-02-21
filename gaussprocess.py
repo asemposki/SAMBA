@@ -8,9 +8,12 @@ from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
 from discrepancy import Discrepancy 
 
+# import warnings 
+
 __all__ = ['GP', 'Diagnostics']
 
 docstrings = docrep.DocstringProcessor()
+
 
 class GP(Models):
 
@@ -260,7 +263,7 @@ class GP(Models):
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(0.0, max(self.gpredict))
-        ax.set_ylim(1.0,3.0)
+        ax.set_ylim(0.0,3.0)
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): GP predictions', fontsize=22)
@@ -319,13 +322,13 @@ class GP(Models):
         '''
 
         #set up the training set from the prediction set (offset by midpoint)
-        midpoint = (self.gpredict[1] - self.gpredict[0]) / 2.0
-        gtrainingset = np.linspace(min(self.gpredict)+midpoint, max(self.gpredict)+midpoint, len(self.gpredict))
+        self.midpoint = (self.gpredict[1] - self.gpredict[0]) / 2.0
+        gtrainingset = np.linspace(min(self.gpredict)+self.midpoint, max(self.gpredict)+self.midpoint, len(self.gpredict))
 
         #stop the training set, negative curvature
         if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
             for i in range(len(gtrainingset)):
-                if Models.low_g(self, gtrainingset[i], loworder) < 1.0:
+                if Models.low_g(self, gtrainingset[i], loworder) < -1.0:    #for sqrt{g} (usually 1.0)
                     lowindex = i-1
                     break
         #stop the training set, positive curvature
@@ -344,7 +347,7 @@ class GP(Models):
         #stop the training set, odd orders (negative curvature)
         else:
             for i in range(len(gtrainingset)):
-                if Models.high_g(self, gtrainingset[i], highorder) < 1.0:
+                if Models.high_g(self, gtrainingset[i], highorder) < -1.0:   #for sqrt{g} (usually 1.0)
                     highindex = i+1
                 else:
                     break
@@ -353,15 +356,17 @@ class GP(Models):
         self.gtrlow = gtrainingset[:lowindex]
         self.gtrhigh = gtrainingset[highindex:]
 
+        print('**Length of training sets: {} and {}'.format(len(self.gtrlow), len(self.gtrhigh)))
+
         #calculate the data at each point
         self.datatrlow = Models.low_g(self, self.gtrlow, loworder)[0,:]
         self.datatrhigh = Models.high_g(self, self.gtrhigh, highorder)[0,:]
 
         #calculate the variance at each point from the next term
-        response = input('Which error model do you want to use? (uninformative/informative)')
-        if response == 'uninformative':
+        response = input('Which error model do you want to use, uninformative or informative? (u/i)')
+        if response == 'u':
             error_model = 1
-        elif response == 'informative':
+        elif response == 'i':
             error_model = 2
         else:
             raise ValueError('Please choose a valid error model.')
@@ -373,14 +378,18 @@ class GP(Models):
 
         #find the values of g in the other set to determine location of points
         index_ghigh = (np.where(self.gtrhigh == self.gtrlow[-1])[0])[0]
+        print('***Index: {} ***'.format(index_ghigh))
 
-        #create two points on either side
+        #create two points on either side (before, 18 and 25 started it)
         glowtr = np.array([self.gtrlow[6], self.gtrlow[11]])
-        ghightr = np.array([self.gtrhigh[index_ghigh+18], self.gtrhigh[index_ghigh+25]])
+     #   ghightr = np.array([self.gtrhigh[index_ghigh+30], self.gtrhigh[index_ghigh+40]])
+        ghightr = np.array([self.gtrhigh[index_ghigh+5], self.gtrhigh[index_ghigh+15]])
         datalowtr = np.array([self.datatrlow[6], self.datatrlow[11]])
-        datahightr = np.array([self.datatrhigh[index_ghigh+18], self.datatrhigh[index_ghigh+25]])
+     #   datahightr = np.array([self.datatrhigh[index_ghigh+30], self.datatrhigh[index_ghigh+40]])
+        datahightr = np.array([self.datatrhigh[index_ghigh+5], self.datatrhigh[index_ghigh+15]])
         sigmalowtr = np.array([self.lowsigma[6], self.lowsigma[11]])
-        sigmahightr = np.array([self.highsigma[index_ghigh+18], self.highsigma[index_ghigh+25]])
+     #   sigmahightr = np.array([self.highsigma[index_ghigh+30], self.highsigma[index_ghigh+40]])
+        sigmahightr = np.array([self.highsigma[index_ghigh+5], self.highsigma[index_ghigh+15]])
 
         #concatenate these arrays and send back
         gtr = np.concatenate((glowtr, ghightr))
@@ -388,39 +397,6 @@ class GP(Models):
         sigmatr = np.concatenate((sigmalowtr, sigmahightr))
 
         return gtr, datatr, sigmatr 
-
-
-    def training_arrays(self):
-
-        '''
-        ***FINISH DOCUMENTATION***
-        '''
-
-        #concatenate the arrays for use in the GP
-        gtr = np.concatenate((self.gtrlow, self.gtrhigh))
-        datatr = np.concatenate((self.datatrlow, self.datatrhigh))
-        sigmatr = np.concatenate((self.lowsigma, self.highsigma))
-
-        #stop training around the gap
-        for i in range(len(gtr)):
-            if gtr[i+1] < gtr[i]:
-                index_low = i+1
-                index_high = i
-                break
-        for i in range(len(gtr), -1, -1):
-            if gtr[i-1] <= gtr[index_high]:
-                index_end = i
-                break
-
-        #find left end of the gap
-        all_indices = np.where(gtr == gtr[index_low])[0]
-
-        #set up the new arrays
-        gs = np.concatenate((gtr[0:all_indices[0]], gtr[index_end:]))
-        datas = np.concatenate((datatr[0:all_indices[0]], datatr[index_end:]))
-        sigmas = np.concatenate((sigmatr[0:all_indices[0]], sigmatr[index_end:]))
-
-        return gs, datas, sigmas 
 
 
 # class Diagnostics(GP):
@@ -494,7 +470,7 @@ class GP(Models):
         return samples
 
 
-    def MD_set(self):
+    def MD_set(self, loworder, highorder):
 
         '''
         ***FINISH DOCUMENTATION & SPLIT CLASS***
@@ -506,41 +482,32 @@ class GP(Models):
             GP.MD_set()
         '''
 
-        #call the training array function to create the sigma array
-        gs, datas, sigmas = self.training_arrays()
+        #call the training array function to create the sigma array ---> fix this later!
+        gtr, datatr, sigmatr = self.training_set(loworder, highorder)
 
-        #select the lhs of the gap
-        logsigl = np.zeros([len(sigmas)])
-        for i in range(len(sigmas)):
-            logsigl[i] = math.floor(math.log10(sigmas[i]))
-            if logsigl[i] >= -2.:
-                index = i
-                if sigmas[index+1]/sigmas[index] <= abs(1.5):
-                    first_index = index+1
-                    print(first_index)
-                    break 
+        #select the edges of the training set
+        g_one = gtr[0]
+        g_two = gtr[-1]
 
-        #select the rhs of the gap
-        logsigr = np.zeros([len(sigmas)])
-        for i in range(len(sigmas)-1, -1, -1):
-            logsigr[i] = math.floor(math.log10(sigmas[i]))
-            if logsigr[i] >= -2.:
-                index = i
-                if sigmas[index-1]/sigmas[index] >= abs(0.01):
-                    second_index = index-1
-                    print(second_index)
-                    break
+        #find the equivalent testing points
+        g_test1 = g_one - self.midpoint
+        g_test2 = g_two - self.midpoint
+
+        #find the two corresponding indices in the testing set
+        tol = 1e-4
+        first_index = np.where(self.gpredict - g_test1 <=tol)[0][-1]
+        second_index = np.where(self.gpredict - g_test2 <=tol)[0][-1]
 
         #reduce the prediction set (g) to the gap 
         md_g = self.gpredict[first_index:second_index]
-#        print(self.gpredict[first_index], self.gpredict[second_index])
+        print(self.gpredict[first_index], self.gpredict[second_index])
 
         #reduce the GP mean, sig, cov to the gap
         md_mean = self.meanp[first_index:second_index]
         md_sig = self.sigp[first_index:second_index]
         md_cov = self.cov[first_index:second_index, first_index:second_index]  
 
-        #plot the result to check
+        #plot the result to check region selected
         plt.xlim(0.,1.)
         plt.plot(md_g, np.ones(len(md_g)), 'k.')
 
