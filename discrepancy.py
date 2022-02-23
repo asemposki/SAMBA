@@ -5,16 +5,30 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
 
+
 __all__ = ['Discrepancy']
+
 
 class Discrepancy(Models):
 
     def __init__(self):
 
-        pass
+        #initalize the variance function used
+        model = input('Which error model do you want to use, uninformative or informative? (u/i)')
+
+        if model == 'u':
+           self.error_model = 1
+
+        elif model == 'i':
+            self.error_model = 2
+
+        else:
+            raise ValueError('Please select one of the options listed.')
+
+        return None
 
 
-    def variance_low(self, g, loworder, error_model):
+    def variance_low(self, g, loworder):
 
 
         '''
@@ -32,9 +46,6 @@ class Discrepancy(Models):
             The order to which we know our expansion model. Must be passed one at a time if
             more than one model is to be calculated.
 
-        error_model : int
-            The model that the variance will be calculated from. 
-
         Returns:
         --------
         var1 : numpy.ndarray
@@ -51,7 +62,7 @@ class Discrepancy(Models):
             c = np.empty([int(loworder + 2)])
 
             #model 1 for even orders
-            if error_model == 1:
+            if self.error_model == 1:
 
                 for k in range(int(loworder + 2)):
 
@@ -60,8 +71,6 @@ class Discrepancy(Models):
                     else:
                         c[k] = 0.0
 
-                print(c)
-
                 #rms value
                 cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
 
@@ -69,7 +78,7 @@ class Discrepancy(Models):
                 var1 = (cbar)**2.0 * (math.factorial(loworder + 2))**2.0 * g**(2.0*(loworder + 2))
 
             #model 2 for even orders
-            elif error_model == 2:
+            elif self.error_model == 2:
 
                 for k in range(int(loworder + 2)):
 
@@ -83,8 +92,6 @@ class Discrepancy(Models):
                                    * math.factorial(k//2 - 1) * 4.0**(k))
                     else:
                         c[k] = 0.0
-
-                print(c)
 
                 #rms value
                 cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
@@ -102,7 +109,7 @@ class Discrepancy(Models):
             c = np.empty([int(loworder + 1)])
 
             #model 1 for odd orders
-            if error_model == 1:
+            if self.error_model == 1:
 
                 for k in range(int(loworder + 1)):
 
@@ -111,8 +118,6 @@ class Discrepancy(Models):
                     else:
                         c[k] = 0.0
 
-                print(c)
-
                 #rms value
                 cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
 
@@ -120,7 +125,7 @@ class Discrepancy(Models):
                 var1 = (cbar)**2.0 * (math.factorial(loworder + 1))**2.0 * g**(2.0*(loworder + 1))
 
             #model 2 for odd orders
-            elif error_model == 2:
+            elif self.error_model == 2:
 
                 for k in range(int(loworder + 1)):
 
@@ -135,8 +140,6 @@ class Discrepancy(Models):
                     else:
                         c[k] = 0.0
 
-                print(c)
-
                 #rms value
                 cbar = np.sqrt(np.sum((np.asarray(c))**2.0) / (loworder//2 + 1))
 
@@ -146,7 +149,7 @@ class Discrepancy(Models):
         return var1
 
 
-    def variance_high(self, g, highorder, error_model):
+    def variance_high(self, g, highorder):
 
         '''
         A function to calculate the variance corresponding to the large-g expansion model.
@@ -161,9 +164,6 @@ class Discrepancy(Models):
 
         highorder : int
             The order to which we know our expansion model. This must be a single value.
-
-        error_model : int
-            The error model that the variance will be calculated from.  
             
         Returns:
         --------
@@ -177,13 +177,11 @@ class Discrepancy(Models):
         d = np.zeros([int(highorder) + 1])
 
         #model 1
-        if error_model == 1:
+        if self.error_model == 1:
 
             for k in range(int(highorder) + 1):
 
                 d[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k * (math.factorial(k)) / (2.0 * math.factorial(k))
-
-            print(d)
 
             #rms value (ignore first two coefficients in this model)
             dbar = np.sqrt(np.sum((np.asarray(d)[2:])**2.0) / (highorder-1))
@@ -193,14 +191,12 @@ class Discrepancy(Models):
                     * g**(-2.0*highorder - 2)
 
         #model 2
-        elif error_model == 2:
+        elif self.error_model == 2:
 
             for k in range(int(highorder) + 1):
 
                 d[k] = special.gamma(k/2.0 + 0.25) * special.gamma(k/2.0 + 1.0) * 4.0**(k) \
                        * (-0.5)**k / (2.0 * math.factorial(k))
-
-            print(d)
 
             #rms value
             dbar = np.sqrt(np.sum((np.asarray(d))**2.0) / (highorder + 1))
@@ -246,19 +242,9 @@ class Discrepancy(Models):
         if isinstance(highorder, np.ndarray) != True:
             highorder = np.array([highorder])
 
-        #select the proper variances
-        model = input('Which error model do you want to use, uninformative or informative?')
-
-        if model == 'uninformative':
-            v_low = np.asarray([self.variance_low(g, loworder[i], error_model=1) for i in range(len(loworder))])
-            v_high = np.asarray([self.variance_high(g, highorder[i], error_model=1) for i in range(len(highorder))])
-
-        elif model == 'informative':
-            v_low = np.asarray([self.variance_low(g, loworder[i], error_model=2) for i in range(len(loworder))])
-            v_high = np.asarray([self.variance_high(g, highorder[i], error_model=2) for i in range(len(highorder))])
-
-        else:
-            raise ValueError('Please select one of the options listed.')
+        #calculate the variances needed
+        v_low = np.asarray([self.variance_low(g, loworder[i], self.error_model) for i in range(len(loworder))])
+        v_high = np.asarray([self.variance_high(g, highorder[i], self.error_model) for i in range(len(highorder))])
 
         #calculating models
         f_low = [Models.low_g(self, g, i) for i in np.array([loworder])][0]
@@ -367,19 +353,8 @@ class Discrepancy(Models):
         if isinstance(highorder, np.ndarray) != True:
             highorder = np.array([highorder])
 
-        #select the proper variances
-        model = input('Which error model do you want to use, uninformative or informative?')
-
-        if model == 'uninformative':
-            v_low = np.asarray([self.variance_low(g, loworder[i], error_model=1) for i in range(len(loworder))])
-            v_high = np.asarray([self.variance_high(g, highorder[i], error_model=1) for i in range(len(highorder))])
-
-        elif model == 'informative':
-            v_low = np.asarray([self.variance_low(g, loworder[i], error_model=2) for i in range(len(loworder))])
-            v_high = np.asarray([self.variance_high(g, highorder[i], error_model=2) for i in range(len(highorder))])
-
-        else:
-            raise ValueError('Please select one of the options listed.')
+        v_low = np.asarray([self.variance_low(g, loworder[i]) for i in range(len(loworder))])
+        v_high = np.asarray([self.variance_high(g, highorder[i]) for i in range(len(highorder))])
 
         #calculating models
         f_low = [Models.low_g(self, g, i) for i in np.array([loworder])][0]
@@ -493,11 +468,8 @@ class Discrepancy(Models):
         if isinstance(highorder, np.ndarray) != True:
             highorder = np.array([highorder])
 
-        #set the dpi
-        dpi = int(input('Set a dpi for the figure.'))
-
         #set up plot configuration
-        fig = plt.figure(figsize=(8,6), dpi=dpi)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
@@ -522,8 +494,6 @@ class Discrepancy(Models):
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): mixed model', fontsize=22)
         ax.plot(g, Models.true_model(self, g), 'k', label='True model')
-
-        #TODO: Figure out a better labelling/colour/linestyle procedure
 
         #call fdagger to calculate results
         if GP_mean.any() and GP_var.any() != 0:
@@ -555,14 +525,6 @@ class Discrepancy(Models):
             ax.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
             ax.plot(g, intervals[:,1], 'g', linestyle='dotted')
             ax.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
-
-        #TODO: Reinstate next order variable; however, this will be very confusing if I do not change labelling and colours first
-
-        # if next_order == True:
-        #     ax.plot(g, Models.low_g(self, g, loworder+1)[0,:], 'r', linestyle='dotted', \
-        #         label=r'$f_s$ ({})'.format(loworder[0]+1))
-        #     ax.plot(g, Models.high_g(self, g, highorder+1)[0,:], 'b', linestyle='dotted', \
-        #         label=r'$f_l$ ({})'.format(highorder[0]+1))
         
         ax.legend(fontsize=14, loc='upper right')
         plt.show()
@@ -613,11 +575,8 @@ class Discrepancy(Models):
         if isinstance(highorder, np.ndarray) != True:
             highorder = np.array([highorder])
 
-        #set the dpi
-        dpi = int(input('Set a dpi for the figure.'))
-
         #set up plot configuration
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,4), dpi=dpi)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,4), dpi=600)
         xlim = input('\nx-limits (enter "auto" if unknown): ')
         ylim = input('\ny-limits (enter "auto" if unknown): ')
 

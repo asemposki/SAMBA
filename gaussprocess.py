@@ -1,5 +1,5 @@
 import numpy as np 
-import math
+import seaborn as sns
 import docrep
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from scipy import stats
@@ -8,7 +8,6 @@ from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
 from discrepancy import Discrepancy 
 
-# import warnings 
 
 __all__ = ['GP', 'Diagnostics']
 
@@ -70,10 +69,10 @@ class GP(Models):
 
         else:
             if kernel == "RBF":
-                k = kernels.RBF(length_scale=0.10, length_scale_bounds=(1e-5,1e5))
+                k = kernels.RBF(length_scale=0.5, length_scale_bounds=(0.5,1e5))
             elif kernel == "Matern":
                 nu = float(input('Enter a value for nu (standard: 0.5, 1.5, 2.5).'))
-                k = kernels.Matern(length_scale=0.4, length_scale_bounds=(1e-5,1e5), nu=nu)
+                k = kernels.Matern(length_scale=0.4, length_scale_bounds=(0.5,1e5), nu=nu)
             elif kernel == "Rational Quadratic":
                 k = kernels.RationalQuadratic(length_scale=1.0, alpha=1)
             else:
@@ -117,8 +116,6 @@ class GP(Models):
         #call the training set generator function
         gs, datas, sigmas = self.training_set(loworder, highorder)
 
-        print(np.shape(gs))
-
         #choose specific training points
         #2 vs 2 perfect points
         # gs = np.array([gs[6], gs[15], gs[58], gs[65]])
@@ -132,8 +129,6 @@ class GP(Models):
         # gs = np.array([gs[6], gs[9], gs[25], gs[30]])
         # datas = np.array([datas[6], datas[9], datas[25], datas[30]])
         # sigmas = np.array([sigmas[6], sigmas[9], sigmas[25], sigmas[30]])
-
-        print(gs)
 
         #make column vectors for the regressor
         gc = gs.reshape(-1,1)
@@ -156,6 +151,7 @@ class GP(Models):
 
         #print the optimized parameters for the user
         print('Optimized parameters: {}, {}'.format(m.kernel_.k1, m.kernel_.k2))
+        print('Gaussian process parameters: {}'.format(m.kernel_))
 
         #plot the results
         fig = plt.figure(figsize=(8,6), dpi=600)
@@ -246,13 +242,13 @@ class GP(Models):
         intervals[:,0] = self.meanp - factor*self.sigp
         intervals[:,1] = self.meanp + factor*self.sigp
 
-        #compare standard deviations for testing set and model values ---> WHAT THE HELL IS THIS DOING HERE
-        test_lowg = self.gpred[:4]
-        test_highg = self.gpred[4:]
-        var_low = Discrepancy.variance_low(self, test_lowg, loworder[0], error_model=2)[:,0]
-        self.stdev_low = np.sqrt(var_low)
-        var_high = Discrepancy.variance_high(self, test_highg, highorder[0], error_model=2)[:,0]
-        self.stdev_high = np.sqrt(var_high)
+        # #compare standard deviations for testing set and model values ---> WHAT THE HELL IS THIS DOING HERE
+        # test_lowg = self.gpred[:4]
+        # test_highg = self.gpred[4:]
+        # var_low = Discrepancy.variance_low(self, test_lowg, loworder[0], error_model=2)[:,0]
+        # self.stdev_low = np.sqrt(var_low)
+        # var_high = Discrepancy.variance_high(self, test_highg, highorder[0], error_model=2)[:,0]
+        # self.stdev_high = np.sqrt(var_high)
 
         #plot the results
         fig = plt.figure(figsize=(8,6), dpi=600)
@@ -263,7 +259,7 @@ class GP(Models):
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(0.0, max(self.gpredict))
-        ax.set_ylim(0.0,3.0)
+        ax.set_ylim(-3.0,5.0)
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): GP predictions', fontsize=22)
@@ -363,17 +359,10 @@ class GP(Models):
         self.datatrhigh = Models.high_g(self, self.gtrhigh, highorder)[0,:]
 
         #calculate the variance at each point from the next term
-        response = input('Which error model do you want to use, uninformative or informative? (u/i)')
-        if response == 'u':
-            error_model = 1
-        elif response == 'i':
-            error_model = 2
-        else:
-            raise ValueError('Please choose a valid error model.')
-
-        lowvariance = Discrepancy.variance_low(self, self.gtrlow, loworder[0], error_model)
+        obj = Discrepancy()
+        lowvariance = obj.variance_low(self.gtrlow, loworder[0])
         self.lowsigma = np.sqrt(lowvariance)
-        highvariance = Discrepancy.variance_high(self, self.gtrhigh, highorder[0], error_model)
+        highvariance = obj.variance_high(self.gtrhigh, highorder[0])
         self.highsigma = np.sqrt(highvariance)
 
         #find the values of g in the other set to determine location of points
@@ -381,13 +370,16 @@ class GP(Models):
         print('***Index: {} ***'.format(index_ghigh))
 
         #create two points on either side (before, 18 and 25 started it)
-        glowtr = np.array([self.gtrlow[6], self.gtrlow[11]])
+      #  glowtr = np.array([self.gtrlow[6], self.gtrlow[11]])
+        glowtr = np.array([self.gtrlow[2], self.gtrlow[5]])
      #   ghightr = np.array([self.gtrhigh[index_ghigh+30], self.gtrhigh[index_ghigh+40]])
         ghightr = np.array([self.gtrhigh[index_ghigh+5], self.gtrhigh[index_ghigh+15]])
-        datalowtr = np.array([self.datatrlow[6], self.datatrlow[11]])
+       # datalowtr = np.array([self.datatrlow[6], self.datatrlow[11]])
+        datalowtr = np.array([self.datatrlow[2], self.datatrlow[5]])
      #   datahightr = np.array([self.datatrhigh[index_ghigh+30], self.datatrhigh[index_ghigh+40]])
         datahightr = np.array([self.datatrhigh[index_ghigh+5], self.datatrhigh[index_ghigh+15]])
-        sigmalowtr = np.array([self.lowsigma[6], self.lowsigma[11]])
+      #  sigmalowtr = np.array([self.lowsigma[6], self.lowsigma[11]])
+        sigmalowtr = np.array([self.lowsigma[2], self.lowsigma[5]])
      #   sigmahightr = np.array([self.highsigma[index_ghigh+30], self.highsigma[index_ghigh+40]])
         sigmahightr = np.array([self.highsigma[index_ghigh+5], self.highsigma[index_ghigh+15]])
 
@@ -402,9 +394,10 @@ class GP(Models):
 # class Diagnostics(GP):
 
 
-#     def __init__(self):
+#     def __init__(self, g):
 
-#         super
+#         #redefine self.gpredict here
+#         self.gpredict = g
         
 #         #***GET GPREDICT PASSED HERE***
 #         print('Available diagnostic tests: Mahalanobis distance.')
@@ -474,12 +467,35 @@ class GP(Models):
 
         '''
         ***FINISH DOCUMENTATION & SPLIT CLASS***
-        A function that takes the errors from the total training set and 
-        uses them to cut the prediction set from GP.validate() to the 
-        approximate region of the gap where the GP is most important. 
+        Takes the training set of points and uses them to cut the
+        testing set to their limits. This reduces the MD calculation
+        to the region of interest.  
 
         Example:
-            GP.MD_set()
+            GP.MD_set(loworder=np.array([2]), highorder=np.array([2]))
+
+        Parameters:
+        -----------
+        loworder : numpy.ndarray
+            The truncation order for the small-g expansion.
+
+        highorder : numpy.ndarray
+            The truncation order for the large-g expansion. 
+
+        Returns:
+        --------
+        md_g : numpy.ndarray
+            The input values used in the MD calculation.
+
+        md_mean : numpy.ndarray
+            The mean values from the GP corresponding to the 
+            md_g points.
+
+        md_sig : numpy.ndarray
+            The error bars corresponding to the md_g points.
+
+        md_cov : numpy.ndarray
+            The covariance matrix corresponding to the md_g points.
         '''
 
         #call the training array function to create the sigma array ---> fix this later!
@@ -551,66 +567,83 @@ class GP(Models):
         return md
 
 
-    def md_plot(self, g, mean, cov):
+    #develop MD plotter and copy into the class
+    def md_plotter(self, dist, npts, md_gp, md_ref, hist=True, box=False):
 
         '''
-        Histogram plotter for the Mahalanobis distance and the GP's
-        reference distribution. 
-
-        :Example:
-            Diagnostics.md_plot(g=np.linspace(), mean=np.array([]), cov=np.array([]))
-
-        Parameters:
-        -----------
-        g : numpy.ndarray
-            The input prediction set to the GP. 
-
-        mean : numpy.ndarray
-            The array of the mean values from the prediction
-            set of the GP. 
-
-        cov : numpy.ndarray
-            The covariance matrix from the prediction set of 
-            the GP. 
-
-        Returns:
-        --------
-        None. 
+        ***FINISH DOCUMENTATION***
         '''
+        
+        title = 'Mahalanobis Distance'
+        xlabel = r'$\mathrm{D}_{\mathrm{MD}}^{2}$'
+        
+        #histogram option
+        if hist is True:
+            fig = plt.figure(figsize=(8,6), dpi=600)
+            ax = plt.axes()
+            ax.set_xlabel(xlabel, fontsize=18)
+            ax.set_title(title, fontsize=22)
+            ax.set_xlim(0.0, max(md_ref))
+            ax.hist(md_ref, bins=50, density=True, histtype='bar', facecolor='black', \
+                    ec='white', label='Reference distribution')
+            ax.plot(md_gp, 0.0, marker='o', color='r', markersize=10)
 
-        #call the reference distribution functions
-        n_curves = 500
-        dist = self.ref_dist(mean, cov)
-        samples = self.sample_ref(dist, n_curves)
+            #add chi-squared to histogram
+            n = 200
+            x = np.linspace(0.0, max(md_ref), n)
+            ax.plot(x, stats.chi2.pdf(x, df=npts), 'r', linewidth=2, label=r'$\chi^2$ (df={})'.format(npts))
 
-        #calculate MD^2 for the reference distribution
-        md_ref = np.ones([n_curves])
-        for i in range(n_curves):
-            md_ref[i] = self.Mahalanobis(samples[:,i].T, mean, cov)
-
-        #MD^2 for the true value and the GP  
-        ftrue = Models.true_model(g)
-        md_true = self.Mahalanobis(ftrue, mean, cov)**2.0
-
-        #histogram plot
-        fig = plt.figure(figsize=(8,6), dpi=600)
-        ax = plt.axes()
-        ax.set_xlabel('MD', fontsize=14)
-        ax.set_title('Mahalanobis distance: reference distribution', fontsize=14)
-        ax.set_xlim(0.0, max(md_ref))
-        ax.hist(md_ref, bins=50, density=True, histtype='bar', facecolor='black', ec='white', label='Reference distribution')
-
-        #check the value of md_true
-        if md_true - md_ref <= 100:
-            ax.plot(md_true, 0.0, 'r', marker='o', markersize=10)
-
-        #plot the chi-squared distribution over this histogram
-        ax.plot(np.linspace(0.0,max(md_ref),200), stats.chi2.pdf(np.linspace(0.0,max(md_ref),200), df=int(len(g))), \
-            'r', linewidth=2, label=r'$\chi^2$ (df={})'.format(len(g)))
-        ax.legend(loc='upper right', fontsize=12)
+        #box-and-whisker option
+        if box is True:
+            
+            legend = False
+        
+            #set up the figure
+            fig = plt.figure(figsize=(8,6), dpi=100)
+            ax = plt.axes()
+            ax.set_xlabel(xlabel, fontsize=18)
+            
+            #reference distribution (using chi2, NOT md_ref)
+            boxartist = self.ref_boxplot(dist, ax=ax, patch_artist=True, widths=0.8)
+            gray = 'gray'
+            for box in boxartist['boxes']:
+                box.update(dict(facecolor='lightgrey', edgecolor=gray))
+            for whisk in boxartist["whiskers"]:
+                whisk.update(dict(color=gray))
+            for cap in boxartist["caps"]:
+                cap.update(dict(color=gray))
+            for med in boxartist["medians"]:
+                med.update(dict(color=gray))
+            
+            #ax.boxplot(md_ref, showfliers=False)
+            ax.get_xaxis().set_ticks([])
+            ax.tick_params(direction='in')
+            ax.set_ylim(0,20)
+            ax.set_aspect(0.25)
+            sns.despine(offset=0, bottom=True, ax=ax)
+            
+            #plot the individual GP MD value
+            ax.plot(1.0, md_gp, color='red', marker='o', markersize=10)
+            
+        #finish up plot
+        if legend is True:
+            ax.legend(loc='upper right', fontsize=16)
+            
         plt.show()
-
+        
         return None
+
+
+    def ref_boxplot(self, dist, q1=0.25, q3=0.75, whislo=0.025, whishi=0.975, ax=None, **kwargs):
+
+        '''
+        ***FINISH DOCUMENTATION***
+        '''
+
+        stat_dict = [{'med': dist.median(), 'q1': dist.ppf(q1), 'q3': dist.ppf(q3),
+                      'whislo': dist.ppf(whislo), 'whishi': dist.ppf(whishi)}]
+    
+        return ax.bxp(stat_dict, showfliers=False, **kwargs)
 
 '''
     def plotter(self, x_label, y_label, title, y_lim, *args, show_true=True, **kwargs):
