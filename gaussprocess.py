@@ -1,3 +1,5 @@
+from re import I
+from attr import ib
 import numpy as np 
 import seaborn as sns
 import docrep
@@ -69,10 +71,10 @@ class GP(Models):
 
         else:
             if kernel == "RBF":
-                k = kernels.RBF(length_scale=0.5, length_scale_bounds=(0.5,1e5))
+                k = kernels.RBF(length_scale=0.5, length_scale_bounds=(1e-5,1e5))
             elif kernel == "Matern":
                 nu = float(input('Enter a value for nu (standard: 0.5, 1.5, 2.5).'))
-                k = kernels.Matern(length_scale=0.4, length_scale_bounds=(0.5,1e5), nu=nu)
+                k = kernels.Matern(length_scale=0.4, length_scale_bounds=(1e-5,1e5), nu=nu)
             elif kernel == "Rational Quadratic":
                 k = kernels.RationalQuadratic(length_scale=1.0, alpha=1)
             else:
@@ -116,20 +118,6 @@ class GP(Models):
         #call the training set generator function
         gs, datas, sigmas = self.training_set(loworder, highorder)
 
-        #choose specific training points
-        #2 vs 2 perfect points
-        # gs = np.array([gs[6], gs[15], gs[58], gs[65]])
-        # datas = np.array([datas[6], datas[15], datas[58], datas[65]])
-        # sigmas = np.array([sigmas[6], sigmas[15], sigmas[58], sigmas[65]])
-        # #5 vs 10 perfect points
-        # gs = np.array([gs[6], gs[9], gs[17], gs[20]])
-        # datas = np.array([datas[6], datas[9], datas[17], datas[20]])
-        # sigmas = np.array([sigmas[6], sigmas[9], sigmas[17], sigmas[20]])
-        #5 vs 5 perfect points
-        # gs = np.array([gs[6], gs[9], gs[25], gs[30]])
-        # datas = np.array([datas[6], datas[9], datas[25], datas[30]])
-        # sigmas = np.array([sigmas[6], sigmas[9], sigmas[25], sigmas[30]])
-
         #make column vectors for the regressor
         gc = gs.reshape(-1,1)
         datac = datas.reshape(-1,1)
@@ -150,7 +138,6 @@ class GP(Models):
         uncov = sk.kernel_(gc)
 
         #print the optimized parameters for the user
-        print('Optimized parameters: {}, {}'.format(m.kernel_.k1, m.kernel_.k2))
         print('Gaussian process parameters: {}'.format(m.kernel_))
 
         #plot the results
@@ -241,14 +228,6 @@ class GP(Models):
         intervals = np.zeros([len(self.meanp), 2])
         intervals[:,0] = self.meanp - factor*self.sigp
         intervals[:,1] = self.meanp + factor*self.sigp
-
-        # #compare standard deviations for testing set and model values ---> WHAT THE HELL IS THIS DOING HERE
-        # test_lowg = self.gpred[:4]
-        # test_highg = self.gpred[4:]
-        # var_low = Discrepancy.variance_low(self, test_lowg, loworder[0], error_model=2)[:,0]
-        # self.stdev_low = np.sqrt(var_low)
-        # var_high = Discrepancy.variance_high(self, test_highg, highorder[0], error_model=2)[:,0]
-        # self.stdev_high = np.sqrt(var_high)
 
         #plot the results
         fig = plt.figure(figsize=(8,6), dpi=600)
@@ -366,22 +345,40 @@ class GP(Models):
         self.highsigma = np.sqrt(highvariance)
 
         #find the values of g in the other set to determine location of points
+        index_glow = (np.where(self.gtrlow == self.gtrhigh[0])[0])[0]
         index_ghigh = (np.where(self.gtrhigh == self.gtrlow[-1])[0])[0]
         print('***Index: {} ***'.format(index_ghigh))
+        print('Values to compare to MD: {} and {}.'.format(self.gtrlow[index_glow], self.gtrhigh[index_ghigh]))
 
-        #create two points on either side (before, 18 and 25 started it)
-      #  glowtr = np.array([self.gtrlow[6], self.gtrlow[11]])
-        glowtr = np.array([self.gtrlow[2], self.gtrlow[5]])
-     #   ghightr = np.array([self.gtrhigh[index_ghigh+30], self.gtrhigh[index_ghigh+40]])
-        ghightr = np.array([self.gtrhigh[index_ghigh+5], self.gtrhigh[index_ghigh+15]])
-       # datalowtr = np.array([self.datatrlow[6], self.datatrlow[11]])
-        datalowtr = np.array([self.datatrlow[2], self.datatrlow[5]])
-     #   datahightr = np.array([self.datatrhigh[index_ghigh+30], self.datatrhigh[index_ghigh+40]])
-        datahightr = np.array([self.datatrhigh[index_ghigh+5], self.datatrhigh[index_ghigh+15]])
-      #  sigmalowtr = np.array([self.lowsigma[6], self.lowsigma[11]])
-        sigmalowtr = np.array([self.lowsigma[2], self.lowsigma[5]])
-     #   sigmahightr = np.array([self.highsigma[index_ghigh+30], self.highsigma[index_ghigh+40]])
-        sigmahightr = np.array([self.highsigma[index_ghigh+5], self.highsigma[index_ghigh+15]])
+        #value of g at the optimal red points
+        pt1 = 0.0656575
+        pt2 = 0.1161625
+
+        #method 1: using g=0.6 as a training point
+        pttest = 0.6  
+        indexptest = self.nearest_value(self.gtrhigh, pttest) 
+
+       #method 3: finding based on error (5%)
+        for i in range(len(self.gtrhigh)-1, -1, -1):
+            if self.highsigma[i] >= 0.05*self.datatrhigh[i]:
+                indexerror = i
+                break 
+
+        print('Index of error at 5%: {}; g-value = {}; error = {}'.format(indexerror, self.gtrhigh[indexerror], self.highsigma[indexerror]))
+
+        #find the values in the training array closest to the points
+        indexpt1 = self.nearest_value(self.gtrlow, pt1)
+        indexpt2 = self.nearest_value(self.gtrlow, pt2)
+
+        #create two points on either side (highpoint = 20)
+        glowtr = np.array([self.gtrlow[indexpt1], self.gtrlow[indexpt2]])
+        ghightr = np.array([self.gtrhigh[indexerror], self.gtrhigh[-1]])
+
+        datalowtr = np.array([self.datatrlow[indexpt1], self.datatrlow[indexpt2]])
+        datahightr = np.array([self.datatrhigh[indexerror], self.datatrhigh[-1]])
+
+        sigmalowtr = np.array([self.lowsigma[indexpt1], self.lowsigma[indexpt2]])
+        sigmahightr = np.array([self.highsigma[indexerror], self.highsigma[-1]])
 
         #concatenate these arrays and send back
         gtr = np.concatenate((glowtr, ghightr))
@@ -389,6 +386,17 @@ class GP(Models):
         sigmatr = np.concatenate((sigmalowtr, sigmahightr))
 
         return gtr, datatr, sigmatr 
+
+    @staticmethod
+    def nearest_value(array, value):
+
+        #calculate the difference between each point
+        abs_val = np.abs(array - value)
+
+        #find the smallest difference in the array
+        index = abs_val.argmin()
+
+        return index
 
 
 # class Diagnostics(GP):
@@ -404,7 +412,7 @@ class GP(Models):
 
 #         return None
 
-
+ 
     def ref_dist(self, mean, cov):
 
         '''
@@ -435,7 +443,7 @@ class GP(Models):
 
         return dist
 
-    
+
     def sample_ref(self, dist, n_curves):
 
         '''
@@ -463,10 +471,9 @@ class GP(Models):
         return samples
 
 
-    def MD_set(self, loworder, highorder):
+    def MD_set(self, loworder, highorder, test=False):
 
         '''
-        ***FINISH DOCUMENTATION & SPLIT CLASS***
         Takes the training set of points and uses them to cut the
         testing set to their limits. This reduces the MD calculation
         to the region of interest.  
@@ -481,6 +488,9 @@ class GP(Models):
 
         highorder : numpy.ndarray
             The truncation order for the large-g expansion. 
+        
+        test : bool
+            The option to use this function to create a test MD set. 
 
         Returns:
         --------
@@ -498,36 +508,71 @@ class GP(Models):
             The covariance matrix corresponding to the md_g points.
         '''
 
-        #call the training array function to create the sigma array ---> fix this later!
-        gtr, datatr, sigmatr = self.training_set(loworder, highorder)
+        #import the GP mean, cov, and errors for the prediction set
+        GP_mean = self.meanp
+        GP_err = self.sigp
+        GP_cov = self.cov
 
-        #select the edges of the training set
-        g_one = gtr[0]
-        g_two = gtr[-1]
+        #calculate the variance at each expansion point from the next term
+        mdobj = Discrepancy()
+        lowvar = mdobj.variance_low(self.gpredict, loworder[0])
+        lowerr = np.sqrt(lowvar)
+        highvar = mdobj.variance_high(self.gpredict, highorder[0])
+        hierr = np.sqrt(highvar)
 
-        #find the equivalent testing points
-        g_test1 = g_one - self.midpoint
-        g_test2 = g_two - self.midpoint
+        #compare the values and choose where the gap is
+        for i in range(len(lowerr)):
+            if GP_err[i] < lowerr[i]:
+                index_lowerr = i
+                break
 
-        #find the two corresponding indices in the testing set
-        tol = 1e-4
-        first_index = np.where(self.gpredict - g_test1 <=tol)[0][-1]
-        second_index = np.where(self.gpredict - g_test2 <=tol)[0][-1]
+        for i in range(len(hierr)-1, -1, -1):
+            if GP_err[i] < hierr[i]: 
+                index_hierr = i 
+                break
 
-        #reduce the prediction set (g) to the gap 
-        md_g = self.gpredict[first_index:second_index]
-        print(self.gpredict[first_index], self.gpredict[second_index])
+        #cut the GP array into the gap
+        md_g = self.gpredict[index_lowerr:index_hierr]
+        md_mean = GP_mean[index_lowerr:index_hierr]
+        md_sig = GP_err[index_lowerr:index_hierr]
+        md_cov = GP_cov[index_lowerr:index_hierr, index_lowerr:index_hierr]
 
-        #reduce the GP mean, sig, cov to the gap
-        md_mean = self.meanp[first_index:second_index]
-        md_sig = self.sigp[first_index:second_index]
-        md_cov = self.cov[first_index:second_index, first_index:second_index]  
+        #select 4 points in g
+        self.lenpts = int(input('Enter the number of training points.'))
+        points = self.create_points(int(self.lenpts), md_g[0], md_g[-1])
+        print(points)
 
-        #plot the result to check region selected
+        #find the indices
+        indices = np.zeros([self.lenpts])
+        for i in range(self.lenpts):
+            indices[i] = self.nearest_value(md_g, points[i])
+
+        #convert to integer array
+        indices = indices.astype(int)
+        
+        #pick the points out of the arrays
+        md_g = md_g[indices]
+        md_mean = md_mean[indices]
+        md_sig = md_sig[indices]
+        md_cov = md_cov[np.ix_(indices, indices)]
+
+        #plot the check the location of the points
         plt.xlim(0.,1.)
         plt.plot(md_g, np.ones(len(md_g)), 'k.')
 
         return md_g, md_mean, md_sig, md_cov
+
+
+    @staticmethod
+    def create_points(N, a, b):
+        
+        #create the linspace with endpoints
+        pts_array = np.linspace(a, b, N+2)
+
+        #remove the first and last point
+        pts = pts_array[1:-1]
+
+        return pts
 
 
     def Mahalanobis(self, y, mean, cov):
@@ -568,7 +613,7 @@ class GP(Models):
 
 
     #develop MD plotter and copy into the class
-    def md_plotter(self, dist, npts, md_gp, md_ref, hist=True, box=False):
+    def md_plotter(self, dist, md_gp, md_ref, hist=True, box=False):
 
         '''
         ***FINISH DOCUMENTATION***
@@ -591,7 +636,7 @@ class GP(Models):
             #add chi-squared to histogram
             n = 200
             x = np.linspace(0.0, max(md_ref), n)
-            ax.plot(x, stats.chi2.pdf(x, df=npts), 'r', linewidth=2, label=r'$\chi^2$ (df={})'.format(npts))
+            ax.plot(x, stats.chi2.pdf(x, df=self.lenpts), 'r', linewidth=2, label=r'$\chi^2$ (df={})'.format(self.lenpts))
 
         #box-and-whisker option
         if box is True:
