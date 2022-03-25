@@ -1,5 +1,3 @@
-from re import I
-from attr import ib
 import numpy as np 
 import seaborn as sns
 import docrep
@@ -9,6 +7,9 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
 from discrepancy import Discrepancy 
+
+#set savefig color for all plots
+plt.rcParams['savefig.facecolor']='white'
 
 
 __all__ = ['GP', 'Diagnostics']
@@ -143,6 +144,7 @@ class GP(Models):
         #plot the results
         fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
+        fig.patch.set_facecolor('white')
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
         ax.locator_params(nbins=8)
@@ -217,7 +219,7 @@ class GP(Models):
 
         #predict the results for the validation data
         self.meanp, self.sigp = sk.predict(self.gpred, return_std=True)
-        meanc, self.cov = sk.predict(self.gpred, return_cov=True)
+        _, self.cov = sk.predict(self.gpred, return_cov=True)
         self.meanp = self.meanp[:,0]
 
         #calculate the interval for the predictions
@@ -232,6 +234,7 @@ class GP(Models):
         #plot the results
         fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
+        fig.patch.set_facecolor('white')
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
         ax.locator_params(nbins=8)
@@ -625,6 +628,7 @@ class GP(Models):
         #histogram option
         if hist is True:
             fig = plt.figure(figsize=(8,6), dpi=600)
+            fig.patch.set_facecolor('white')
             ax = plt.axes()
             ax.set_xlabel(xlabel, fontsize=18)
             ax.set_title(title, fontsize=22)
