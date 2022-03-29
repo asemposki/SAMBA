@@ -9,12 +9,14 @@
 #packages needed
 import numpy as np
 import scipy.special as sp
-from gaussprocess import GP
+import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
+from mixing import Models 
 
 __all__ = ['FPR']
 
 
-class FPR(GP):
+class FPR():
 
     def __init__(self, g):
 
@@ -136,3 +138,67 @@ class FPR(GP):
             raise KeyError('The key provided does not match any in the FPR database.')
 
         return fpr
+
+    
+    def fpr_plot(self, g, loworder, highorder, mean, intervals, fpr, ci=68):
+
+        #set up plot configuration
+        fig = plt.figure(figsize=(8,6), dpi=600)
+        ax = plt.axes()
+        ax.tick_params(axis='x', labelsize=18)
+        ax.tick_params(axis='y', labelsize=18)
+        ax.locator_params(nbins=8)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+        #set up x and y limits
+        xlim = input('\nx-limits (enter "auto" if unknown): ')
+        ylim = input('\ny-limits (enter "auto" if unknown): ')
+        if xlim == "auto":
+            ax.set_xlim(0.0,0.5)
+        else:
+            ax.set_xlim(tuple(map(float, xlim.split(','))))
+        if ylim == "auto":
+            ax.set_ylim(0.0,4.0)
+        else:
+            ax.set_ylim(tuple(map(float, ylim.split(','))))
+
+        #labels and true model
+        ax.set_xlabel('g', fontsize=22)
+        ax.set_ylabel('F(g)', fontsize=22)
+        ax.set_title('F(g): mixed model', fontsize=22)
+        ax.plot(g, Models.true_model(self, g), 'k', label='True model')
+
+        #unpack ci
+        self.ci = ci 
+
+        #plot the small-g expansions and error bands
+        for j in loworder:
+            ax.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
+        
+        #plot the large-g expansions and error bands
+        for j in highorder:
+            ax.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+        
+        #plot the GP results (mixed model)
+        ax.plot(g, mean, 'g', label='Mean')
+        ax.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
+        ax.plot(g, intervals[:,1], 'g', linestyle='dotted')
+        ax.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
+
+        #FPR results
+        ax.plot(g, fpr, 'm', linestyle='dashed', label='FPR Results')
+        
+        ax.legend(fontsize=14, loc='upper right')
+        plt.show()
+
+        #save figure option
+        response = input('Would you like to save this figure? (yes/no)')
+
+        if response == 'yes':
+            name = input('Enter a file name (include .jpg, .png, etc.)')
+            fig.savefig(name)
+        else:
+            pass
+
+        return None
