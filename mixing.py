@@ -5,6 +5,8 @@ import math
 import time
 import emcee
 import corner
+import warnings
+import statistics
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from priors import Priors
@@ -83,7 +85,7 @@ class Models():
                         else:
                             low_c[k] = 0
 
-                        low_terms[k] = low_c[k] * g[i]**(k)
+                        low_terms[k] = low_c[k] * g[i]**(k) #* np.sqrt(g[i])   #multiplying by sqrt(g)
 
                     value[i] = np.sum(low_terms)
 
@@ -100,7 +102,7 @@ class Models():
                     else:
                         low_c[k] = 0
 
-                    low_terms[k] = low_c[k] * g**(k)
+                    low_terms[k] = low_c[k] * g**(k) #* np.sqrt(g)  #multiplying by sqrt(g)
 
                 value = np.sum(low_terms)
                 data = value
@@ -153,7 +155,7 @@ class Models():
 
                         high_c[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
 
-                        high_terms[k] = (high_c[k] * g[i]**(-k)) / np.sqrt(g[i])
+                        high_terms[k] = (high_c[k] * g[i]**(-k)) / np.sqrt(g[i]) #* np.sqrt(g[i])  #multiplying by sqrt(g)
 
                     #sum the terms for each value of g
                     value[i] = np.sum(high_terms)
@@ -171,7 +173,7 @@ class Models():
 
                     high_c[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
 
-                    high_terms[k] = (high_c[k] * g**(-k)) / np.sqrt(g)
+                    high_terms[k] = (high_c[k] * g**(-k)) / np.sqrt(g) #* np.sqrt(g)  #multiplying by sqrt(g)
 
                 #sum the terms for each value of g
                 value = np.sum(high_terms)
@@ -202,7 +204,7 @@ class Models():
     
         #define a function for the integrand
         def function(x,g):
-            return np.exp(-(x**2.0)/2.0 - (g**2.0 * x**4.0))
+            return np.exp(-(x**2.0)/2.0 - (g**2.0 * x**4.0)) #* np.sqrt(g)  #multiplying by sqrt(g)
     
         #initialization
         self.model = np.zeros([len(g)])
@@ -241,11 +243,8 @@ class Models():
         
         '''
         
-        #dpi settings
-        dpi = int(input('Select a dpi for the figure.'))
-
         #set up the plot
-        fig = plt.figure(figsize=(8,6), dpi=dpi)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         if min(g) == 1e-6:
             ax.set_xlim(0.0, max(g))
@@ -290,7 +289,7 @@ class Models():
 
         if response == 'yes':
             name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name)
+            fig.savefig(name, bbox_inches='tight')
         else:
             pass
 
@@ -322,7 +321,7 @@ class Models():
         '''
         
         #set up the plot
-        fig = plt.figure(figsize=(8,6), dpi=100)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
@@ -605,8 +604,6 @@ class Switching:
         --------
         None.
         '''
-
-        dpi = int(input('Set a dpi for the figure.'))
     
         xmin = float(input('Enter the minimum g to plot.'))
         xmax = float(input('Enter the maximum g to plot.'))
@@ -624,7 +621,7 @@ class Switching:
         if ymax == None:
             ymax = 2.6
         
-        fig = plt.figure(figsize=(8,6), dpi=dpi)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
@@ -644,7 +641,7 @@ class Switching:
         ax.plot(g_true, Models.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
 
         ax.plot(g_ppd, ppd_results, 'g', label='Mixed model')
-        ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% interval (HPD)'.format(percent))
+        ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% CI (HPD)'.format(percent))
         ax.plot(g_ppd, ppd_intervals[:,1], 'g', linestyle='dotted')
 
         ax.fill_between(g_ppd, ppd_intervals[:,0], ppd_intervals[:,1], color='green', alpha=0.2)
@@ -665,7 +662,7 @@ class Switching:
 
         if answer == 'yes':
             name = input('Enter a file name to use (include file type as .png, .pdf, etc.).')
-            fig.savefig(name)
+            fig.savefig(name, bbox_inches='tight')
         else:
             pass
         
@@ -696,6 +693,8 @@ class Mixing(Switching, Models, Priors):
         '''
         
         print('Welcome to the BMM sandbox! Here you get to play!')
+
+        return None
         
         
     def add_data(self, g_true, g_data, data=None, sigma=None):
@@ -778,11 +777,9 @@ class Mixing(Switching, Models, Priors):
         None.
         
         '''
-
-        dpi = int(input('Set a dpi for the figure.'))
         
         #set up the plot
-        fig = plt.figure(figsize=(8,6), dpi=dpi)
+        fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
@@ -810,7 +807,7 @@ class Mixing(Switching, Models, Priors):
 
         if response == 'yes':
             name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name)
+            fig.savefig(name, bbox_inches='tight')
         else:
             pass
 
@@ -1149,6 +1146,182 @@ class Mixing(Switching, Models, Priors):
         emcee_trace_mixed = sampler_object.chain[:, nburnin:, :].reshape(-1, ndim).T
         
         return emcee_trace_mixed
+
+    
+    def _autocorrelation(self, chain, max_lag=100):
+
+        '''
+        ***FINISH DOCUMENTATION***
+        Copied from Christian Forssen's nuclear TALENT school work.
+        Re-write this. Internal function, no outside access. 
+        '''
+
+        #determine the autocorrelation length
+        dimension = len(chain)
+        acors = np.empty(max_lag+1)
+        if max_lag > len(chain)/5:
+            warnings.warn('max_lag is more than one fifth the chain length')
+        
+        # Create a copy of the chain with average zero
+        chain1d = chain - np.average(chain)
+        for lag in range(max_lag+1):
+            unshifted = None
+            shifted = chain1d[lag:]
+            if 0 == lag:
+                unshifted = chain1d
+            else:
+                unshifted = chain1d[:-lag]
+            normalization = np.sqrt(np.dot(unshifted, unshifted))
+            normalization *= np.sqrt(np.dot(shifted, shifted))
+            acors[lag] = np.dot(unshifted, shifted) / normalization 
+
+        return acors
+
+
+    def stats_chain(self, chain, params): #---> FURTHER BREAK THIS GIGUNDOUS FUNCTION UP (after reducing it)
+
+        '''
+        Calculates the autocorrelation time and thins the samples
+        accordingly for a better estimate of the mean and median. 
+
+        :Example: 
+            Mixing.stats_chain(chain=emcee.object, params=np.array([]))
+
+        Parameters:
+        -----------
+        chain : emcee object
+            The object resulting from sampling the parameters
+            using emcee. The chain of samples must be extracted
+            from it. 
+
+        params : numpy.ndarray
+            The initial parameter array given to emcee. 
+
+        Returns:
+        --------
+        median_results : numpy.ndarray
+            Each of the median parameter values found from the 
+            sampling.
+
+        mean_results : numpy.ndarray
+            Each of the mean parameter values found from the
+            sampling. 
+        '''
+
+        #retrieve the chain
+        chain_result = chain.chain[:,:,:]
+
+        #set up arrays ---> FIX THIS ONCE WE CAN GENERALIZE
+        chain1 = chain_result[:,:,0]
+        chain2 = chain_result[:,:,1]
+        chain3 = chain_result[:,:,2]
+        
+        #flatten each individual array
+        flat1 = chain1.flatten()
+        flat2 = chain2.flatten()
+        flat3 = chain3.flatten()
+
+        #call autocorrelation to find the lengths
+        post_acors1 = self._autocorrelation(flat1, max_lag=200)
+        post_acors2 = self._autocorrelation(flat2, max_lag=200)
+        post_acors3 = self._autocorrelation(flat3, max_lag=200)
+
+        # #plot the autocorrelation results
+        # fig, ax = plt.subplots(3,1, figsize=(8,6), dpi=200)
+        # ax[0].plot(post_acors1)
+        # ax[1].plot(post_acors2)
+        # ax[2].plot(post_acors3) 
+
+        # for i in range(3):
+        #     ax[i].set(xlabel='lag', ylabel='autocorrelation', ylim=(-.1, 1))
+
+        # ax[0].set_title(f'Autocorrelation function: before thinning: g1, g2, g3')
+
+        #check the results and ask user for range to determine time
+        response = input('What range of indices should be used for the autocorrelation time? (Enter in int:int format.)')
+
+        #determine the autocorrelation time
+        post_rho1 = post_acors1[tuple(map(int, response.split(':')))]
+        post_rho2 = post_acors2[tuple(map(int, response.split(':')))]
+        post_rho3 = post_acors3[tuple(map(int, response.split(':')))]
+
+        # fig,ax = plt.subplots(3,1, figsize=(8,6), dpi=200)
+        post_y = np.arange(10)
+        post_x1 = -np.log(post_rho1)
+        post_x2 = -np.log(post_rho2)
+        post_x3 = -np.log(post_rho3)
+                
+        # ax[2].set_xlabel(r'ln($\rho(h)$)')
+        # for i in range(3):
+        #     ax[i].set_ylabel('h')
+        # ax[0].set_title('Autocorrelation time')
+        # ax[0].plot(post_x1, post_y)
+        # ax[1].plot(post_x2, post_y)
+        # ax[2].plot(post_x3, post_y)
+
+        #linear fits
+        p1, cov1 = np.polyfit(post_x1, post_y, 1, cov=True)
+        p2, cov2 = np.polyfit(post_x2, post_y, 1, cov=True)
+        p3, cov3 = np.polyfit(post_x3, post_y, 1, cov=True)
+
+        print('The autocorrelation information is: p = {}; cov = {}'.format(p1, cov1))
+        print('The autocorrelation information is: p = {}; cov = {}'.format(p2, cov2))
+        print('The autocorrelation information is: p = {}; cov = {}'.format(p3, cov3))
+
+        print('The autocorrelation time is: {}'.format(p1[0]))
+        print('The autocorrelation time is: {}'.format(p2[0]))
+        print('The autocorrelation time is: {}'.format(p3[0]))
+
+        # ax[0].plot(post_x1, p1[0]*post_x1 + p1[1])
+        # ax[1].plot(post_x2, p2[0]*post_x2 + p2[1])
+        # ax[2].plot(post_x3, p3[0]*post_x3 + p3[1])
+
+        #thin the samples given the determined autocorrelation time
+        thin1 = []
+        thin2 = []
+        thin3 = []
+
+        #get the autocorrelation time we use for all 3 parameters
+        if p1[0] > p2[0]:
+            time = p1[0]
+        else:
+            time = p2[0]
+            if p3[0] > time:
+                time = p3[0]
+        time = int(time)
+                
+        for i in range(len(flat2)):
+            if i % time == 0:
+                thin1.append(flat1[i])
+                thin2.append(flat2[i])
+                thin3.append(flat3[i])
+                            
+        #array thinned samples
+        thin1 = np.array(thin1)
+        thin2 = np.array(thin2)
+        thin3 = np.array(thin3)
+
+        #stack traces back together
+        thin = np.vstack((thin1, thin2, thin3))
+
+        #median calculation
+        median_1 = statistics.median(thin[0,:])
+        median_2 = statistics.median(thin[1,:])
+        median_3 = statistics.median(thin[2,:])
+
+        #mean calculation
+        mean_1 = np.mean(thin[0,:])
+        mean_2 = np.mean(thin[1,:])
+        mean_3 = np.mean(thin[2,:])
+
+        #arrays
+        mean_results = np.array([mean_1, mean_2, mean_3])
+        median_results = np.array([median_1, median_2, median_3])
+
+        print('The median values are: {}'.format(median_results))
+        print('The mean values are: {}'.format(mean_results))
+
+        return mean_results, median_results   
 
     
     def stats_trace(self, trace, ndim):

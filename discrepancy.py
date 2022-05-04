@@ -13,7 +13,7 @@ class Discrepancy(Models):
 
     def __init__(self):
 
-        #initalize the variance function used
+        #initialize the variance function used
         model = input('Which error model do you want to use, uninformative or informative? (u/i)')
 
         if model == 'u':
@@ -336,7 +336,7 @@ class Discrepancy(Models):
         return mean, intervals, interval_low, interval_high
 
     
-    def plot_mix(self, g, loworder, highorder, plot_fdagger=True, GP_mean=np.zeros([2]), GP_var=np.zeros([2])):
+    def plot_mix(self, g, loworder, highorder, plot_fdagger=True, plot_true=True, GP_mean=np.zeros([2]), GP_var=np.zeros([2])):
 
         '''
         An all-in-one plotting function that will plot the results of fdagger for N numbers
@@ -361,6 +361,10 @@ class Discrepancy(Models):
         plot_fdagger : bool
             If True, this parameter will allow for the plotting of fdagger and
             its credibility interval. 
+        
+        plot_true : bool
+            Determines whether or not to plot the true model curve. 
+            Default is True. 
 
         GP_mean : numpy.ndarray
             The mean array from the GP being included. 
@@ -404,7 +408,9 @@ class Discrepancy(Models):
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): mixed model', fontsize=22)
-        ax.plot(g, Models.true_model(self, g), 'k', label='True model')
+
+        if plot_true is True:
+            ax.plot(g, Models.true_model(self, g), 'k', label='True model')
 
         #call fdagger to calculate results
         if GP_mean.any() and GP_var.any() != 0:
@@ -419,7 +425,7 @@ class Discrepancy(Models):
         
         for i in range(len(loworder)):
             ax.plot(g, interval_low[i, :, 0], 'r', linestyle='dotted', \
-                label=r'$f_s$ ($N_s$ = {}) {}\% interval'.format(loworder[i], int(self.ci)))
+                label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[i], int(self.ci)))
             ax.plot(g, interval_low[i, :, 1], 'r', linestyle='dotted')
 
         #plot the large-g expansions and error bands
@@ -428,12 +434,12 @@ class Discrepancy(Models):
             
         for i in range(len(highorder)):
             ax.plot(g, interval_high[i, :, 0], 'b', linestyle='dotted', \
-                label=r'$f_l$ ($N_l$ = {}) {}\% interval'.format(highorder[i], int(self.ci)))
+                label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[i], int(self.ci)))
             ax.plot(g, interval_high[i, :, 1], 'b', linestyle='dotted')
 
         if plot_fdagger == True:
             ax.plot(g, mean, 'g', label='Mean')
-            ax.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
+            ax.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
             ax.plot(g, intervals[:,1], 'g', linestyle='dotted')
             ax.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
         
@@ -445,11 +451,11 @@ class Discrepancy(Models):
 
         if response == 'yes':
             name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name)
+            fig.savefig(name, bbox_inches='tight')
         else:
             pass
 
-        return None
+        return mean, intervals 
 
 
     def subplot_mix(self, g, loworder, highorder, GP_mean=np.zeros([2]), GP_var=np.zeros([2])):
@@ -487,30 +493,34 @@ class Discrepancy(Models):
             highorder = np.array([highorder])
 
         #set up plot configuration
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,4), dpi=600)
+        fig = plt.figure(figsize=(16,6), dpi=600)
+        gs = fig.add_gridspec(1, 2, hspace=0, wspace=0)
+        (ax1, ax2) = gs.subplots(sharex='col', sharey='row')
         xlim = input('\nx-limits (enter "auto" if unknown): ')
         ylim = input('\ny-limits (enter "auto" if unknown): ')
 
-        for ax in fig.get_axes():
+        for ax in (ax1, ax2):
 
-            ax.tick_params(axis='x', labelsize=14)
-            ax.tick_params(axis='y', labelsize=14)
+            ax.tick_params(axis='x', labelsize=18)
+            ax.tick_params(axis='y', labelsize=18)
             ax.locator_params(nbins=5)
             ax.xaxis.set_minor_locator(AutoMinorLocator())
             ax.yaxis.set_minor_locator(AutoMinorLocator())
             
             if xlim == "auto":
-                ax.set_xlim(0.0,0.5)
+                ax.set_xlim(0.0,1.0)
+                ax.set_xticks([0.1, 0.3, 0.5, 0.7, 0.9])
+
             else:
                 ax.set_xlim(tuple(map(float, xlim.split(','))))
             if ylim == "auto":
-                ax.set_ylim(0.0,4.0)
+                ax.set_ylim(1.0,3.0)
             else:
                 ax.set_ylim(tuple(map(float, ylim.split(','))))
 
             #labels and true model
-            ax.set_xlabel('g', fontsize=16)
-            ax.set_ylabel('F(g)', fontsize=16)
+            ax.set_xlabel('g', fontsize=22)
+            ax.set_ylabel('F(g)', fontsize=22)
             ax.plot(g, Models.true_model(self, g), 'k', label='True model')
 
             #only label outer plot axes
@@ -519,17 +529,17 @@ class Discrepancy(Models):
         #set log scale option (overwrite axes if yes)
         ans = input('Log scale? (yes/no)')
         if ans == 'yes':
-            for ax in fig.get_axes():
+            for ax in (ax1, ax2):
                 ax.set_yscale('log')
                 ax.set_ylim(1e-2, 10.0)
 
         #titles
         total = int(len(loworder) + len(highorder))
-        ax1.set_title('F(g): 2 models', fontsize=16)
+        ax1.set_title('F(g): 2 models', fontsize=22)
         if GP_mean.any() != 0:
-            ax2.set_title('F(g): {} models + GP'.format(total), fontsize=16)
+            ax2.set_title('F(g): {} models + GP'.format(total), fontsize=22)
         else:
-            ax2.set_title('F(g): {} models'.format(total), fontsize=16)
+            ax2.set_title('F(g): {} models'.format(total), fontsize=22)
 
         #call fdagger to calculate results
         mean2, intervals2, _, _ = self.fdagger(g, loworder[0], highorder[0])
@@ -544,7 +554,7 @@ class Discrepancy(Models):
         ax1.plot(g, Models.low_g(self, g, loworder[0].item())[0,:], 'r--', \
             label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
         ax1.plot(g, interval_low[0, :, 0], 'r', linestyle='dotted',\
-             label=r'$f_s$ ($N_s$ = {}) {}\% interval'.format(loworder[0], int(self.ci)))
+             label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[0], int(self.ci)))
         ax1.plot(g, interval_low[0, :, 1], 'r', linestyle='dotted')
 
         a = 0
@@ -561,17 +571,17 @@ class Discrepancy(Models):
 
             if i > 0:
                 ax2.plot(g, interval_low[i, :, 0], color='fuchsia', linestyle='dotted', \
-                    label=r'$f_s$ ($N_s$ = {}) {}\% interval'.format(loworder[i], int(self.ci)))
+                    label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[i], int(self.ci)))
                 ax2.plot(g, interval_low[i, :, 1], color='fuchsia', linestyle='dotted')
            
             else:
                 ax2.plot(g, interval_low[i, :, 0], 'r', linestyle='dotted',\
-                     label=r'$f_s$ ($N_s$ = {}) {}\% interval'.format(loworder[i], int(self.ci)))
+                     label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[i], int(self.ci)))
                 ax2.plot(g, interval_low[i, :, 1], 'r', linestyle='dotted')
 
         #plot the large-g expansions and error bands
         ax1.plot(g, Models.high_g(self, g, highorder[0].item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
-        ax1.plot(g, interval_high[0, :, 0], 'b', linestyle='dotted', label=r'$f_l$ ($N_l$ = {}) {}\% interval'.format(highorder[0], int(self.ci)))
+        ax1.plot(g, interval_high[0, :, 0], 'b', linestyle='dotted', label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[0], int(self.ci)))
         ax1.plot(g, interval_high[0, :, 1], 'b', linestyle='dotted')
 
         b = 0
@@ -589,26 +599,352 @@ class Discrepancy(Models):
 
             if i > 0:
                 ax2.plot(g, interval_high[i, :, 0], color='darkorange', linestyle='dotted', \
-                    label=r'$f_l$ ($N_l$ = {}) {}\% interval'.format(highorder[i], int(self.ci)))
+                    label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[i], int(self.ci)))
                 ax2.plot(g, interval_high[i, :, 1], color='darkorange', linestyle='dotted')
             else:
                 ax2.plot(g, interval_high[i, :, 0], 'b', linestyle='dotted', \
-                    label=r'$f_l$ ($N_l$ = {}) {}\% interval'.format(highorder[i], int(self.ci)))
+                    label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[i], int(self.ci)))
                 ax2.plot(g, interval_high[i, :, 1], 'b', linestyle='dotted')
 
         #2 model case
         ax1.plot(g, mean2, 'g', label='Mixed model mean')
-        ax1.plot(g, intervals2[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
+        ax1.plot(g, intervals2[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
         ax1.plot(g, intervals2[:,1], 'g', linestyle='dotted')
         ax1.fill_between(g, intervals2[:,0], intervals2[:,1], color='green', alpha=0.2)
 
         #N model case
         ax2.plot(g, mean, 'g', label='Mixed model mean')
-        ax2.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
+        ax2.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
         ax2.plot(g, intervals[:,1], 'g', linestyle='dotted')
         ax2.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
 
-        ax2.legend(bbox_to_anchor=(1.0, 0.5), fontsize=12, loc='center left')
+        #ax2.legend(bbox_to_anchor=(1.0, 0.5), fontsize=12, loc='center left')
+        ax2.legend(fontsize=14, loc='upper right')
+
+        plt.show()
+
+        #save figure option
+        response = input('Would you like to save this figure? (yes/no)')
+
+        if response == 'yes':
+            name = input('Enter a file name (include .jpg, .png, etc.)')
+            fig.savefig(name, bbox_inches='tight')
+
+        return None
+
+
+    def plot_error_models(self, g, loworder, highorder):
+
+        '''
+        An all-in-one plotting function that will plot the results of fdagger for N numbers
+        of models side-by-side with the 2 model case to compare.
+
+        :Example:
+            Discrepancy.subplot_mix(g=np.linspace(1e-6, 0.5, 100), loworder=np.array([5, 8]), 
+            highorder=5)
+
+        Parameters:
+        -----------
+        g : numpy.linspace
+            The space over which the models are calculated.
+        
+        loworder : int, float, numpy.ndarray
+            The highest orders to which the small-g expansion will be calculated. The first
+            value will be the model used for the 2 model comparison.
+
+        highorder : int, float, numpy.ndarray
+            The highest orders to which the large-g expansion will be calculated. The first
+            value will be the model used for the 2 model comparison.
+
+        Returns:
+        --------
+        None.
+        '''
+
+        #check orders comply with function formatting
+        if isinstance(loworder, np.ndarray) != True:
+            loworder = np.array([loworder])
+        if isinstance(highorder, np.ndarray) != True:
+            highorder = np.array([highorder])
+
+        #set up plot configuration
+        fig = plt.figure(figsize=(16,6), dpi=600)
+        gs = fig.add_gridspec(1, 2, hspace=0, wspace=0)
+        (ax1, ax2) = gs.subplots(sharex='col', sharey='row')
+        xlim = input('\nx-limits (enter "auto" if unknown): ')
+        ylim = input('\ny-limits (enter "auto" if unknown): ')
+
+        for ax in (ax1, ax2):
+
+            ax.tick_params(axis='x', labelsize=18)
+            ax.tick_params(axis='y', labelsize=18)
+            ax.locator_params(nbins=5)
+            ax.xaxis.set_minor_locator(AutoMinorLocator())
+            ax.yaxis.set_minor_locator(AutoMinorLocator())
+            
+            if xlim == "auto":
+                ax.set_xlim(0.0,0.5)
+            else:
+                ax.set_xlim(tuple(map(float, xlim.split(','))))
+                ax.set_xticks([0.1, 0.3, 0.5, 0.7, 0.9])
+            if ylim == "auto":
+                ax.set_ylim(0.0,4.0)
+            else:
+                ax.set_ylim(tuple(map(float, ylim.split(','))))
+
+            #labels and true model
+            ax.set_xlabel('g', fontsize=22)
+            ax.set_ylabel('F(g)', fontsize=22)
+            ax.plot(g, Models.true_model(self, g), 'k', label='True model')
+
+            #only label outer plot axes
+            ax.label_outer()
+
+        #set log scale option (overwrite axes if yes)
+        ans = input('Log scale? (yes/no)')
+        if ans == 'yes':
+            for ax in (ax1, ax2):
+                ax.set_yscale('log')
+                ax.set_ylim(1e-2, 10.0)
+
+        #titles
+        ax1.set_title('F(g): uninformative', fontsize=22)
+        ax2.set_title('F(g): informative', fontsize=22)
+
+        #call fdagger to calculate results (try to overwrite condition)
+        self.error_model = 1 
+        mean_u, intervals_u, interval_low_u, interval_high_u = self.fdagger(g, loworder[0], highorder[0])
+        self.error_model = 2
+        mean_i, intervals_i, interval_low_i, interval_high_i = self.fdagger(g, loworder[0], highorder[0])
+
+        #plot the small-g expansions and error bands
+        ax1.plot(g, Models.low_g(self, g, loworder[0].item())[0,:], 'r--', \
+            label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
+        ax1.plot(g, interval_low_u[0, :, 0], 'r', linestyle='dotted',\
+             label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[0], int(self.ci)))
+        ax1.plot(g, interval_low_u[0, :, 1], 'r', linestyle='dotted')
+
+        a = 0
+
+        for j in loworder:
+            if a >= 1:
+                ax2.plot(g, Models.low_g(self, g, j.item())[0,:], color='fuchsia', linestyle='dashed',\
+                     label=r'$f_s$ ($N_s$ = {})'.format(j))
+            else:
+                ax2.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
+            a += 1
+
+        for i in range(len(loworder)):
+
+            if i > 0:
+                ax2.plot(g, interval_low_i[i, :, 0], color='fuchsia', linestyle='dotted', \
+                    label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[i], int(self.ci)))
+                ax2.plot(g, interval_low_i[i, :, 1], color='fuchsia', linestyle='dotted')
+           
+            else:
+                ax2.plot(g, interval_low_i[i, :, 0], 'r', linestyle='dotted',\
+                     label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[i], int(self.ci)))
+                ax2.plot(g, interval_low_i[i, :, 1], 'r', linestyle='dotted')
+
+        #plot the large-g expansions and error bands
+        ax1.plot(g, Models.high_g(self, g, highorder[0].item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
+        ax1.plot(g, interval_high_u[0, :, 0], 'b', linestyle='dotted', label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[0], int(self.ci)))
+        ax1.plot(g, interval_high_u[0, :, 1], 'b', linestyle='dotted')
+
+        b = 0
+
+        for j in highorder:
+
+            if b >= 1:
+                ax2.plot(g, Models.high_g(self, g, j.item())[0,:], color='darkorange', linestyle='dashed', \
+                     label=r'$f_l$ ($N_l$ = {})'.format(j))
+            else:
+                ax2.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+            b += 1
+            
+        for i in range(len(highorder)):
+
+            if i > 0:
+                ax2.plot(g, interval_high_i[i, :, 0], color='darkorange', linestyle='dotted', \
+                    label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[i], int(self.ci)))
+                ax2.plot(g, interval_high_i[i, :, 1], color='darkorange', linestyle='dotted')
+            else:
+                ax2.plot(g, interval_high_i[i, :, 0], 'b', linestyle='dotted', \
+                    label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[i], int(self.ci)))
+                ax2.plot(g, interval_high_i[i, :, 1], 'b', linestyle='dotted')
+
+        #uninformative model case
+        ax1.plot(g, mean_u, 'g', label='Mixed model mean')
+        ax1.plot(g, intervals_u[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
+        ax1.plot(g, intervals_u[:,1], 'g', linestyle='dotted')
+        ax1.fill_between(g, intervals_u[:,0], intervals_u[:,1], color='green', alpha=0.2)
+
+        #informative model case
+        ax2.plot(g, mean_i, 'g', label='Mixed model mean')
+        ax2.plot(g, intervals_i[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
+        ax2.plot(g, intervals_i[:,1], 'g', linestyle='dotted')
+        ax2.fill_between(g, intervals_i[:,0], intervals_i[:,1], color='green', alpha=0.2)
+
+        #ax2.legend(bbox_to_anchor=(1.0, 0.5), fontsize=16, loc='center left')
+        ax2.legend(fontsize=16, loc='upper right')
+
+        plt.show()
+
+        #save figure option
+        response = input('Would you like to save this figure? (yes/no)')
+
+        if response == 'yes':
+            name = input('Enter a file name (include .jpg, .png, etc.)')
+            fig.savefig(name, bbox_inches='tight')
+        else:
+            pass
+
+        return None
+
+
+    def vertical_plot_fdagger(self, g, loworder, highorder):  #plot specifically for loworder=2,5 and highorder=2,5 or arrays
+
+        '''
+        An all-in-one plotting function that will plot the results of fdagger for N numbers
+        of models side-by-side with the 2 model case to compare.
+
+        :Example:
+            Discrepancy.subplot_mix(g=np.linspace(1e-6, 0.5, 100), loworder=np.array([5, 8]), 
+            highorder=5)
+
+        Parameters:
+        -----------
+        g : numpy.linspace
+            The space over which the models are calculated.
+        
+        loworder : int, float, numpy.ndarray
+            The highest orders to which the small-g expansion will be calculated. The first
+            value will be the model used for the 2 model comparison.
+
+        highorder : int, float, numpy.ndarray
+            The highest orders to which the large-g expansion will be calculated. The first
+            value will be the model used for the 2 model comparison.
+
+        Returns:
+        --------
+        None.
+        '''
+
+        #check orders comply with function formatting
+        if isinstance(loworder, np.ndarray) != True:
+            loworder = np.array([loworder])
+        if isinstance(highorder, np.ndarray) != True:
+            highorder = np.array([highorder])
+
+        #set up plot configuration
+        fig = plt.figure(figsize=(8,12), dpi=600)
+        gs = fig.add_gridspec(1, 2, hspace=0, wspace=0)
+        (ax1, ax2) = gs.subplots(sharex='col', sharey='row')
+        xlim = input('\nx-limits (enter "auto" if unknown): ')
+        ylim = input('\ny-limits (enter "auto" if unknown): ')
+
+        for ax in (ax1, ax2):
+
+            ax.tick_params(axis='x', labelsize=18)
+            ax.tick_params(axis='y', labelsize=18)
+            ax.locator_params(nbins=5)
+            ax.xaxis.set_minor_locator(AutoMinorLocator())
+            ax.yaxis.set_minor_locator(AutoMinorLocator())
+            
+            if xlim == "auto":
+                ax.set_xlim(0.0,1.0)
+            else:
+                ax.set_xlim(tuple(map(float, xlim.split(','))))
+            if ylim == "auto":
+                ax.set_ylim(1.0,3.0)
+            else:
+                ax.set_ylim(tuple(map(float, ylim.split(','))))
+
+            #labels and true model
+            ax.set_xlabel('g', fontsize=22)
+            ax.set_ylabel('F(g)', fontsize=22)
+            ax.plot(g, Models.true_model(self, g), 'k', label='True model')
+
+            #only label outer plot axes
+            ax.label_outer()
+
+        #titles
+        ax.set_title('F(g): mixed model', fontsize=22)
+
+        #call fdagger to calculate results (try to overwrite condition)
+        mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g, loworder[0], highorder[0])
+        mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g, loworder[0], highorder[0])
+
+        #plot the small-g expansions and error bands
+        ax1.plot(g, Models.low_g(self, g, loworder[0].item())[0,:], 'r--', \
+            label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
+        ax1.plot(g, interval_low_1[0, :, 0], 'r', linestyle='dotted',\
+             label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[0], int(self.ci)))
+        ax1.plot(g, interval_low_1[0, :, 1], 'r', linestyle='dotted')
+
+        a = 0
+
+        for j in loworder:
+            if a >= 1:
+                ax2.plot(g, Models.low_g(self, g, j.item())[0,:], color='fuchsia', linestyle='dashed',\
+                     label=r'$f_s$ ($N_s$ = {})'.format(j))
+            else:
+                ax2.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
+            a += 1
+
+        for i in range(len(loworder)):
+
+            if i > 0:
+                ax2.plot(g, interval_low_2[i, :, 0], color='fuchsia', linestyle='dotted', \
+                    label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[i], int(self.ci)))
+                ax2.plot(g, interval_low_2[i, :, 1], color='fuchsia', linestyle='dotted')
+           
+            else:
+                ax2.plot(g, interval_low_2[i, :, 0], 'r', linestyle='dotted',\
+                     label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[i], int(self.ci)))
+                ax2.plot(g, interval_low_2[i, :, 1], 'r', linestyle='dotted')
+
+        #plot the large-g expansions and error bands
+        ax1.plot(g, Models.high_g(self, g, highorder[0].item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
+        ax1.plot(g, interval_high_1[0, :, 0], 'b', linestyle='dotted', label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[0], int(self.ci)))
+        ax1.plot(g, interval_high_1[0, :, 1], 'b', linestyle='dotted')
+
+        b = 0
+
+        for j in highorder:
+
+            if b >= 1:
+                ax2.plot(g, Models.high_g(self, g, j.item())[0,:], color='darkorange', linestyle='dashed', \
+                     label=r'$f_l$ ($N_l$ = {})'.format(j))
+            else:
+                ax2.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+            b += 1
+            
+        for i in range(len(highorder)):
+
+            if i > 0:
+                ax2.plot(g, interval_high_2[i, :, 0], color='darkorange', linestyle='dotted', \
+                    label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[i], int(self.ci)))
+                ax2.plot(g, interval_high_2[i, :, 1], color='darkorange', linestyle='dotted')
+            else:
+                ax2.plot(g, interval_high_2[i, :, 0], 'b', linestyle='dotted', \
+                    label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[i], int(self.ci)))
+                ax2.plot(g, interval_high_2[i, :, 1], 'b', linestyle='dotted')
+
+        #uninformative model case
+        ax1.plot(g, mean_1, 'g', label='Mixed model mean')
+        ax1.plot(g, intervals_1[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
+        ax1.plot(g, intervals_1[:,1], 'g', linestyle='dotted')
+        ax1.fill_between(g, intervals_1[:,0], intervals_1[:,1], color='green', alpha=0.2)
+
+        #informative model case
+        ax2.plot(g, mean_2, 'g', label='Mixed model mean')
+        ax2.plot(g, intervals_2[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
+        ax2.plot(g, intervals_2[:,1], 'g', linestyle='dotted')
+        ax2.fill_between(g, intervals_2[:,0], intervals_2[:,1], color='green', alpha=0.2)
+
+        #ax2.legend(bbox_to_anchor=(1.0, 0.5), fontsize=16, loc='center left')
+        ax1.legend(fontsize=16, loc='upper right')
 
         plt.show()
 

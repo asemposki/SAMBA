@@ -2,7 +2,7 @@ import numpy as np
 import seaborn as sns
 import docrep
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
-from scipy import stats
+from scipy import stats, misc
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
@@ -53,6 +53,9 @@ class GP(Models):
         #set up the prediction array as a class variable for use later
         self.gpredict = g
 
+        #integral length
+        self.gint = np.empty([])
+
         #kernel set-up for the rest of the class (one-dimensional)
         kconstant = kernels.ConstantKernel(1.0)
 
@@ -88,7 +91,7 @@ class GP(Models):
         return None
 
     
-    def training(self, loworder, highorder, error=False):
+    def training(self, loworder, highorder, error=False, method=1):
 
         '''
         A function that links the model data and the training function in 
@@ -107,7 +110,10 @@ class GP(Models):
 
         error : bool
             A boolean variable to toggle use of the data uncertainty in the 
-            kernel during training. Default is False. 
+            kernel during training. Default is False.
+
+        method : int    #TEMPORARY 
+            The method used for determining the training points. Options: 1,2,3.
 
         Returns:
         --------
@@ -115,6 +121,9 @@ class GP(Models):
             The object storing all training information from the sklearn regression
             performed on the data.
         '''
+
+        #first set the method
+        self.method = method 
 
         #call the training set generator function
         gs, datas, sigmas = self.training_set(loworder, highorder)
@@ -151,7 +160,7 @@ class GP(Models):
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(0.0, max(self.gpredict))
-        ax.set_ylim(-2.0,5.0)
+        ax.set_ylim(1.0,3.0)
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): training set', fontsize=22)
@@ -174,7 +183,7 @@ class GP(Models):
 
         if response == 'yes':
             name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name)
+            fig.savefig(name, bbox_inches='tight')
 
         return sk, uncov
 
@@ -241,7 +250,7 @@ class GP(Models):
         ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlim(0.0, max(self.gpredict))
-        ax.set_ylim(-3.0,5.0)
+        ax.set_ylim(1.0,3.0)
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): GP predictions', fontsize=22)
@@ -253,7 +262,7 @@ class GP(Models):
         ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, color="blue", fmt='o', markersize=4, \
              capsize=4, alpha=0.4, label=r"$f_l$ ($N_l$ = {})".format(highorder[0]), zorder=1)
         ax.plot(self.gpred, self.meanp, 'g', label='Predictions', zorder=2)
-        ax.plot(self.gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ interval'.format(interval), zorder=2)
+        ax.plot(self.gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ CI'.format(interval), zorder=2)
         ax.plot(self.gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
         ax.fill_between(self.gpred[:,0], intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
 
@@ -265,7 +274,7 @@ class GP(Models):
 
         if response == 'yes':
             name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name)
+            fig.savefig(name, bbox_inches='tight')
 
         return self.meanp, self.sigp, self.cov
 
@@ -285,7 +294,7 @@ class GP(Models):
             The truncation order of the small-g expansion.
 
         highorder : numpy.ndarray
-            The truncation order of the large-g expansion. 
+            The truncation order of the large-g expansion.
 
         Returns:
         -------
@@ -299,36 +308,58 @@ class GP(Models):
             The modified array of the truncation errors for the training. 
         '''
 
+        #print the method used for training
+        print('Current training method: {}'.format(self.method))
+
         #set up the training set from the prediction set (offset by midpoint)
         self.midpoint = (self.gpredict[1] - self.gpredict[0]) / 2.0
         gtrainingset = np.linspace(min(self.gpredict)+self.midpoint, max(self.gpredict)+self.midpoint, len(self.gpredict))
 
+        #stop the training sets using derivatives
+        dg = gtrainingset[1] - gtrainingset[0]
+        lowarray = Models.low_g(self, gtrainingset, loworder)[0]
+        higharray = Models.high_g(self, gtrainingset, highorder)[0]
+        dfsdg = np.gradient(lowarray, dg)
+        dfldg = np.gradient(higharray, dg)    
+       
+        for i in range(len(gtrainingset)):
+            if np.abs(dfsdg[i]) >= 10.0:
+                lowindex = i-1
+                print(lowindex)
+                break 
+
+        for i in range(len(gtrainingset)-1, -1, -1):
+            if np.abs(dfldg[i]) >= 10.0:
+                highindex = i+1
+                print(highindex)
+                break 
+
         #stop the training set, negative curvature
-        if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
-            for i in range(len(gtrainingset)):
-                if Models.low_g(self, gtrainingset[i], loworder) < -1.0:    #for sqrt{g} (usually 1.0)
-                    lowindex = i-1
-                    break
-        #stop the training set, positive curvature
-        elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
-            for i in range(len(gtrainingset)):
-                if Models.low_g(self, gtrainingset[i], loworder) > 3.0:
-                    lowindex = i-1
-                    break
-        #stop the training set, even orders (positive curvature)
-        if highorder[0] % 2 == 0:
-            for i in range(len(gtrainingset)):
-                if Models.high_g(self, gtrainingset[i], highorder) > 3.0:
-                    highindex = i+1
-                else:
-                    break
-        #stop the training set, odd orders (negative curvature)
-        else:
-            for i in range(len(gtrainingset)):
-                if Models.high_g(self, gtrainingset[i], highorder) < -1.0:   #for sqrt{g} (usually 1.0)
-                    highindex = i+1
-                else:
-                    break
+        # if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
+        #     for i in range(len(gtrainingset)):
+        #         if Models.low_g(self, gtrainingset[i], loworder) < -1.0:    #for sqrt{g} (usually 1.0)
+        #             lowindex = i-1
+        #             break
+        # #stop the training set, positive curvature
+        # elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
+        #     for i in range(len(gtrainingset)):
+        #         if Models.low_g(self, gtrainingset[i], loworder) > 3.0:
+        #             lowindex = i-1
+        #             break
+        # #stop the training set, even orders (positive curvature)
+        # if highorder[0] % 2 == 0:
+        #     for i in range(len(gtrainingset)):
+        #         if Models.high_g(self, gtrainingset[i], highorder) > 3.0:
+        #             highindex = i+1
+        #         else:
+        #             break
+        # #stop the training set, odd orders (negative curvature)
+        # else:
+        #     for i in range(len(gtrainingset)):
+        #         if Models.high_g(self, gtrainingset[i], highorder) < -1.0:   #for sqrt{g} (usually 1.0)
+        #             highindex = i+1
+        #         else:
+        #             break
 
         #slice the training set for the two models
         self.gtrlow = gtrainingset[:lowindex]
@@ -375,13 +406,24 @@ class GP(Models):
 
         #create two points on either side (highpoint = 20)
         glowtr = np.array([self.gtrlow[indexpt1], self.gtrlow[indexpt2]])
-        ghightr = np.array([self.gtrhigh[indexerror], self.gtrhigh[-1]])
-
         datalowtr = np.array([self.datatrlow[indexpt1], self.datatrlow[indexpt2]])
-        datahightr = np.array([self.datatrhigh[indexerror], self.datatrhigh[-1]])
-
         sigmalowtr = np.array([self.lowsigma[indexpt1], self.lowsigma[indexpt2]])
-        sigmahightr = np.array([self.highsigma[indexerror], self.highsigma[-1]])
+
+        #choose training points depending on method entered
+        if self.method == 1:
+            ghightr = np.array([self.gtrhigh[indexptest], self.gtrhigh[-1]])
+            datahightr = np.array([self.datatrhigh[indexptest], self.datatrhigh[-1]])
+            sigmahightr = np.array([self.highsigma[indexptest], self.highsigma[-1]])
+
+        elif self.method == 2:
+            ghightr = np.array([self.gtrhigh[index_ghigh], self.gtrhigh[-1]])
+            datahightr = np.array([self.datatrhigh[index_ghigh], self.datatrhigh[-1]])
+            sigmahightr = np.array([self.highsigma[index_ghigh], self.highsigma[-1]])
+
+        elif self.method == 3:
+            ghightr = np.array([self.gtrhigh[indexerror], self.gtrhigh[-1]])
+            datahightr = np.array([self.datatrhigh[indexerror], self.datatrhigh[-1]])
+            sigmahightr = np.array([self.highsigma[indexerror], self.highsigma[-1]])
 
         #concatenate these arrays and send back
         gtr = np.concatenate((glowtr, ghightr))
@@ -401,8 +443,7 @@ class GP(Models):
 
         return index
 
-
-# class Diagnostics(GP):
+#class Diagnostics(GP):
 
 
 #     def __init__(self, g):
@@ -536,6 +577,8 @@ class GP(Models):
 
         #cut the GP array into the gap
         md_g = self.gpredict[index_lowerr:index_hierr]
+        print(f'md_g : {md_g} Type of object: {type(md_g)}')
+        self.gint = md_g.copy()
         md_mean = GP_mean[index_lowerr:index_hierr]
         md_sig = GP_err[index_lowerr:index_hierr]
         md_cov = GP_cov[index_lowerr:index_hierr, index_lowerr:index_hierr]
@@ -676,7 +719,7 @@ class GP(Models):
             
         #finish up plot
         if legend is True:
-            ax.legend(loc='upper right', fontsize=16)
+            ax.legend(loc='upper right', fontsize=14)
             
         plt.show()
         
@@ -693,6 +736,15 @@ class GP(Models):
                       'whislo': dist.ppf(whislo), 'whishi': dist.ppf(whishi)}]
     
         return ax.bxp(stat_dict, showfliers=False, **kwargs)
+
+
+    #function for paper plot (vertical)
+    def vertical_gp(self, g, loworder, highorder):
+
+        #set up the vertical subplots
+        
+
+        return None
 
 '''
     def plotter(self, x_label, y_label, title, y_lim, *args, show_true=True, **kwargs):

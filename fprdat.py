@@ -10,8 +10,12 @@
 import numpy as np
 import scipy.special as sp
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid.inset_locator import (inset_axes, zoomed_inset_axes, InsetPosition,
+                                                  mark_inset)
+from cycler import cycler
 from matplotlib.ticker import AutoMinorLocator
 from mixing import Models 
+
 
 __all__ = ['FPR']
 
@@ -49,8 +53,10 @@ class FPR():
             Results of the FPR function in an array. 
         '''
 
-        #switch-case statement for calling the proper FPR function
+        #if statement for calling the proper FPR function
         fpr = np.zeros(len(self.g))
+
+        self.keyvalue = key
 
         if key == '(0,0)^(1/2)':
                 
@@ -116,20 +122,20 @@ class FPR():
                   self.g**3 + 43.17787580118569 * self.g**4 + 25.54986136647706 * self.g**5))**(1/10)
 
         elif key == '(4,4)^(1/10)':
-            #FPR[1/(2*5),4,4,g_] = 
+            #FPR[1/(2*5),4,4,g_] 
             fpr = 2.5066282746310002 * (( 1. + 5.072505666220409 * self.g + 14.43685326985559 * \
                   self.g**2)/( 1. + 5.072505666220409 * self.g + 44.43685326985559 * self.g**2 + 152.17516998661225 * \
                   self.g**3 + 403.10559809566917 * self.g**4 + 708.6889005862954 * self.g**5 + 752.9544739983669 * \
                   self.g**6 + 368.85959961298136 * self.g**7))**(1/10)
 
         elif key == '(3,3)^(1/14)':
-            #FPR[1/(2*7),3,3,g_] = 
+            #FPR[1/(2*7),3,3,g_] 
             fpr = 2.5066282746310002 * (1/( 1. + 42. * self.g**2+155.75843284764994 * \
                   self.g**4 + 239.21559267499774 * self.g**5 + 220.9758065100799 * \
                   self.g**6 + 93.39937438057375 * self.g**7))**(1/14)
 
         elif key == '(4,4)^(1/18)':
-            #FPR[1/(2*9),4,4,g_] = 
+            #FPR[1/(2*9),4,4,g_] 
             fpr = 2.5066282746310002 * (1/( 1. + 54. * self.g**2+594. * self.g**4+780.7879756756589 * \
                   self.g**5 + 1294.340979801729 * self.g**6 + 1475.3510504866329 * self.g**7 + 1038.5911468627608 * \
                   self.g**8 + 341.42819835916043 * self.g**9))**(1/18)
@@ -139,57 +145,100 @@ class FPR():
 
         return fpr
 
-    
-    def fpr_plot(self, g, loworder, highorder, mean, intervals, fpr, ci=68):
+    #at the moment, this is very specific to the paper plot---disassemble later for package
+    def fpr_plot(self, g, loworder, highorder, mean, intervals, fpr_keys=None, ci=68):
+
+        '''
+        A plotter for the overlay of the GP results and the FPR results
+        from Honda (2014). 
+        '''
 
         #set up plot configuration
-        fig = plt.figure(figsize=(8,6), dpi=600)
-        ax = plt.axes()
-        ax.tick_params(axis='x', labelsize=18)
-        ax.tick_params(axis='y', labelsize=18)
-        ax.locator_params(nbins=8)
-        ax.xaxis.set_minor_locator(AutoMinorLocator())
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        fig, ax1 = plt.subplots(figsize=(8,6), dpi=600)
+        ax1.tick_params(axis='x', labelsize=18)
+        ax1.tick_params(axis='y', labelsize=18)
+        ax1.locator_params(nbins=8)
+        ax1.xaxis.set_minor_locator(AutoMinorLocator())
+        ax1.yaxis.set_minor_locator(AutoMinorLocator())
 
         #set up x and y limits
         xlim = input('\nx-limits (enter "auto" if unknown): ')
         ylim = input('\ny-limits (enter "auto" if unknown): ')
         if xlim == "auto":
-            ax.set_xlim(0.0,0.5)
+            ax1.set_xlim(0.0,0.5)
         else:
-            ax.set_xlim(tuple(map(float, xlim.split(','))))
+            ax1.set_xlim(tuple(map(float, xlim.split(','))))
         if ylim == "auto":
-            ax.set_ylim(0.0,4.0)
+            ax1.set_ylim(0.0,4.0)
         else:
-            ax.set_ylim(tuple(map(float, ylim.split(','))))
+            ax1.set_ylim(tuple(map(float, ylim.split(','))))
 
         #labels and true model
-        ax.set_xlabel('g', fontsize=22)
-        ax.set_ylabel('F(g)', fontsize=22)
-        ax.set_title('F(g): mixed model', fontsize=22)
-        ax.plot(g, Models.true_model(self, g), 'k', label='True model')
+        ax1.set_xlabel('g', fontsize=22)
+        ax1.set_ylabel('F(g)', fontsize=22)
+        ax1.set_title('F(g): mixed model', fontsize=22)
+        ax1.plot(g, Models.true_model(self, g), 'k', label='True model')
 
         #unpack ci
         self.ci = ci 
 
         #plot the small-g expansions and error bands
         for j in loworder:
-            ax.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
+            ax1.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
         
         #plot the large-g expansions and error bands
         for j in highorder:
-            ax.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+            ax1.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
         
         #plot the GP results (mixed model)
-        ax.plot(g, mean, 'g', label='Mean')
-        ax.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
-        ax.plot(g, intervals[:,1], 'g', linestyle='dotted')
-        ax.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
+        ax1.plot(g, mean, 'g', label='Mean')
+        ax1.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
+        ax1.plot(g, intervals[:,1], 'g', linestyle='dotted')
+        ax1.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
 
         #FPR results
-        ax.plot(g, fpr, 'm', linestyle='dashed', label='FPR Results')
-        
-        ax.legend(fontsize=14, loc='upper right')
+        if fpr_keys is not None:
+            ax1.set_prop_cycle(cycler('color', ['darkviolet', 'deepskyblue', 'darkorange', 'gold']))
+            for k in fpr_keys:
+                mn = k[0:5]
+                alpha = k[6:]
+                fpr = self.fprset(k)
+                ax1.plot(g, fpr, linestyle='dashed', label=r'$F_{{{}}}^{{{}}} (g)$'.format(mn, alpha))
+                
+        ax1.legend(fontsize=14, loc='upper right')
+
+        #inset plot parameters
+        x1 = 0.26
+        x2 = 0.31
+        y1 = 2.15
+        y2 = 2.25
+        axins = zoomed_inset_axes(ax1, 6, loc=9) 
+        axins.plot(g, Models.true_model(self, g), 'k', label='True model')
+        axins.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
+        axins.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+        axins.plot(g, mean, 'g', label='Mean')
+        axins.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
+        axins.plot(g, intervals[:,1], 'g', linestyle='dotted')
+        axins.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
+        if fpr_keys is not None:
+            axins.set_prop_cycle(cycler('color', ['darkviolet', 'deepskyblue', 'darkorange', 'gold']))
+        for k in fpr_keys:
+                mn = k[0:5]
+                alpha = k[6:]
+                fpr = self.fprset(k)
+                axins.plot(g, fpr, linestyle='dashed', label=r'$F_{{{}}}^{{{}}} (g)$'.format(mn, alpha))
+                
+        axins.set_xlim(x1, x2)
+        axins.set_ylim(y1, y2)
+       # plt.xticks(visible=False)
+       # plt.yticks(visible=False)
+        mark_inset(ax1, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+        plt.draw()
+       # ax2 = plt.axes([0,0,1,1])
+        # ip = InsetPosition(ax1, [0.3,0.67,0.38,0.3])
+        # ax2.set_axes_locator(ip)
+      #  mark_inset(ax1, ax2, loc1=2, loc2=4, fc="none", ec='0.5')
+
         plt.show()
 
         #save figure option
@@ -197,7 +246,7 @@ class FPR():
 
         if response == 'yes':
             name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name)
+            fig.savefig(name, bbox_inches='tight')
         else:
             pass
 
