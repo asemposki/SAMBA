@@ -165,18 +165,20 @@ class FPR():
         xlim = input('\nx-limits (enter "auto" if unknown): ')
         ylim = input('\ny-limits (enter "auto" if unknown): ')
         if xlim == "auto":
-            ax1.set_xlim(0.0,0.5)
+            ax1.set_xlim(0,1)
+            ax1.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1])
         else:
             ax1.set_xlim(tuple(map(float, xlim.split(','))))
         if ylim == "auto":
-            ax1.set_ylim(0.0,4.0)
+            ax1.set_ylim(1.2,3.2)
+            ax1.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
         else:
             ax1.set_ylim(tuple(map(float, ylim.split(','))))
 
         #labels and true model
         ax1.set_xlabel('g', fontsize=22)
         ax1.set_ylabel('F(g)', fontsize=22)
-        ax1.set_title('F(g): mixed model', fontsize=22)
+        #ax1.set_title('F(g): mixed model', fontsize=22)
         ax1.plot(g, Models.true_model(self, g), 'k', label='True model')
 
         #unpack ci
@@ -192,7 +194,7 @@ class FPR():
         
         #plot the GP results (mixed model)
         ax1.plot(g, mean, 'g', label='Mean')
-        ax1.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
+        ax1.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
         ax1.plot(g, intervals[:,1], 'g', linestyle='dotted')
         ax1.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
 
@@ -205,7 +207,7 @@ class FPR():
                 fpr = self.fprset(k)
                 ax1.plot(g, fpr, linestyle='dashed', label=r'$F_{{{}}}^{{{}}} (g)$'.format(mn, alpha))
                 
-        ax1.legend(fontsize=14, loc='upper right')
+        ax1.legend(fontsize=16, loc='upper right')
 
         #inset plot parameters
         x1 = 0.26

@@ -10,6 +10,7 @@ import statistics
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from priors import Priors
+from uncertainties import Uncertainties
 
 __all__ = ['Models', 'Switching', 'Mixing']
 
@@ -254,7 +255,8 @@ class Models():
         #ylim settings
         ylim = input('\ny-limits (enter "auto" if unknown): ')
         if ylim == "auto":
-            ax.set_ylim(1.8,2.6)
+            ax.set_ylim(1.2,3.2)
+            ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
         else:
             ax.set_ylim(tuple(map(float, ylim.split(','))))
         ax.tick_params(axis='x', labelsize=18)
@@ -264,7 +266,7 @@ class Models():
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
-        ax.set_title('F(g): expansions and true model', fontsize=22)
+       # ax.set_title('F(g): expansions and true model', fontsize=22)
         
         #plot the true model 
         ax.plot(g, self.true_model(g), 'k', label='True model')
@@ -281,7 +283,7 @@ class Models():
         for i in highorder:
             ax.plot(g, self.high_g(g, i.item())[0], color='b', label=r'$f_l$ ($N_l$ = {})'.format(i))
             
-        ax.legend(fontsize=14, loc='upper right')
+        ax.legend(fontsize=18, loc='upper right')
         plt.show()
 
         #save figure option
@@ -355,7 +357,7 @@ class Models():
             residhi = (valuehi - value_true)/value_true
             ax.loglog(g_ext, abs(residhi[0,:]), 'b', linestyle="None", label=r"$F_l({})$".format(i))
         
-        ax.legend(fontsize=12)
+        ax.legend(fontsize=18)
         plt.show()
     
 
@@ -604,22 +606,6 @@ class Switching:
         --------
         None.
         '''
-    
-        xmin = float(input('Enter the minimum g to plot.'))
-        xmax = float(input('Enter the maximum g to plot.'))
-
-        if xmin == None:
-            xmin = min(g_ppd)
-        if xmax == None:
-            xmax = max(g_ppd)
-        
-        ymin = float(input('Enter the minimum for F(g).'))
-        ymax = float(input('Enter the maximum for F(g).'))
-        
-        if ymin == None:
-            ymin = 1.8
-        if ymax == None:
-            ymax = 2.6
         
         fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
@@ -630,15 +616,17 @@ class Switching:
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
-        ax.set_xlim(xmin, xmax)
-        ax.set_ylim(ymin, ymax)
-        ax.set_title('Mixed prediction with calibrated posteriors', fontsize=22)
+
+        ax.set_xlim(0.0, 1.0)
+ 
+        ax.set_ylim(1.2, 3.2)
+        ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
 
         ax.plot(g_data, data, 'k.', label='Data set')  
         ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
 
-        ax.plot(g_true, Models.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ({})'.format(loworder[0]))
-        ax.plot(g_true, Models.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ({})'.format(highorder[0]))
+        ax.plot(g_true, Models.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
+        ax.plot(g_true, Models.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
 
         ax.plot(g_ppd, ppd_results, 'g', label='Mixed model')
         ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% CI (HPD)'.format(percent))
@@ -647,7 +635,7 @@ class Switching:
         ax.fill_between(g_ppd, ppd_intervals[:,0], ppd_intervals[:,1], color='green', alpha=0.2)
 
         #parameter results
-        ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{3}$, $\theta_{2}$")
+        ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{2}$, $\theta_{3}$")
         ax.axvline(x=results[1], color='darkviolet', alpha=0.35)
         ax.axvline(x=results[2], color='darkviolet', alpha=0.35)
 
@@ -655,7 +643,7 @@ class Switching:
         # ax.axvline(x=0.23, color='darkviolet', linewidth= 30, alpha=0.15)
         # ax.axvline(x=0.30, color='darkviolet', linewidth= 30, alpha=0.15)
 
-        ax.legend(fontsize=13, loc='upper right')
+        ax.legend(fontsize=18, loc='upper right')
         plt.show()
 
         answer = input('Would you like to save the plot to a file (yes/no)?')
@@ -799,7 +787,7 @@ class Mixing(Switching, Models, Priors):
         ax.plot(g_data, data, 'k.', label='Data set')
         ax.plot(g_true, Mixing.true_model(self, g_true), 'k', label='True model')
         
-        ax.legend(fontsize=16)
+        ax.legend(fontsize=18)
         plt.show()
 
         #save figure option
@@ -850,7 +838,7 @@ class Mixing(Switching, Models, Priors):
         return interval
     
     
-    def likelihood_low(self, g_data, data, sigma, loworder):
+    def likelihood_low(self, g_data, data, sigma, siglow, loworder):
         
         '''
         The likelihood function for the data using the small-g expansion as the model in the 
@@ -879,14 +867,17 @@ class Mixing(Switching, Models, Priors):
             An array of the likelihood calculated at each data point. 
             
         '''
+
+        #set up the uncertainties using experimental & theory errors
+        sigma_t = np.sqrt(sigma**2.0 + siglow**2.0)
     
-        prelow = (np.sqrt(2.0 * np.pi) * sigma)**(-1.0)
-        insidelow = -0.5 * ((data - Models.low_g(self, g_data, loworder))/(sigma))**2.0
+        prelow = (np.sqrt(2.0 * np.pi) * sigma_t)**(-1.0)
+        insidelow = -0.5 * ((data - Models.low_g(self, g_data, loworder))/(sigma_t))**2.0
         
         return prelow*np.exp(insidelow)
 
     
-    def likelihood_high(self, g_data, data, sigma, highorder):
+    def likelihood_high(self, g_data, data, sigma, sighigh, highorder):
         
         '''
         The likelihood function for the data using the large-g expansion as the model in the 
@@ -914,14 +905,17 @@ class Mixing(Switching, Models, Priors):
         --------
             An array of the likelihood calculated at each data point. 
         '''
+
+        #set up the uncertainties using experimental & theory errors
+        sigma_t = np.sqrt(sigma**2.0 + sighigh**2.0)
     
-        prehigh = (np.sqrt(2.0 * np.pi) * sigma)**(-1.0)
-        insidehigh = -0.5 * ((data - Models.high_g(self, g_data, highorder))/(sigma))**2.0
+        prehigh = (np.sqrt(2.0 * np.pi) * sigma_t)**(-1.0)
+        insidehigh = -0.5 * ((data - Models.high_g(self, g_data, highorder))/(sigma_t))**2.0
     
         return prehigh*np.exp(insidehigh)
 
 
-    def sampler_mix(self, params, g_data, data, sigma, loworder, highorder):
+    def sampler_mix(self, params, g_data, data, sigma, siglow, sighigh, loworder, highorder):
 
         '''
         The model mixing function sent to the sampler to find the values of the parameters in the 
@@ -972,9 +966,9 @@ class Mixing(Switching, Models, Priors):
             #likelihood mixing
             for i in range(len(g_data)):
                 mixed_likelihood[i] = self.f(params, g_data[i]) * \
-                                    Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], loworder) \
+                                    Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], siglow[i], loworder) \
                                     + (1.0- self.f(params, g_data[i])) * \
-                                    Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], highorder)
+                                    Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], sighigh[i], highorder)
 
                 if mixed_likelihood[i] <= 0.0:
                     return -np.inf
@@ -1011,6 +1005,10 @@ class Mixing(Switching, Models, Priors):
             
         sigma : numpy.ndarray     
             An array of standard deviations at each data point.
+
+        sigma_t : numpy.ndarray
+            A 2D array of standard deviations at each data point. The first column is those
+            from the small-g expansion; the second column is those from the large-g expansion.
             
         loworder : numpy.ndarray, int, float          
             The order of the small-g expansion desired for the mixed model to be calculated at.
@@ -1042,6 +1040,11 @@ class Mixing(Switching, Models, Priors):
         else:
             raise ValueError('Switching function requested is not found. Select one of the valid options.')
 
+        #call Discrepancy class for the theory errors (variances)
+        err = Uncertainties()
+        siglow = np.sqrt(err.variance_low(g_data, loworder[0]))
+        sighigh = np.sqrt(err.variance_high(g_data, highorder[0]))
+
         #set up sampler
         nwalkers = 2*int(3*ndim + 1)
         nsteps = int(input('Enter the number of steps per walker.'))
@@ -1055,14 +1058,14 @@ class Mixing(Switching, Models, Priors):
         starting_points[:,0] = np.random.uniform(0.12, 0.18, nwalkers)
         starting_points[:,2] = np.random.uniform(0.19, 0.24, nwalkers)
         starting_points[:,1] = np.random.uniform(0.25, 0.30, nwalkers)
-        print(starting_points, np.shape(starting_points))
+       # print(starting_points, np.shape(starting_points))
 
         #set the switching function
         self.f = self._select_function(self.choice)
         
         #call emcee
         sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix, \
-                                            args=[g_data, data, sigma, loworder, highorder])
+                                            args=[g_data, data, sigma, siglow, sighigh, loworder, highorder])
         now = time.time()
         sampler_mixed.run_mcmc(starting_points, nsteps)
         stop = time.time()

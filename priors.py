@@ -4,6 +4,7 @@ from scipy import stats
 '''TEST FILE: User will write their own prior class
    and "send" it to the mixed model/sampler_mix functions.''' 
 
+__all__ = ['Priors']
 
 class Priors:
 
@@ -44,13 +45,13 @@ class Priors:
         elif len(params) == 3:
 
             #g1 truncated between (0, 0.35)
-            g1 = self.luniform(params[0], 0.1, 0.3) + stats.norm.logpdf(params[0], 0.09, 0.05)
+            g1 = self.luniform(params[0], 0.1, 0.2) + stats.norm.logpdf(params[0], 0.1, 0.05)   #0.1 for 2 v 2
 
             #g3 truncated between (g1, 0.35)
-            g3 = self.luniform(params[2], params[0], 0.3) + stats.norm.logpdf(params[2], 0.19, 0.05)
+            g3 = self.luniform(params[2], params[0], 0.3) + stats.norm.logpdf(params[2], 0.25, 0.05)   #0.4 for 2 v 2
 
             #g2 truncated between (g3, 0.35)
-            g2 = self.luniform(params[1], params[2], 0.3) + stats.norm.logpdf(params[1], 0.25, 0.05)
+            g2 = self.luniform(params[1], params[2], 0.5) + stats.norm.logpdf(params[1], 0.4, 0.05)  #0.6 for 2 v 2
 
             return (g1 + g2 + g3)
 

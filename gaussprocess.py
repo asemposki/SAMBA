@@ -6,7 +6,7 @@ from scipy import stats, misc
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
-from discrepancy import Discrepancy 
+from uncertainties import Uncertainties
 
 #set savefig color for all plots
 plt.rcParams['savefig.facecolor']='white'
@@ -175,7 +175,7 @@ class GP(Models):
         #plot the chosen training points over the whole training set
         ax.errorbar(gs, datas, yerr=sigmas, color='black', fmt='o', markersize=4, capsize=4, label='Training data')
 
-        ax.legend(fontsize=14, loc='upper right')
+        ax.legend(fontsize=18, loc='upper right')
         plt.show()
 
         #save figure option
@@ -266,7 +266,7 @@ class GP(Models):
         ax.plot(self.gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
         ax.fill_between(self.gpred[:,0], intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
 
-        ax.legend(fontsize=14, loc='upper right')
+        ax.legend(fontsize=18, loc='upper right')
         plt.show()
 
         #save figure option
@@ -325,54 +325,27 @@ class GP(Models):
         for i in range(len(gtrainingset)):
             if np.abs(dfsdg[i]) >= 10.0:
                 lowindex = i-1
-                print(lowindex)
+                #print(lowindex)
                 break 
 
         for i in range(len(gtrainingset)-1, -1, -1):
             if np.abs(dfldg[i]) >= 10.0:
                 highindex = i+1
-                print(highindex)
+                #print(highindex)
                 break 
-
-        #stop the training set, negative curvature
-        # if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
-        #     for i in range(len(gtrainingset)):
-        #         if Models.low_g(self, gtrainingset[i], loworder) < -1.0:    #for sqrt{g} (usually 1.0)
-        #             lowindex = i-1
-        #             break
-        # #stop the training set, positive curvature
-        # elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
-        #     for i in range(len(gtrainingset)):
-        #         if Models.low_g(self, gtrainingset[i], loworder) > 3.0:
-        #             lowindex = i-1
-        #             break
-        # #stop the training set, even orders (positive curvature)
-        # if highorder[0] % 2 == 0:
-        #     for i in range(len(gtrainingset)):
-        #         if Models.high_g(self, gtrainingset[i], highorder) > 3.0:
-        #             highindex = i+1
-        #         else:
-        #             break
-        # #stop the training set, odd orders (negative curvature)
-        # else:
-        #     for i in range(len(gtrainingset)):
-        #         if Models.high_g(self, gtrainingset[i], highorder) < -1.0:   #for sqrt{g} (usually 1.0)
-        #             highindex = i+1
-        #         else:
-        #             break
 
         #slice the training set for the two models
         self.gtrlow = gtrainingset[:lowindex]
         self.gtrhigh = gtrainingset[highindex:]
 
-        print('**Length of training sets: {} and {}'.format(len(self.gtrlow), len(self.gtrhigh)))
+      #  print('**Length of training sets: {} and {}'.format(len(self.gtrlow), len(self.gtrhigh)))
 
         #calculate the data at each point
         self.datatrlow = Models.low_g(self, self.gtrlow, loworder)[0,:]
         self.datatrhigh = Models.high_g(self, self.gtrhigh, highorder)[0,:]
 
         #calculate the variance at each point from the next term
-        obj = Discrepancy()
+        obj = Uncertainties()
         lowvariance = obj.variance_low(self.gtrlow, loworder[0])
         self.lowsigma = np.sqrt(lowvariance)
         highvariance = obj.variance_high(self.gtrhigh, highorder[0])
@@ -381,8 +354,8 @@ class GP(Models):
         #find the values of g in the other set to determine location of points
         index_glow = (np.where(self.gtrlow == self.gtrhigh[0])[0])[0]
         index_ghigh = (np.where(self.gtrhigh == self.gtrlow[-1])[0])[0]
-        print('***Index: {} ***'.format(index_ghigh))
-        print('Values to compare to MD: {} and {}.'.format(self.gtrlow[index_glow], self.gtrhigh[index_ghigh]))
+     #   print('***Index: {} ***'.format(index_ghigh))
+     #   print('Values to compare to MD: {} and {}.'.format(self.gtrlow[index_glow], self.gtrhigh[index_ghigh]))
 
         #value of g at the optimal red points
         pt1 = 0.0656575
@@ -398,7 +371,7 @@ class GP(Models):
                 indexerror = i
                 break 
 
-        print('Index of error at 5%: {}; g-value = {}; error = {}'.format(indexerror, self.gtrhigh[indexerror], self.highsigma[indexerror]))
+     #   print('Index of error at 5%: {}; g-value = {}; error = {}'.format(indexerror, self.gtrhigh[indexerror], self.highsigma[indexerror]))
 
         #find the values in the training array closest to the points
         indexpt1 = self.nearest_value(self.gtrlow, pt1)
@@ -558,7 +531,7 @@ class GP(Models):
         GP_cov = self.cov
 
         #calculate the variance at each expansion point from the next term
-        mdobj = Discrepancy()
+        mdobj = Uncertainties()
         lowvar = mdobj.variance_low(self.gpredict, loworder[0])
         lowerr = np.sqrt(lowvar)
         highvar = mdobj.variance_high(self.gpredict, highorder[0])
@@ -577,7 +550,7 @@ class GP(Models):
 
         #cut the GP array into the gap
         md_g = self.gpredict[index_lowerr:index_hierr]
-        print(f'md_g : {md_g} Type of object: {type(md_g)}')
+      #  print(f'md_g : {md_g} Type of object: {type(md_g)}')
         self.gint = md_g.copy()
         md_mean = GP_mean[index_lowerr:index_hierr]
         md_sig = GP_err[index_lowerr:index_hierr]
@@ -719,7 +692,7 @@ class GP(Models):
             
         #finish up plot
         if legend is True:
-            ax.legend(loc='upper right', fontsize=14)
+            ax.legend(loc='upper right', fontsize=18)
             
         plt.show()
         
