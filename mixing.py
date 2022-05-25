@@ -17,7 +17,7 @@ __all__ = ['Models', 'Switching', 'Mixing']
 
 class Models():
 
-    def __init__(self):
+    def __init__(self, highorder):
 
         '''
         The class containing the expansion models from Honda's paper
@@ -34,7 +34,13 @@ class Models():
         --------
         None.
         '''
-        pass
+        #check type and assign to class variable
+        if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
+            highorder = np.array([highorder])
+
+        self.highorder = highorder 
+
+        return None 
 
 
     def low_g(self, g, loworder):
@@ -86,7 +92,7 @@ class Models():
                         else:
                             low_c[k] = 0
 
-                        low_terms[k] = low_c[k] * g[i]**(k) #* np.sqrt(g[i])   #multiplying by sqrt(g)
+                        low_terms[k] = low_c[k] * g[i]**(k) 
 
                     value[i] = np.sum(low_terms)
 
@@ -103,14 +109,15 @@ class Models():
                     else:
                         low_c[k] = 0
 
-                    low_terms[k] = low_c[k] * g**(k) #* np.sqrt(g)  #multiplying by sqrt(g)
+                    low_terms[k] = low_c[k] * g**(k) 
 
                 value = np.sum(low_terms)
                 data = value
+
         return data
 
         
-    def high_g(self, g, highorder):
+    def high_g(self, g):
         
         '''
         A function to calculate the large-g convergent Taylor expansion for a given range in the coupling 
@@ -123,10 +130,6 @@ class Models():
         -----------
         g : linspace
             The linspace of the coupling constant for this calculation.
-        
-        highorder : int, float   
-            The array of different expansions orders to calculate. These indicate the highest power the expansions
-            are calculated up to. 
             
         Returns
         -------
@@ -136,11 +139,11 @@ class Models():
         '''
 
         #converts a float or int into an array
-        if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
-            highorder = np.array([highorder])
+        if isinstance(self.highorder, float) == True or isinstance(self.highorder, int) == True:
+            self.highorder = np.array([self.highorder])
         output = []
         
-        for order in highorder:
+        for order in self.highorder:
             high_c = np.empty([int(order) + 1])
             high_terms = np.empty([int(order) + 1])
             
@@ -205,7 +208,7 @@ class Models():
     
         #define a function for the integrand
         def function(x,g):
-            return np.exp(-(x**2.0)/2.0 - (g**2.0 * x**4.0)) #* np.sqrt(g)  #multiplying by sqrt(g)
+            return np.exp(-(x**2.0)/2.0 - (g**2.0 * x**4.0)) 
     
         #initialization
         self.model = np.zeros([len(g)])
@@ -218,7 +221,7 @@ class Models():
         return self.model 
    
 
-    def plot_models(self, g, loworder, highorder):
+    def plot_models(self, g, loworder):
         
         '''
         A plotting function to produce a figure of the model expansions calculated in Models.low_g and Models.high_g, 
@@ -234,10 +237,7 @@ class Models():
 
         loworder : numpy.ndarray, int, float   
             As in Models.low_g, the highest powers to calculate the series to for the asymptotic small-g expansion.
-        
-        highorder : numpy.ndarray, int, float        
-            As in Models.high_g, the highest powers to calculate the series to for the convergent large-g expansion.
-            
+                 
         Returns
         -------
         None.
@@ -247,18 +247,6 @@ class Models():
         #set up the plot
         fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
-        if min(g) == 1e-6:
-            ax.set_xlim(0.0, max(g))
-        else:
-            ax.set_xlim(min(g), max(g))
-
-        #ylim settings
-        ylim = input('\ny-limits (enter "auto" if unknown): ')
-        if ylim == "auto":
-            ax.set_ylim(1.2,3.2)
-            ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
-        else:
-            ax.set_ylim(tuple(map(float, ylim.split(','))))
         ax.tick_params(axis='x', labelsize=18)
         ax.tick_params(axis='y', labelsize=18)
         ax.locator_params(nbins=8)
@@ -266,8 +254,15 @@ class Models():
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
-       # ax.set_title('F(g): expansions and true model', fontsize=22)
-        
+
+        #x and y limits
+        if min(g) == 1e-6:
+            ax.set_xlim(0.0, max(g))
+        else:
+            ax.set_xlim(min(g), max(g))
+        ax.set_ylim(1.2,3.2)
+        ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
+  
         #plot the true model 
         ax.plot(g, self.true_model(g), 'k', label='True model')
         
@@ -278,11 +273,11 @@ class Models():
         #for each small-g order, plot
         for i in loworder:
             ax.plot(g, self.low_g(g, i.item())[0], color='r', label=r'$f_s$ ($N_s$ = {})'.format(i))
-        
-        #for each large-g order, plot
-        for i in highorder:
-            ax.plot(g, self.high_g(g, i.item())[0], color='b', label=r'$f_l$ ($N_l$ = {})'.format(i))
-            
+
+        #for each large-g order, calculate and plot
+        for i,j in zip(range(len(self.highorder)), self.highorder):
+            ax.plot(g, self.high_g(g)[i,:], color='b', label=r'$f_l$ ($N_l$ = {})'.format(j))
+                    
         ax.legend(fontsize=18, loc='upper right')
         plt.show()
 
@@ -298,7 +293,7 @@ class Models():
         return None
         
          
-    def residuals(self, loworder, highorder):
+    def residuals(self, loworder):
         
         '''
         A calculation and plot of the residuals of the model expansions vs the true model values at each point in g.
@@ -312,10 +307,7 @@ class Models():
         -----------
         loworder : int, float        
             The array of highest power series orders for the asymptotic, small-g expansion.
-            
-        highorder : int, float        
-            The array of highest power series orders for the convergent, large-g expansion.
-            
+                  
         Returns:
         --------
         None. 
@@ -352,16 +344,19 @@ class Models():
             ax.loglog(g_ext, abs(residlow[0,:]), 'r', linestyle="None", label=r"$F_s({})$".format(i))
 
         #for each large-g order, plot
-        for i in np.array([highorder]):
-            valuehi = self.high_g(g_ext, i)
-            residhi = (valuehi - value_true)/value_true
-            ax.loglog(g_ext, abs(residhi[0,:]), 'b', linestyle="None", label=r"$F_l({})$".format(i))
+        valuehi = np.zeros([len(self.highorder), len(g_ext)])
+        residhi = np.zeros([len(self.highorder), len(g_ext)])
+
+        for i,j in zip(range(len(self.highorder)), self.highorder):
+            valuehi[i,:] = self.high_g(g_ext)[i]
+            residhi[i,:] = (valuehi[i,:] - value_true)/value_true
+            ax.loglog(g_ext, abs(residhi[i,:]), 'b', linestyle="None", label=r"$F_l({})$".format(j))
         
         ax.legend(fontsize=18)
         plt.show()
     
 
-class Switching:
+class Switching:   #MAKE THESE INTO CLASS AND STATIC METHODS IN MIXING() CLASS!
    
     
     def __init__(self):
@@ -440,6 +435,17 @@ class Switching:
         function = (1.0 + math.erf(beta0 + g*beta1)/np.sqrt(2.0)) / 2.0
     
         return function
+
+
+    def hypertan(self, params, g):
+
+        #params unpack
+        theta0, theta1 = params
+
+        #set up the tanh function
+        hyperfunction = 0.5 + 0.5*np.tanh(-(theta0 + g*theta1))
+
+        return hyperfunction
     
     
     def switchcos(self, params, g):
@@ -657,10 +663,10 @@ class Switching:
         return None
 
 
-class Mixing(Switching, Models, Priors):
+class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNCTIONS NOT A CLASS
     
     
-    def __init__(self):
+    def __init__(self, highorder):
         
         '''
         This class is designed with all of the necessary functions for creating a data set, plotting it 
@@ -678,9 +684,15 @@ class Mixing(Switching, Models, Priors):
         --------
         None.
         
-        '''
-        
-        print('Welcome to the BMM sandbox! Here you get to play!')
+        '''    
+
+        print('Instantiating the linear mixture model method.')
+
+        #check type and create class variables
+        if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
+            highorder = np.array([highorder])
+
+        self.highorder = highorder 
 
         return None
         
@@ -877,7 +889,7 @@ class Mixing(Switching, Models, Priors):
         return prelow*np.exp(insidelow)
 
     
-    def likelihood_high(self, g_data, data, sigma, sighigh, highorder):
+    def likelihood_high(self, g_data, data, sigma, sighigh):
         
         '''
         The likelihood function for the data using the large-g expansion as the model in the 
@@ -898,9 +910,6 @@ class Mixing(Switching, Models, Priors):
         sigma : numpy.ndarray         
             An array of standard deviations at each point in 'data'. 
            
-        highorder : numpy.ndarray, int, float         
-            The specific large-g expansion order desired for calculating the mixed model. 
-            
         Returns:
         --------
             An array of the likelihood calculated at each data point. 
@@ -910,12 +919,12 @@ class Mixing(Switching, Models, Priors):
         sigma_t = np.sqrt(sigma**2.0 + sighigh**2.0)
     
         prehigh = (np.sqrt(2.0 * np.pi) * sigma_t)**(-1.0)
-        insidehigh = -0.5 * ((data - Models.high_g(self, g_data, highorder))/(sigma_t))**2.0
+        insidehigh = -0.5 * ((data - Models.high_g(self, g_data))/(sigma_t))**2.0
     
         return prehigh*np.exp(insidehigh)
 
 
-    def sampler_mix(self, params, g_data, data, sigma, siglow, sighigh, loworder, highorder):
+    def sampler_mix(self, params, g_data, data, sigma, siglow, sighigh, loworder):
 
         '''
         The model mixing function sent to the sampler to find the values of the parameters in the 
@@ -923,7 +932,7 @@ class Mixing(Switching, Models, Priors):
 
         :Example:
             emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix,
-                                  args=[g_data, data, sigma, loworder, highorder, mu, sig])
+                                  args=[g_data, data, sigma, loworder, mu, sig])
 
         Parameters:
         -----------
@@ -941,9 +950,6 @@ class Mixing(Switching, Models, Priors):
 
         loworder : numpy.ndarray, int, float
             The order of the small-g expansion desired for the mixing calculation.
-
-        highorder : numpy.ndarray, int, float
-            The order of the large-g expansion desired for the mixing calculation.
 
         Returns:
         --------
@@ -968,7 +974,7 @@ class Mixing(Switching, Models, Priors):
                 mixed_likelihood[i] = self.f(params, g_data[i]) * \
                                     Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], siglow[i], loworder) \
                                     + (1.0- self.f(params, g_data[i])) * \
-                                    Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], sighigh[i], highorder)
+                                    Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], sighigh[i])
 
                 if mixed_likelihood[i] <= 0.0:
                     return -np.inf
@@ -983,7 +989,7 @@ class Mixing(Switching, Models, Priors):
             return mixed_results
 
         
-    def mixed_model(self, g_data, data, sigma, loworder, highorder):
+    def mixed_model(self, g_data, data, sigma, loworder):
         
         '''
         A function that will run the emcee ensemble sampler for a given mixed model to determine at least one
@@ -993,7 +999,7 @@ class Mixing(Switching, Models, Priors):
         
         :Example:
             Mixing.mixed_model(g_data=np.linspace(0.0, 0.5, 20), data=np.array(), sigma=np.array(),
-            loworder=5, highorder=23)
+            loworder=5)
             
         Parameters:
         -----------
@@ -1013,9 +1019,6 @@ class Mixing(Switching, Models, Priors):
         loworder : numpy.ndarray, int, float          
             The order of the small-g expansion desired for the mixed model to be calculated at.
             
-        highorder : numpy.ndarray, int, float           
-            The order of the large-g expansion desired for the mixed model to be calculated at.
-            
         Returns:
         --------
             The sampler results, contained in a sampler object, from the determination of the
@@ -1027,7 +1030,7 @@ class Mixing(Switching, Models, Priors):
         self.function_mappings = {
             'logistic': self.logistic,
             'cdf': self.cdf,
-            'cosine': self.switchcos
+            'cosine': self.switchcos,
         }
         
         #ask user which switching function to use
@@ -1040,10 +1043,10 @@ class Mixing(Switching, Models, Priors):
         else:
             raise ValueError('Switching function requested is not found. Select one of the valid options.')
 
-        #call Discrepancy class for the theory errors (variances)
+        #call Uncertainties class for the theory errors (variances)
         err = Uncertainties()
         siglow = np.sqrt(err.variance_low(g_data, loworder[0]))
-        sighigh = np.sqrt(err.variance_high(g_data, highorder[0]))
+        sighigh = np.sqrt(err.variance_high(g_data, self.highorder[0]))
 
         #set up sampler
         nwalkers = 2*int(3*ndim + 1)
@@ -1058,14 +1061,13 @@ class Mixing(Switching, Models, Priors):
         starting_points[:,0] = np.random.uniform(0.12, 0.18, nwalkers)
         starting_points[:,2] = np.random.uniform(0.19, 0.24, nwalkers)
         starting_points[:,1] = np.random.uniform(0.25, 0.30, nwalkers)
-       # print(starting_points, np.shape(starting_points))
 
         #set the switching function
         self.f = self._select_function(self.choice)
         
         #call emcee
         sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix, \
-                                            args=[g_data, data, sigma, siglow, sighigh, loworder, highorder])
+                                            args=[g_data, data, sigma, siglow, sighigh, loworder])
         now = time.time()
         sampler_mixed.run_mcmc(starting_points, nsteps)
         stop = time.time()
@@ -1181,11 +1183,11 @@ class Mixing(Switching, Models, Priors):
         return acors
 
 
-    def stats_chain(self, chain, params): #---> FURTHER BREAK THIS GIGUNDOUS FUNCTION UP (after reducing it)
+    def stats_chain(self, chain): #---> FURTHER BREAK THIS GIGUNDOUS FUNCTION UP (after reducing it)
 
         '''
         Calculates the autocorrelation time and thins the samples
-        accordingly for a better estimate of the mean and median. 
+        accordingly for a better estimate of the mean, median, and MAP values. 
 
         :Example: 
             Mixing.stats_chain(chain=emcee.object, params=np.array([]))
@@ -1317,14 +1319,21 @@ class Mixing(Switching, Models, Priors):
         mean_2 = np.mean(thin[1,:])
         mean_3 = np.mean(thin[2,:])
 
+        #MAP calculation
+        map_1 = np.argmax(thin[0, :])
+        map_2 = np.argmax(thin[1, :])
+        map_3 = np.argmax(thin[2, :])
+
         #arrays
         mean_results = np.array([mean_1, mean_2, mean_3])
         median_results = np.array([median_1, median_2, median_3])
+        map_results = np.array([map_1, map_2, map_3])
 
         print('The median values are: {}'.format(median_results))
         print('The mean values are: {}'.format(mean_results))
+        print('The MAP values are: {}'.format(map_1, map_2, map_3))
 
-        return mean_results, median_results   
+        return mean_results, median_results, map_results
 
     
     def stats_trace(self, trace, ndim):

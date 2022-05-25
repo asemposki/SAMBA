@@ -11,8 +11,27 @@ __all__ = ['Discrepancy']
 
 class Discrepancy(Models):
 
+    def __init__(self, highorder):
+
+        ans = input('Which error model would you like to use: uninformative (u) or informative (i)?')
+
+        if ans == 'u':
+            self.error_model = 1
+        elif ans == 'i':
+            self.error_model = 2
+        else:
+            raise ValueError('Please choose either uninformative or informative.')
+
+        #check type and assign class variables
+        if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
+            highorder = np.array([highorder])
+
+        self.highorder = highorder 
+
+        return None
+
     
-    def fdagger(self, g, loworder, highorder, GP_mean=np.zeros([2]), GP_var=np.zeros([2])): 
+    def fdagger(self, g, loworder, GP_mean=np.zeros([2]), GP_var=np.zeros([2])): 
 
         '''
         A do-it-all function to determine the pdf of the mixed model. Can use models 
@@ -31,10 +50,6 @@ class Discrepancy(Models):
         loworder : numpy.ndarray
             The chosen order to which this model is calculated regarding the 
             small-g expansions.
-
-        highorder : numpy.ndarray
-            The chosen order to which this model is calculated regarding the 
-            large-g expansions. 
 
         GP_mean : numpy.ndarray
             An array of mean values from a Gaussian process to be mixed in
@@ -66,16 +81,14 @@ class Discrepancy(Models):
         #check orders comply with function formatting
         if isinstance(loworder, np.ndarray) != True:
             loworder = np.array([loworder])
-        if isinstance(highorder, np.ndarray) != True:
-            highorder = np.array([highorder])
 
         #uncertainties
-        v_low = np.asarray([Uncertainties.variance_low(g, loworder[i]) for i in range(len(loworder))])
-        v_high = np.asarray([Uncertainties.variance_high(g, highorder[i]) for i in range(len(highorder))])
+        v_low = np.asarray([Uncertainties.variance_low(self, g, loworder[i]) for i in range(len(loworder))])
+        v_high = np.asarray([Uncertainties.variance_high(self, g, self.highorder[i]) for i in range(len(self.highorder))])
 
         #calculating models
         f_low = [Models.low_g(self, g, i) for i in np.array([loworder])][0]
-        f_high = [Models.high_g(self, g, i) for i in np.array([highorder])][0]
+        f_high = Models.high_g(self, g)
 
         #concatenate models and variances
         if GP_mean.any() and GP_var.any() != 0:
@@ -96,6 +109,9 @@ class Discrepancy(Models):
             mean_n[i] = f[i]/v[i]
             mean_d[i] = 1.0/v[i]
             var[i] = 1.0/v[i]
+
+        #save variances for each model
+        self.var_weights = var/(np.sum(var, axis=0))
         
         mean_n = np.sum(mean_n, axis=0)
         mean_d = np.sum(mean_d, axis=0)
@@ -116,7 +132,7 @@ class Discrepancy(Models):
         #initialise credibility intervals
         intervals = np.zeros([len(g), 2])
         interval_low = np.zeros([len(loworder), len(g), 2])
-        interval_high = np.zeros([len(highorder), len(g), 2])
+        interval_high = np.zeros([len(self.highorder), len(g), 2])
 
         #calculate credibility intervals 
         intervals[:, 0] = (mean - val * np.sqrt(var))
@@ -129,19 +145,15 @@ class Discrepancy(Models):
             interval_low[i,:,0] = (Models.low_g(self, g, j.item())[0,:] - val * np.sqrt(v_low[i,:]))
             interval_low[i,:,1] = (Models.low_g(self, g, j.item())[0,:] + val * np.sqrt(v_low[i,:]))
             i += 1
-
-        #index
-        i = 0
           
-        for j in highorder:
-            interval_high[i,:,0] = (Models.high_g(self, g, j.item())[0,:] - val * np.sqrt(v_high[i,:]))
-            interval_high[i,:,1] = (Models.high_g(self, g, j.item())[0,:] + val * np.sqrt(v_high[i,:]))
-            i += 1
+        for i in range(len(self.highorder)):
+            interval_high[i,:,0] = (Models.high_g(self, g)[i,:] - val * np.sqrt(v_high[i,:]))
+            interval_high[i,:,1] = (Models.high_g(self, g)[i,:] + val * np.sqrt(v_high[i,:]))
 
         return mean, intervals, interval_low, interval_high
 
     
-    def plot_mix(self, g, loworder, highorder, plot_fdagger=True, plot_true=True, GP_mean=np.zeros([2]), GP_var=np.zeros([2])):
+    def plot_mix(self, g, loworder, plot_fdagger=True, plot_true=True, GP_mean=np.zeros([2]), GP_var=np.zeros([2])):
 
         '''
         An all-in-one plotting function that will plot the results of fdagger for N numbers
@@ -159,9 +171,6 @@ class Discrepancy(Models):
         
         loworder : int, float, numpy.ndarray
             The highest orders to which the small-g expansion will be calculated.
-
-        highorder : int, float, numpy.ndarray
-            The highest orders to which the large-g expansion will be calculated.
 
         plot_fdagger : bool
             If True, this parameter will allow for the plotting of fdagger and
@@ -185,8 +194,6 @@ class Discrepancy(Models):
         #check orders comply with function formatting
         if isinstance(loworder, np.ndarray) != True:
             loworder = np.array([loworder])
-        if isinstance(highorder, np.ndarray) != True:
-            highorder = np.array([highorder])
 
         #set up plot configuration
         fig = plt.figure(figsize=(8,6), dpi=600)
@@ -198,31 +205,23 @@ class Discrepancy(Models):
         ax.yaxis.set_minor_locator(AutoMinorLocator())
 
         #set up x and y limits
-        xlim = input('\nx-limits (enter "auto" if unknown): ')
-        ylim = input('\ny-limits (enter "auto" if unknown): ')
-        if xlim == "auto":
-            ax.set_xlim(0.0,0.5)
-        else:
-            ax.set_xlim(tuple(map(float, xlim.split(','))))
-        if ylim == "auto":
-            ax.set_ylim(0.0,4.0)
-        else:
-            ax.set_ylim(tuple(map(float, ylim.split(','))))
-
+        ax.set_xlim(0.0,1.0)
+        ax.set_ylim(1.0,3.0)
+        ax.set_yticks([1.0, 1.4, 1.8, 2.2, 2.6, 3.0])
+     
         #labels and true model
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
-        ax.set_title('F(g): mixed model', fontsize=22)
 
         if plot_true is True:
             ax.plot(g, Models.true_model(self, g), 'k', label='True model')
 
         #call fdagger to calculate results
         if GP_mean.any() and GP_var.any() != 0:
-            mean, intervals, interval_low, interval_high = self.fdagger(g, loworder, highorder, GP_mean, GP_var)
+            mean, intervals, interval_low, interval_high = self.fdagger(g, loworder, GP_mean, GP_var)
 
         else:
-            mean, intervals, interval_low, interval_high = self.fdagger(g, loworder, highorder)
+            mean, intervals, interval_low, interval_high = self.fdagger(g, loworder)
 
         #plot the small-g expansions and error bands
         for j in loworder:
@@ -233,13 +232,13 @@ class Discrepancy(Models):
                 label=r'$f_s$ ($N_s$ = {}) {}\% CI'.format(loworder[i], int(self.ci)))
             ax.plot(g, interval_low[i, :, 1], 'r', linestyle='dotted')
 
-        #plot the large-g expansions and error bands
-        for j in highorder:
-            ax.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
-            
-        for i in range(len(highorder)):
+        #for each large-g order, calculate and plot
+        for i,j in zip(range(len(self.highorder)), self.highorder):
+            ax.plot(g, self.high_g(g)[i,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+          
+        for i in range(len(self.highorder)):
             ax.plot(g, interval_high[i, :, 0], 'b', linestyle='dotted', \
-                label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(highorder[i], int(self.ci)))
+                label=r'$f_l$ ($N_l$ = {}) {}\% CI'.format(self.highorder[i], int(self.ci)))
             ax.plot(g, interval_high[i, :, 1], 'b', linestyle='dotted')
 
         if plot_fdagger == True:
@@ -615,13 +614,13 @@ class Discrepancy(Models):
         return None
 
 
-    def vertical_plot_fdagger(self, g, loworder, highorder, gp_mean1=np.zeros([2]), gp_mean2=np.zeros([2]), gp_var1=np.zeros([2]), gp_var2=np.zeros([2])):
+    def vertical_plot_fdagger(self, g1, g2, loworder, highorder, gp_mean1=np.zeros([2]), gp_mean2=np.zeros([2]), gp_var1=np.zeros([2]), gp_var2=np.zeros([2])):
 
         '''
         Vertical panel plotter for the paper to generate two mixed model plots. 
 
         :Example:
-            Discrepancy.subplot_mix(g=np.linspace(1e-6, 0.5, 100), loworder=np.array([2, 5]), 
+            Discrepancy.subplot_mix(g=np.linspace(1e-6, 0.5, 100), loworder=np.array([5, 2]), 
             highorder=5)
 
         Parameters:
@@ -676,7 +675,7 @@ class Discrepancy(Models):
             #labels and true model
             ax.set_xlabel('g', fontsize=22)
             ax.set_ylabel('F(g)', fontsize=22)
-            ax.plot(g, Models.true_model(self, g), 'k', label='True model')
+            ax.plot(g1, Models.true_model(self, g1), 'k', label='True model')
 
             #only label outer plot axes
             ax.label_outer()
@@ -685,53 +684,53 @@ class Discrepancy(Models):
         if gp_mean1.any() and gp_mean2.any() != 0:
             
             #then get plot results
-            mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g, loworder[0], \
+            mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g1, loworder[0], \
                 highorder[0], GP_mean=gp_mean1, GP_var=gp_var1) 
 
-            mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g, loworder[1], \
+            mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g2, loworder[1], \
                 highorder[1], GP_mean=gp_mean2, GP_var=gp_var2)
 
         else:
-            mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g, loworder[0], highorder[0])
-            mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g, loworder[1], highorder[1])
+            mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g1, loworder[0], highorder[0])
+            mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g2, loworder[1], highorder[1])
 
         #plot the small-g expansions and error bands (panel a)
-        ax1.plot(g, Models.low_g(self, g, loworder[0].item())[0,:], 'r--', \
+        ax1.plot(g1, Models.low_g(self, g1, loworder[0].item())[0,:], 'r--', \
             label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
-        ax1.plot(g, interval_low_1[0, :, 0], 'r', linestyle='dotted',\
+        ax1.plot(g1, interval_low_1[0, :, 0], 'r', linestyle='dotted',\
              label=r'$f_s$ {}\% CI'.format(int(self.ci)))
-        ax1.plot(g, interval_low_1[0, :, 1], 'r', linestyle='dotted')
+        ax1.plot(g1, interval_low_1[0, :, 1], 'r', linestyle='dotted')
 
-        #plot the large-g expansions and error bands (panel b)
-        ax2.plot(g, Models.low_g(self, g, loworder[1].item())[0,:], color='r', linestyle='dashed',\
+        #plot the small-g expansions and error bands (panel b)
+        ax2.plot(g2, Models.low_g(self, g2, loworder[1].item())[0,:], color='r', linestyle='dashed',\
                 label=r'$f_s$ ($N_s$ = {})'.format(loworder[1]))
-        ax2.plot(g, interval_low_2[0, :, 0], color='r', linestyle='dotted', \
+        ax2.plot(g2, interval_low_2[0, :, 0], color='r', linestyle='dotted', \
             label=r'$f_s$ {}\% CI'.format(int(self.ci)))
-        ax2.plot(g, interval_low_2[0, :, 1], color='r', linestyle='dotted')
+        ax2.plot(g2, interval_low_2[0, :, 1], color='r', linestyle='dotted')
 
         #plot the large-g expansions and error bands (panel a)
-        ax1.plot(g, Models.high_g(self, g, highorder[0].item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
-        ax1.plot(g, interval_high_1[0, :, 0], 'b', linestyle='dotted', label=r'$f_l$ {}\% CI'.format(int(self.ci)))
-        ax1.plot(g, interval_high_1[0, :, 1], 'b', linestyle='dotted')
+        ax1.plot(g1, Models.high_g(self, g1, highorder[0].item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
+        ax1.plot(g1, interval_high_1[0, :, 0], 'b', linestyle='dotted', label=r'$f_l$ {}\% CI'.format(int(self.ci)))
+        ax1.plot(g1, interval_high_1[0, :, 1], 'b', linestyle='dotted')
        
         #plot the large-g expansions and error bands (panel b)
-        ax2.plot(g, Models.high_g(self, g, highorder[1].item())[0,:], color='b', linestyle='dashed', \
+        ax2.plot(g2, Models.high_g(self, g2, highorder[1].item())[0,:], color='b', linestyle='dashed', \
                 label=r'$f_l$ ($N_l$ = {})'.format(highorder[1]))
-        ax2.plot(g, interval_high_2[0, :, 0], color='b', linestyle='dotted', \
+        ax2.plot(g2, interval_high_2[0, :, 0], color='b', linestyle='dotted', \
             label=r'$f_l$ {}\% CI'.format(int(self.ci)))
-        ax2.plot(g, interval_high_2[0, :, 1], color='b', linestyle='dotted')
+        ax2.plot(g2, interval_high_2[0, :, 1], color='b', linestyle='dotted')
            
         #uninformative model case
-        ax1.plot(g, mean_1, 'g', label='Mixed model')
-        ax1.plot(g, intervals_1[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
-        ax1.plot(g, intervals_1[:,1], 'g', linestyle='dotted')
-        ax1.fill_between(g, intervals_1[:,0], intervals_1[:,1], color='green', alpha=0.2)
+        ax1.plot(g1, mean_1, 'g', label='Mixed model')
+        ax1.plot(g1, intervals_1[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
+        ax1.plot(g1, intervals_1[:,1], 'g', linestyle='dotted')
+        ax1.fill_between(g1, intervals_1[:,0], intervals_1[:,1], color='green', alpha=0.2)
 
         #informative model case
-        ax2.plot(g, mean_2, 'g', label='Mixed model')
-        ax2.plot(g, intervals_2[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
-        ax2.plot(g, intervals_2[:,1], 'g', linestyle='dotted')
-        ax2.fill_between(g, intervals_2[:,0], intervals_2[:,1], color='green', alpha=0.2)
+        ax2.plot(g2, mean_2, 'g', label='Mixed model')
+        ax2.plot(g2, intervals_2[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
+        ax2.plot(g2, intervals_2[:,1], 'g', linestyle='dotted')
+        ax2.fill_between(g2, intervals_2[:,0], intervals_2[:,1], color='green', alpha=0.2)
 
         #add panel labels
         ax1.text(0.94, 1.3, '(a)', fontsize=18)

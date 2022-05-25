@@ -144,9 +144,6 @@ class GP(Models):
         #fit the GP to the training data
         sk = m.fit(gc, datac)
 
-        #get the covariance matrix of the unconditional GP
-        uncov = sk.kernel_(gc)
-
         #print the optimized parameters for the user
         print('Gaussian process parameters: {}'.format(m.kernel_))
 
@@ -185,7 +182,7 @@ class GP(Models):
             name = input('Enter a file name (include .jpg, .png, etc.)')
             fig.savefig(name, bbox_inches='tight')
 
-        return sk, uncov
+        return sk
 
 
     def validate(self, sk, loworder, highorder, interval=68):
