@@ -12,7 +12,7 @@ from matplotlib.ticker import AutoMinorLocator
 from priors import Priors
 from uncertainties import Uncertainties
 
-__all__ = ['Models', 'Switching', 'Mixing']
+__all__ = ['Models', 'Mixing']
 
 
 class Models():
@@ -354,316 +354,9 @@ class Models():
         
         ax.legend(fontsize=18)
         plt.show()
-    
-
-class Switching:   #MAKE THESE INTO CLASS AND STATIC METHODS IN MIXING() CLASS!
-   
-    
-    def __init__(self):
-        
-        '''
-        This class contains each of the current switching functions that the user can select from 
-        when running the mixed model function in the class Mixing.
-        
-        :Example:
-            Switching()
-            
-        Parameters:
-        -----------
-        None.
-        
-        Returns:
-        --------
-        None.
-        '''
-        
-        pass
-    
-    
-    def logistic(self, params, g):
-        
-        '''
-        A basic logistic function often used in machine learning, implemented here with two free
-        parameters to be determined via sampling.
-        
-        :Example:
-            Switching.logistic(params=np.array(), g=0.5)
-            
-        Parameters:
-        -----------
-        params : numpy.ndarray
-            The array of parameters the sampler will determine (here labelled beta0 and beta1, where
-            beta0 controls the location of the function and beta1 controls the slope). 
-
-        Returns:
-        --------
-        mixing : float        
-            The result of the logistic function given the value g.
-        '''
-        beta0, beta1 = params
-    
-        mixing = (1.0 + np.exp(-(beta0 + g*beta1)))**(-1.0)
-    
-        return mixing
-    
-
-    def cdf(self, params, g):
-        
-        '''
-        The cumulative distribution function of a standard normal distribution, with two free parameters
-        determined by sampling.
-        
-        :Example:
-            Switching.cdf(params=np.array(), g=0.5)
-        
-        Parameters:
-        -----------
-        params : numpy.ndarray
-            The array of parameters the sampler will determine (here labelled beta0 and beta1, where
-            beta0 controls the location of the function and beta1 controls the slope). 
-        
-        g : float
-            The value of g the cdf is calculated at.
-
-        Returns:
-        --------
-        function : float         
-            The result of the cdf function at the value of g. 
-        '''
-        beta0, beta1 = params
-    
-        function = (1.0 + math.erf(beta0 + g*beta1)/np.sqrt(2.0)) / 2.0
-    
-        return function
 
 
-    def hypertan(self, params, g):
-
-        #params unpack
-        theta0, theta1 = params
-
-        #set up the tanh function
-        hyperfunction = 0.5 + 0.5*np.tanh(-(theta0 + g*theta1))
-
-        return hyperfunction
-    
-    
-    def switchcos(self, params, g):
-        
-        '''
-        A piecewise function using two constants at either end, and two cosine functions in the centre,
-        to be used as a switching function. One free parameter, g3, is found by sampling. 
-        
-        :Example:
-            Switching.switchcos(params=np.array(), g=0.5)
-            
-        Parameters:
-        -----------
-        params : numpy.ndarray
-            The array of parameters to be determined by the sampler (here labelled g1, g2, and g3, where
-            g1 is the separation point between the first constant function and the first cosine function, 
-            g2 is the separation point between the second cosine function and the second constant function, 
-            and g3 is the point between the two cosine functions). 
-
-        g : float
-            The value of g that this cosine function is calculated at.
-
-        Returns:
-        --------
-            The value of the function at a specific point in g. 
-        '''
-
-        #unpack the parameters
-        g1, g2, g3 = params
-
-        if g1 > g2 or g2 < g3 or g1 > g3:
-            return -np.inf
-
-        if g <= g1:
-            return 1.0
-    
-        elif g <= g3:
-            return (1.0 + np.cos((np.pi/2.0) * ((g - g1)/(g3 - g1))))/2.0
-    
-        elif g < g2:
-            return 0.5 + np.cos((np.pi/2.0) * (1.0 + ((g - g3)/(g2 - g3))))/2.0
-    
-        else:
-            return 0.0
-    
-
-    def ppd(self, trace, g, loworder, highorder):
-        
-        '''
-        A function to calculate the posterior predictive distribution (PPD) for any chosen switching function 
-        defined in this class. 
-        
-        :Example:
-            Switching.ppd(trace, g=np.linspace(0.0, 0.5, 100), loworder=5,
-            highorder=23)
-            
-        Parameters:
-        -----------
-        trace : numpy.ndarray
-            The trace of each of the parameters from the sampler.
-            
-        g : linspace
-            The linspace desired to calculate the PPD across.
-            
-        loworder : numpy.ndarray, int, float
-            The order of the small-g expansion to be calculated in the mixing model.
-        
-        highorder : numpy.ndarray, int, float
-            The order of the large-g expansion to be calculated in the mixing model. 
-        
-        Returns:
-        --------
-        result_array : numpy.ndarray
-            The array of results of the PPD for each of the points in the linspace g. 
-        '''
-
-        result_array = np.empty([len(g), len(trace[0].T)])
-        gmax = max(g)
-
-        #determine which switching function was used
-        if self.choice == 'logistic' or self.choice == 'cdf':
-    
-            for i in range(len(g)):
-                for j in range(len(trace[0].T)):
-            
-                    if (Models.low_g(self, g[i], loworder) - Models.high_g(self, g[i], highorder))\
-                    > 0.1 and g[i] > (0.25*gmax):
-                        result_array[i,j] = Models.high_g(self, g[i], highorder)
-                    
-                    elif (Models.low_g(self, g[i], loworder) - Models.high_g(self, g[i], highorder)) > 0.1:
-                        result_array[i,j] = Models.low_g(self, g[i], loworder)
-                    
-                    else:
-                        params = np.array([trace[0, j], trace[1, j]])
-
-                        result_array[i,j] = self.f(params, g[i])*Models.low_g(self, g[i], loworder) \
-                                        + (1.0 - self.f(params, g[i])) \
-                                        *Models.high_g(self, g[i], highorder)
-        
-            return result_array    
-
-        elif self.choice == 'cosine':
-
-            params = np.array([np.mean(trace[0,:]), np.mean(trace[1,:]), np.mean(trace[2,:])])
-
-            for i in range(len(g)):
-                for j in range(len(trace[0].T)):
-                    
-                    params = np.array([trace[0, j], trace[1, j], trace[2, j]])
-                
-                    result_array[i,j] = self.switchcos(params, g[i]) * Models.low_g(self, g[i], loworder) \
-                                    + (1.0 - self.switchcos(params, g[i])) \
-                                    * Models.high_g(self, g[i], highorder)
-
-            return result_array
-    
-    
-    def plot_ppd(self, results, g_data, g_true, g_ppd, data, ppd_results, ppd_intervals, percent, loworder, highorder):
-        
-        '''
-        A plotting function that can be used to plot the posterior predictive distribution (PPD) results (mean and 
-        credible interval) obtained from calling the functions above in the main code, as well as data generated, 
-        the true model, and the small- and large-g expansions chosen for the mixed model calculation. 
-        
-        :Example:
-            Switching.plot_ppd(g_data=np.linspace(0.0, 0.5, 20), g_true=np.linspace(0.0, 0.5, 100), 
-            g_ppd=np.linspace(0.0, 0.5, 200), data=np.array(), ppd_results=np.array(), ppd_intervals=np.array(),
-            loworder=5, highorder=23)
-            
-        Parameters:
-        -----------
-        results : numpy.ndarray
-            The mean or the median of the estimated parameters from the posterior draws. 
-
-        g_data : linspace
-            The linspace used to generate the data.
-        
-        g_true : linspace
-            The linspace used to calculate the true model over the input space, as well as the expansions.
-        
-        g_ppd : linspace
-            The linspace chosen to calculate the PPD over. 
-        
-        data : numpy.ndarray
-            An array of data either generated or supplied by the user.
-            
-        ppd_results : numpy.ndarray
-            An array of the mean of the PPD at each point in the g_ppd linspace.
-        
-        ppd_intervals : numpy.ndarray
-            A 2D array of the credibility interval calculated for the PPD (containing both bounds).
-            
-        percent : float
-            The percent credibility interval calculated for the variable ppd_intervals (used in the plot
-            legend). 
-        
-        loworder : numpy.ndarray, int, float
-            The order of the small-g expansion used in the mixed model.
-        
-        highorder : numpy.ndarray, int, float
-            The order of the large-g expansion used in the mixed model. 
-        
-        Returns:
-        --------
-        None.
-        '''
-        
-        fig = plt.figure(figsize=(8,6), dpi=600)
-        ax = plt.axes()
-        ax.tick_params(axis='x', labelsize=18)
-        ax.tick_params(axis='y', labelsize=18)
-        ax.locator_params(nbins=6)
-        ax.xaxis.set_minor_locator(AutoMinorLocator())
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.set_xlabel('g', fontsize=22)
-        ax.set_ylabel('F(g)', fontsize=22)
-
-        ax.set_xlim(0.0, 1.0)
- 
-        ax.set_ylim(1.2, 3.2)
-        ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
-
-        ax.plot(g_data, data, 'k.', label='Data set')  
-        ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
-
-        ax.plot(g_true, Models.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
-        ax.plot(g_true, Models.high_g(self, g_true, highorder)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
-
-        ax.plot(g_ppd, ppd_results, 'g', label='Mixed model')
-        ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% CI (HPD)'.format(percent))
-        ax.plot(g_ppd, ppd_intervals[:,1], 'g', linestyle='dotted')
-
-        ax.fill_between(g_ppd, ppd_intervals[:,0], ppd_intervals[:,1], color='green', alpha=0.2)
-
-        #parameter results
-        ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{2}$, $\theta_{3}$")
-        ax.axvline(x=results[1], color='darkviolet', alpha=0.35)
-        ax.axvline(x=results[2], color='darkviolet', alpha=0.35)
-
-        # ax.axvline(x=0.16, color='darkviolet', linewidth= 30, alpha=0.15)
-        # ax.axvline(x=0.23, color='darkviolet', linewidth= 30, alpha=0.15)
-        # ax.axvline(x=0.30, color='darkviolet', linewidth= 30, alpha=0.15)
-
-        ax.legend(fontsize=18, loc='upper right')
-        plt.show()
-
-        answer = input('Would you like to save the plot to a file (yes/no)?')
-
-        if answer == 'yes':
-            name = input('Enter a file name to use (include file type as .png, .pdf, etc.).')
-            fig.savefig(name, bbox_inches='tight')
-        else:
-            pass
-        
-        return None
-
-
-class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNCTIONS NOT A CLASS
+class Mixing(Models, Priors): 
     
     
     def __init__(self, highorder):
@@ -671,7 +364,7 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
         '''
         This class is designed with all of the necessary functions for creating a data set, plotting it 
         along with the true model, and calculating expansions of specific orders of the true model to mix.
-        Dependent on the Switching class to run the mixed model functions. 
+        Dependent on the Models class to run the expansion functions. 
     
         :Example:            
             Mixing()
@@ -928,7 +621,7 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
 
         '''
         The model mixing function sent to the sampler to find the values of the parameters in the 
-        selected switching function. 
+        selected mixing function. 
 
         :Example:
             emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix,
@@ -993,9 +686,9 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
         
         '''
         A function that will run the emcee ensemble sampler for a given mixed model to determine at least one
-        unknown parameter in the switching function selected. The function asks the user to decide which switching
-        function to use, and runs the subsequent code to use the correct one. Functions sent to the sampler are 
-        found in the class 'Switching'.
+        unknown parameter in the mixing function selected. The function asks the user to decide which mixing
+        function to use, and runs the subsequent code to use the correct one. Functions sent to the sampler are
+        static methods defined at the end of this class.
         
         :Example:
             Mixing.mixed_model(g_data=np.linspace(0.0, 0.5, 20), data=np.array(), sigma=np.array(),
@@ -1026,22 +719,22 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
             
         '''
 
-        #dictionary of switching functions
+        #dictionary of mixing functions
         self.function_mappings = {
             'logistic': self.logistic,
             'cdf': self.cdf,
             'cosine': self.switchcos,
         }
         
-        #ask user which switching function to use
-        self.choice = input('What switching function would you like to use: logistic, cdf, or cosine?')
+        #ask user which mixing function to use
+        self.choice = input('What mixing function would you like to use: logistic, cdf, or cosine?')
         
         if self.choice == 'logistic' or self.choice == 'cdf':
             ndim = 2 
         elif self.choice == 'cosine':
             ndim = 3
         else:
-            raise ValueError('Switching function requested is not found. Select one of the valid options.')
+            raise ValueError('Mixing function requested is not found. Select one of the valid options.')
 
         #call Uncertainties class for the theory errors (variances)
         err = Uncertainties()
@@ -1062,7 +755,7 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
         starting_points[:,2] = np.random.uniform(0.19, 0.24, nwalkers)
         starting_points[:,1] = np.random.uniform(0.25, 0.30, nwalkers)
 
-        #set the switching function
+        #set the mixing function
         self.f = self._select_function(self.choice)
         
         #call emcee
@@ -1092,7 +785,7 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
     def _select_function(self, x):
 
         '''
-        An internal function that selects the proper switching function given the input from the user
+        An internal function that selects the proper mixing function given the input from the user
         in the function 'Mixing.mixed_model'. 
 
         :Example:
@@ -1101,12 +794,12 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
         Parameters:
         -----------
         x : string
-            The string that is input by the user to select one of the available switching functions. 
+            The string that is input by the user to select one of the available mixing functions. 
         
         Returns:
         --------
         self.function_mappings[x]
-            The correct function label for the chosen switching function, converted from string to object.
+            The correct function label for the chosen mixing function, converted from string to object.
         '''
         while True:
             try:
@@ -1349,10 +1042,10 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
         -----------
         trace : numpy.ndarray
             The trace from the sampler object that was generated when estimating the
-            parameters of the switching function.
+            parameters of the mixing function.
 
         ndim : int
-            The number of parameters in the switching function that were sampled. To
+            The number of parameters in the mixing function that were sampled. To
             find this, simply use len(trace) in the main code and pass it here.
 
         Returns:
@@ -1421,6 +1114,279 @@ class Mixing(Models, Switching, Priors):    #MAKE SWITCHING() A BUNCH OF SUBFUNC
             quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True, label_kwargs=dict(fontsize=16))
         
         return mean, ci 
+
+
+    @staticmethod
+    def logistic(params, g):
+        
+        '''
+        A basic logistic function often used in machine learning, implemented here with two free
+        parameters to be determined via sampling.
+        
+        :Example:
+            logistic(params=np.array(), g=0.5)
+            
+        Parameters:
+        -----------
+        params : numpy.ndarray
+            The array of parameters the sampler will determine (here labelled beta0 and beta1, where
+            beta0 controls the location of the function and beta1 controls the slope). 
+
+        Returns:
+        --------
+        mixing : float        
+            The result of the logistic function given the value g.
+        '''
+        beta0, beta1 = params
+    
+        mixing = (1.0 + np.exp(-(beta0 + g*beta1)))**(-1.0)
+    
+        return mixing
+    
+    @staticmethod
+    def cdf(params, g):
+        
+        '''
+        The cumulative distribution function of a standard normal distribution, with two free parameters
+        determined by sampling.
+        
+        :Example:
+            cdf(params=np.array(), g=0.5)
+        
+        Parameters:
+        -----------
+        params : numpy.ndarray
+            The array of parameters the sampler will determine (here labelled beta0 and beta1, where
+            beta0 controls the location of the function and beta1 controls the slope). 
+        
+        g : float
+            The value of g the cdf is calculated at.
+
+        Returns:
+        --------
+        function : float         
+            The result of the cdf function at the value of g. 
+        '''
+        beta0, beta1 = params
+    
+        function = (1.0 + math.erf(beta0 + g*beta1)/np.sqrt(2.0)) / 2.0
+    
+        return function
+
+    @staticmethod
+    def hypertan(params, g):
+
+        #params unpack
+        theta0, theta1 = params
+
+        #set up the tanh function
+        hyperfunction = 0.5 + 0.5*np.tanh(-(theta0 + g*theta1))
+
+        return hyperfunction
+    
+    @staticmethod
+    def switchcos(params, g):
+        
+        '''
+        A piecewise function using two constants at either end, and two cosine functions in the centre,
+        to be used as a mixing function. One free parameter, g3, is found by sampling. 
+        
+        :Example:
+            switchcos(params=np.array(), g=0.5)
+            
+        Parameters:
+        -----------
+        params : numpy.ndarray
+            The array of parameters to be determined by the sampler (here labelled g1, g2, and g3, where
+            g1 is the separation point between the first constant function and the first cosine function, 
+            g2 is the separation point between the second cosine function and the second constant function, 
+            and g3 is the point between the two cosine functions). 
+
+        g : float
+            The value of g that this cosine function is calculated at.
+
+        Returns:
+        --------
+            The value of the function at a specific point in g. 
+        '''
+
+        #unpack the parameters
+        g1, g2, g3 = params
+
+        if g1 > g2 or g2 < g3 or g1 > g3:
+            return -np.inf
+
+        if g <= g1:
+            return 1.0
+    
+        elif g <= g3:
+            return (1.0 + np.cos((np.pi/2.0) * ((g - g1)/(g3 - g1))))/2.0
+    
+        elif g < g2:
+            return 0.5 + np.cos((np.pi/2.0) * (1.0 + ((g - g3)/(g2 - g3))))/2.0
+    
+        else:
+            return 0.0
+
+
+    def ppd(self, trace, g, loworder):
+        
+        '''
+        A function to calculate the posterior predictive distribution (PPD) for any chosen mixing function 
+        defined in this class. 
+        
+        :Example:
+            Mixing.ppd(trace, g=np.linspace(0.0, 0.5, 100), loworder=5)
+            
+        Parameters:
+        -----------
+        trace : numpy.ndarray
+            The trace of each of the parameters from the sampler.
+            
+        g : linspace
+            The linspace desired to calculate the PPD across.
+            
+        loworder : numpy.ndarray, int, float
+            The order of the small-g expansion to be calculated in the mixing model.
+             
+        Returns:
+        --------
+        result_array : numpy.ndarray
+            The array of results of the PPD for each of the points in the linspace g. 
+        '''
+
+        result_array = np.empty([len(g), len(trace[0].T)])
+        gmax = max(g)
+
+        #determine which mixing function was used
+        if self.choice == 'logistic' or self.choice == 'cdf':
+    
+            for i in range(len(g)):
+                for j in range(len(trace[0].T)):
+            
+                    if (Models.low_g(self, g[i], loworder) - Models.high_g(self, g[i]))\
+                    > 0.1 and g[i] > (0.25*gmax):
+                        result_array[i,j] = Models.high_g(self, g[i])
+                    
+                    elif (Models.low_g(self, g[i], loworder) - Models.high_g(self, g[i])) > 0.1:
+                        result_array[i,j] = Models.low_g(self, g[i], loworder)
+                    
+                    else:
+                        params = np.array([trace[0, j], trace[1, j]])
+
+                        result_array[i,j] = self.f(params, g[i])*Models.low_g(self, g[i], loworder) \
+                                        + (1.0 - self.f(params, g[i])) \
+                                        *Models.high_g(self, g[i])
+        
+            return result_array    
+
+        elif self.choice == 'cosine':
+
+            params = np.array([np.mean(trace[0,:]), np.mean(trace[1,:]), np.mean(trace[2,:])])
+
+            for i in range(len(g)):
+                for j in range(len(trace[0].T)):
+                    
+                    params = np.array([trace[0, j], trace[1, j], trace[2, j]])
+                
+                    result_array[i,j] = self.switchcos(params, g[i]) * Models.low_g(self, g[i], loworder) \
+                                    + (1.0 - self.switchcos(params, g[i])) \
+                                    * Models.high_g(self, g[i])
+
+            return result_array
+    
+    
+    def plot_ppd(self, results, g_data, g_true, g_ppd, data, ppd_results, ppd_intervals, percent, loworder):
+        
+        '''
+        A plotting function that can be used to plot the posterior predictive distribution (PPD) results (mean and 
+        credible interval) obtained from calling the functions above in the main code, as well as data generated, 
+        the true model, and the small- and large-g expansions chosen for the mixed model calculation. 
+        
+        :Example:
+            Mixing.plot_ppd(g_data=np.linspace(0.0, 0.5, 20), g_true=np.linspace(0.0, 0.5, 100), 
+            g_ppd=np.linspace(0.0, 0.5, 200), data=np.array(), ppd_results=np.array(), ppd_intervals=np.array(),
+            loworder=5)
+            
+        Parameters:
+        -----------
+        results : numpy.ndarray
+            The mean or the median of the estimated parameters from the posterior draws. 
+
+        g_data : linspace
+            The linspace used to generate the data.
+        
+        g_true : linspace
+            The linspace used to calculate the true model over the input space, as well as the expansions.
+        
+        g_ppd : linspace
+            The linspace chosen to calculate the PPD over. 
+        
+        data : numpy.ndarray
+            An array of data either generated or supplied by the user.
+            
+        ppd_results : numpy.ndarray
+            An array of the mean of the PPD at each point in the g_ppd linspace.
+        
+        ppd_intervals : numpy.ndarray
+            A 2D array of the credibility interval calculated for the PPD (containing both bounds).
+            
+        percent : float
+            The percent credibility interval calculated for the variable ppd_intervals (used in the plot
+            legend). 
+        
+        loworder : numpy.ndarray, int, float
+            The order of the small-g expansion used in the mixed model.
+          
+        Returns:
+        --------
+        None.
+        '''
+        
+        fig = plt.figure(figsize=(8,6), dpi=600)
+        ax = plt.axes()
+        ax.tick_params(axis='x', labelsize=18)
+        ax.tick_params(axis='y', labelsize=18)
+        ax.locator_params(nbins=6)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.set_xlabel('g', fontsize=22)
+        ax.set_ylabel('F(g)', fontsize=22)
+
+        ax.set_xlim(0.0, 1.0)
+ 
+        ax.set_ylim(1.2, 3.2)
+        ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
+
+        ax.plot(g_data, data, 'k.', label='Data set')  
+        ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
+
+        ax.plot(g_true, Models.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
+        ax.plot(g_true, Models.high_g(self, g_true)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
+
+        ax.plot(g_ppd, ppd_results, 'g', label='Mixed model')
+        ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% CI (HPD)'.format(percent))
+        ax.plot(g_ppd, ppd_intervals[:,1], 'g', linestyle='dotted')
+
+        ax.fill_between(g_ppd, ppd_intervals[:,0], ppd_intervals[:,1], color='green', alpha=0.2)
+
+        #parameter results
+        ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{2}$, $\theta_{3}$")
+        ax.axvline(x=results[1], color='darkviolet', alpha=0.35)
+        ax.axvline(x=results[2], color='darkviolet', alpha=0.35)
+
+        ax.legend(fontsize=18, loc='upper right')
+        plt.show()
+
+        answer = input('Would you like to save the plot to a file (yes/no)?')
+
+        if answer == 'yes':
+            name = input('Enter a file name to use (include file type as .png, .pdf, etc.).')
+            fig.savefig(name, bbox_inches='tight')
+        else:
+            pass
+        
+        return None
 
 
 if __name__=="__main__":

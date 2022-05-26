@@ -20,10 +20,10 @@ docstrings = docrep.DocstringProcessor()
 class GP(Models):
 
 
-    def __init__(self, g, kernel="RBF", fix_length=False):
+    def __init__(self, g, highorder, kernel="RBF", fix_length=False):
 
         '''
-        A class that will pull from the Models and Discrepancy classes
+        A class that will pull from the Models class
         to perform GP emulation on two models from the small-g expansion region
         to the large-g expansion region. The parameter settings of the kernel
         will be set by the user in this initial function. This class 'wraps' the
@@ -36,6 +36,9 @@ class GP(Models):
         -----------
         g : numpy linspace
             The linspace across the coupling constant space used for the GP.
+        
+        highorder : numpy.ndarray, float, int
+            The truncation order of the large-g expansion. 
         
         kernel : str
             The type of kernel the user wishes to use. Default is the RBF kernel;
@@ -52,6 +55,12 @@ class GP(Models):
         
         #set up the prediction array as a class variable for use later
         self.gpredict = g
+
+        #check type and assign class variables
+        if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
+            highorder = np.array([highorder])
+        
+        self.highorder = highorder 
 
         #integral length
         self.gint = np.empty([])
@@ -91,7 +100,7 @@ class GP(Models):
         return None
 
     
-    def training(self, loworder, highorder, error=False, method=1):
+    def training(self, loworder, error=False, method=1):
 
         '''
         A function that links the model data and the training function in 
@@ -104,9 +113,6 @@ class GP(Models):
         -----------
         loworder : numpy.ndarray, float, int
             The truncation order for the low-g expansion.
-
-        highorder : numpy.ndarray, float, int
-            The truncation order for the high-g expansion.
 
         error : bool
             A boolean variable to toggle use of the data uncertainty in the 
@@ -126,7 +132,7 @@ class GP(Models):
         self.method = method 
 
         #call the training set generator function
-        gs, datas, sigmas = self.training_set(loworder, highorder)
+        gs, datas, sigmas = self.training_set(loworder)
 
         #make column vectors for the regressor
         gc = gs.reshape(-1,1)
@@ -167,7 +173,7 @@ class GP(Models):
         ax.errorbar(self.gtrlow, self.datatrlow, yerr=self.lowsigma, color='red', fmt='o', markersize=4, \
                     capsize=4, label=r'$f_s$ ($N_s$ = {}) data'.format(loworder[0]))
         ax.errorbar(self.gtrhigh, self.datatrhigh, yerr=self.highsigma, color='blue', fmt='o', markersize=4, \
-                    capsize=4, label=r'$f_l$ ($N_l$ = {}) data'.format(highorder[0]))
+                    capsize=4, label=r'$f_l$ ($N_l$ = {}) data'.format(self.highorder[0]))
 
         #plot the chosen training points over the whole training set
         ax.errorbar(gs, datas, yerr=sigmas, color='black', fmt='o', markersize=4, capsize=4, label='Training data')
@@ -185,7 +191,7 @@ class GP(Models):
         return sk
 
 
-    def validate(self, sk, loworder, highorder, interval=68):
+    def validate(self, sk, loworder, interval=68):
 
         '''
         A wrapper function for scikit learn's GP prediction function. This will 
@@ -201,9 +207,6 @@ class GP(Models):
 
         loworder : int
             The order at which the small-g expansion data was generated.
-
-        highorder : int
-            The order at which the large-g expansion data was generated.
 
         interval : float
             The credible interval desired. 68 or 95 available.
@@ -257,7 +260,7 @@ class GP(Models):
         ax.errorbar(self.gtrlow, self.datatrlow, self.lowsigma, color="red", fmt='o', markersize=4, \
             capsize=4, alpha = 0.4, label=r"$f_s$ ($N_s$ = {})".format(loworder[0]), zorder=1)
         ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, color="blue", fmt='o', markersize=4, \
-             capsize=4, alpha=0.4, label=r"$f_l$ ($N_l$ = {})".format(highorder[0]), zorder=1)
+             capsize=4, alpha=0.4, label=r"$f_l$ ($N_l$ = {})".format(self.highorder[0]), zorder=1)
         ax.plot(self.gpred, self.meanp, 'g', label='Predictions', zorder=2)
         ax.plot(self.gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ CI'.format(interval), zorder=2)
         ax.plot(self.gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
@@ -276,22 +279,19 @@ class GP(Models):
         return self.meanp, self.sigp, self.cov
 
     
-    def training_set(self, loworder, highorder):
+    def training_set(self, loworder):
 
         '''
         An internal function to calculate the necessary training data set from
         the input prediction set. 
 
         :Example:
-            GP.training_set(loworder=np.array([2]), highorder=np.array([2])) 
+            GP.training_set(loworder=np.array([2])) 
 
         Parameters:
         -----------
         loworder : numpy.ndarray
             The truncation order of the small-g expansion.
-
-        highorder : numpy.ndarray
-            The truncation order of the large-g expansion.
 
         Returns:
         -------
@@ -315,45 +315,39 @@ class GP(Models):
         #stop the training sets using derivatives
         dg = gtrainingset[1] - gtrainingset[0]
         lowarray = Models.low_g(self, gtrainingset, loworder)[0]
-        higharray = Models.high_g(self, gtrainingset, highorder)[0]
+        higharray = Models.high_g(self, gtrainingset)[0]
         dfsdg = np.gradient(lowarray, dg)
         dfldg = np.gradient(higharray, dg)    
        
         for i in range(len(gtrainingset)):
             if np.abs(dfsdg[i]) >= 10.0:
                 lowindex = i-1
-                #print(lowindex)
                 break 
 
         for i in range(len(gtrainingset)-1, -1, -1):
             if np.abs(dfldg[i]) >= 10.0:
                 highindex = i+1
-                #print(highindex)
                 break 
 
         #slice the training set for the two models
         self.gtrlow = gtrainingset[:lowindex]
         self.gtrhigh = gtrainingset[highindex:]
 
-      #  print('**Length of training sets: {} and {}'.format(len(self.gtrlow), len(self.gtrhigh)))
-
         #calculate the data at each point
         self.datatrlow = Models.low_g(self, self.gtrlow, loworder)[0,:]
-        self.datatrhigh = Models.high_g(self, self.gtrhigh, highorder)[0,:]
+        self.datatrhigh = Models.high_g(self, self.gtrhigh)[0,:]
 
         #calculate the variance at each point from the next term
         obj = Uncertainties()
         lowvariance = obj.variance_low(self.gtrlow, loworder[0])
         self.lowsigma = np.sqrt(lowvariance)
-        highvariance = obj.variance_high(self.gtrhigh, highorder[0])
+        highvariance = obj.variance_high(self.gtrhigh, self.highorder[0])
         self.highsigma = np.sqrt(highvariance)
 
         #find the values of g in the other set to determine location of points
         index_glow = (np.where(self.gtrlow == self.gtrhigh[0])[0])[0]
         index_ghigh = (np.where(self.gtrhigh == self.gtrlow[-1])[0])[0]
-     #   print('***Index: {} ***'.format(index_ghigh))
-     #   print('Values to compare to MD: {} and {}.'.format(self.gtrlow[index_glow], self.gtrhigh[index_ghigh]))
-
+    
         #value of g at the optimal red points
         pt1 = 0.0656575
         pt2 = 0.1161625
@@ -367,8 +361,6 @@ class GP(Models):
             if self.highsigma[i] >= 0.05*self.datatrhigh[i]:
                 indexerror = i
                 break 
-
-     #   print('Index of error at 5%: {}; g-value = {}; error = {}'.format(indexerror, self.gtrhigh[indexerror], self.highsigma[indexerror]))
 
         #find the values in the training array closest to the points
         indexpt1 = self.nearest_value(self.gtrlow, pt1)
@@ -413,20 +405,7 @@ class GP(Models):
 
         return index
 
-#class Diagnostics(GP):
 
-
-#     def __init__(self, g):
-
-#         #redefine self.gpredict here
-#         self.gpredict = g
-        
-#         #***GET GPREDICT PASSED HERE***
-#         print('Available diagnostic tests: Mahalanobis distance.')
-
-#         return None
-
- 
     def ref_dist(self, mean, cov):
 
         '''
@@ -485,7 +464,7 @@ class GP(Models):
         return samples
 
 
-    def MD_set(self, loworder, highorder, test=False):
+    def MD_set(self, loworder):
 
         '''
         Takes the training set of points and uses them to cut the
@@ -499,10 +478,7 @@ class GP(Models):
         -----------
         loworder : numpy.ndarray
             The truncation order for the small-g expansion.
-
-        highorder : numpy.ndarray
-            The truncation order for the large-g expansion. 
-        
+  
         test : bool
             The option to use this function to create a test MD set. 
 
@@ -531,7 +507,7 @@ class GP(Models):
         mdobj = Uncertainties()
         lowvar = mdobj.variance_low(self.gpredict, loworder[0])
         lowerr = np.sqrt(lowvar)
-        highvar = mdobj.variance_high(self.gpredict, highorder[0])
+        highvar = mdobj.variance_high(self.gpredict, self.highorder[0])
         hierr = np.sqrt(highvar)
 
         #compare the values and choose where the gap is
@@ -547,7 +523,6 @@ class GP(Models):
 
         #cut the GP array into the gap
         md_g = self.gpredict[index_lowerr:index_hierr]
-      #  print(f'md_g : {md_g} Type of object: {type(md_g)}')
         self.gint = md_g.copy()
         md_mean = GP_mean[index_lowerr:index_hierr]
         md_sig = GP_err[index_lowerr:index_hierr]
