@@ -316,19 +316,53 @@ class GP(Models):
         dg = gtrainingset[1] - gtrainingset[0]
         lowarray = Models.low_g(self, gtrainingset, loworder)[0]
         higharray = Models.high_g(self, gtrainingset)[0]
-        dfsdg = np.gradient(lowarray, dg)
-        dfldg = np.gradient(higharray, dg)    
-       
-        for i in range(len(gtrainingset)):
-            if np.abs(dfsdg[i]) >= 10.0:
-                lowindex = i-1
-                break 
+     #   dfsdg = np.gradient(lowarray, dg)
+     #   dfldg = np.gradient(higharray, dg)  
 
-        for i in range(len(gtrainingset)-1, -1, -1):
-            if np.abs(dfldg[i]) >= 10.0:
-                highindex = i+1
-                break 
+        print('low-g: ', lowarray, '\nhigh-g: ', higharray)
+        
+        # #test derivatives
+        # for i in range(len(gtrainingset)):
+        #     if np.abs(dfsdg[i]) >= 10.0:
+        #         lowindex = i-1
+        #         break 
 
+        # for i in range(len(gtrainingset)-1, -1, -1):
+        #     if np.abs(dfldg[i]) >= 10.0:
+        #         highindex = i+1
+        #         print('Here is 10:', highindex)
+        #         break
+
+        #stop the training set, negative curvature
+        if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
+            for i in range(len(gtrainingset)):
+                if Models.low_g(self, gtrainingset[i], loworder) < -1.0:
+                    lowindex = i-1
+                    break
+
+        #stop the training set, positive curvature
+        elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
+            for i in range(len(gtrainingset)):
+                if Models.low_g(self, gtrainingset[i], loworder) > 3.0:
+                    lowindex = i-1
+                    break
+
+        #stop the training set, even orders (positive curvature)
+        if self.highorder[0] % 2 == 0:
+            for i in range(len(gtrainingset)):
+                if Models.high_g(self, gtrainingset[i]) > 3.0:
+                    highindex = i+1
+                else:
+                    break
+
+        #stop the training set, odd orders (negative curvature)
+        else:
+            for i in range(len(gtrainingset)):
+                if Models.high_g(self, gtrainingset[i]) < -1.0:
+                    highindex = i+1
+                else:
+                    break
+           
         #slice the training set for the two models
         self.gtrlow = gtrainingset[:lowindex]
         self.gtrhigh = gtrainingset[highindex:]
@@ -345,7 +379,6 @@ class GP(Models):
         self.highsigma = np.sqrt(highvariance)
 
         #find the values of g in the other set to determine location of points
-        index_glow = (np.where(self.gtrlow == self.gtrhigh[0])[0])[0]
         index_ghigh = (np.where(self.gtrhigh == self.gtrlow[-1])[0])[0]
     
         #value of g at the optimal red points
