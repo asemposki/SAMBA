@@ -10,8 +10,7 @@
 import numpy as np
 import scipy.special as sp
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid.inset_locator import (inset_axes, zoomed_inset_axes, InsetPosition,
-                                                  mark_inset)
+from mpl_toolkits.axes_grid.inset_locator import (zoomed_inset_axes, mark_inset)
 from cycler import cycler
 from matplotlib.ticker import AutoMinorLocator
 from mixing import Models 
@@ -20,11 +19,16 @@ from mixing import Models
 __all__ = ['FPR']
 
 
-class FPR():
+class FPR(Models):
 
-    def __init__(self, g):
+    def __init__(self, g, loworder, highorder):
 
         self.g = g
+        self.loworder = loworder
+        self.highorder = highorder 
+
+        #instantiate Models() class here
+        self.m = Models(self.loworder, self.highorder)
 
         return None
 
@@ -146,7 +150,7 @@ class FPR():
         return fpr
 
     #at the moment, this is very specific to the paper plot---disassemble later for package
-    def fpr_plot(self, g, loworder, highorder, mean, intervals, fpr_keys=None, ci=68):
+    def fpr_plot(self, mean, intervals, fpr_keys=None, ci=68):
 
         '''
         A plotter for the overlay of the GP results and the FPR results
@@ -159,7 +163,10 @@ class FPR():
         ax1.tick_params(axis='y', labelsize=18)
         ax1.locator_params(nbins=8)
         ax1.xaxis.set_minor_locator(AutoMinorLocator())
+        ax1.xaxis.set_label_coords(.5, -.05)
         ax1.yaxis.set_minor_locator(AutoMinorLocator())
+        ax1.yaxis.set_label_coords(-.05, .5)
+
 
         #set up x and y limits
         xlim = input('\nx-limits (enter "auto" if unknown): ')
@@ -178,25 +185,22 @@ class FPR():
         #labels and true model
         ax1.set_xlabel('g', fontsize=22)
         ax1.set_ylabel('F(g)', fontsize=22)
-        #ax1.set_title('F(g): mixed model', fontsize=22)
-        ax1.plot(g, Models.true_model(self, g), 'k', label='True model')
+        ax1.plot(self.g, Models.true_model(self, self.g), 'k', label='True model')
 
         #unpack ci
         self.ci = ci 
 
         #plot the small-g expansions and error bands
-        for j in loworder:
-            ax1.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
+        ax1.plot(self.g, Models.low_g(self, self.g)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(self.loworder[0]))
         
         #plot the large-g expansions and error bands
-        for j in highorder:
-            ax1.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+        ax1.plot(self.g, Models.high_g(self, self.g)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
         
         #plot the GP results (mixed model)
-        ax1.plot(g, mean, 'g', label='Mean')
-        ax1.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
-        ax1.plot(g, intervals[:,1], 'g', linestyle='dotted')
-        ax1.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
+        ax1.plot(self.g, mean, 'g', label='Mean')
+        ax1.plot(self.g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ CI'.format(int(self.ci)))
+        ax1.plot(self.g, intervals[:,1], 'g', linestyle='dotted')
+        ax1.fill_between(self.g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
 
         #FPR results
         if fpr_keys is not None:
@@ -205,7 +209,7 @@ class FPR():
                 mn = k[0:5]
                 alpha = k[6:]
                 fpr = self.fprset(k)
-                ax1.plot(g, fpr, linestyle='dashed', label=r'$F_{{{}}}^{{{}}} (g)$'.format(mn, alpha))
+                ax1.plot(self.g, fpr, linestyle='dashed', label=r'$F_{{{}}}^{{{}}} (g)$'.format(mn, alpha))
                 
         ax1.legend(fontsize=16, loc='upper right')
 
@@ -215,32 +219,25 @@ class FPR():
         y1 = 2.15
         y2 = 2.25
         axins = zoomed_inset_axes(ax1, 6, loc=9) 
-        axins.plot(g, Models.true_model(self, g), 'k', label='True model')
-        axins.plot(g, Models.low_g(self, g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
-        axins.plot(g, Models.high_g(self, g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
-        axins.plot(g, mean, 'g', label='Mean')
-        axins.plot(g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
-        axins.plot(g, intervals[:,1], 'g', linestyle='dotted')
-        axins.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
+        axins.plot(self.g, Models.true_model(self, self.g), 'k', label='True model')
+        axins.plot(self.g, Models.low_g(self, self.g)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(self.loworder[0]))
+        axins.plot(self.g, Models.high_g(self, self.g)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
+        axins.plot(self.g, mean, 'g', label='Mean')
+        axins.plot(self.g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
+        axins.plot(self.g, intervals[:,1], 'g', linestyle='dotted')
+        axins.fill_between(self.g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
         if fpr_keys is not None:
             axins.set_prop_cycle(cycler('color', ['darkviolet', 'deepskyblue', 'darkorange', 'gold']))
         for k in fpr_keys:
                 mn = k[0:5]
                 alpha = k[6:]
                 fpr = self.fprset(k)
-                axins.plot(g, fpr, linestyle='dashed', label=r'$F_{{{}}}^{{{}}} (g)$'.format(mn, alpha))
+                axins.plot(self.g, fpr, linestyle='dashed', label=r'$F_{{{}}}^{{{}}} (g)$'.format(mn, alpha))
                 
         axins.set_xlim(x1, x2)
         axins.set_ylim(y1, y2)
-       # plt.xticks(visible=False)
-       # plt.yticks(visible=False)
         mark_inset(ax1, axins, loc1=2, loc2=4, fc="none", ec="0.5")
         plt.draw()
-       # ax2 = plt.axes([0,0,1,1])
-        # ip = InsetPosition(ax1, [0.3,0.67,0.38,0.3])
-        # ax2.set_axes_locator(ip)
-      #  mark_inset(ax1, ax2, loc1=2, loc2=4, fc="none", ec='0.5')
-
         plt.show()
 
         #save figure option

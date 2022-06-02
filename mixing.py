@@ -17,7 +17,7 @@ __all__ = ['Models', 'Mixing']
 
 class Models():
 
-    def __init__(self, highorder):
+    def __init__(self, loworder, highorder):
 
         '''
         The class containing the expansion models from Honda's paper
@@ -28,22 +28,34 @@ class Models():
 
         Parameters:
         -----------
-        None.
+        loworder : numpy.ndarray, int, float
+            The value of N_s to be used to truncate the small-g expansion.
+            Can be an array of multiple values or one. 
+
+        highorder : numpy.ndarray, int, float
+            The value of N_l to be used to truncate the large-g expansion.
+            Can be an array of multiple values or one. 
 
         Returns:
         --------
         None.
         '''
+
+        #check type and assign to class variable
+        if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
+            loworder = np.array([loworder])
+
         #check type and assign to class variable
         if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
             highorder = np.array([highorder])
 
+        self.loworder = loworder
         self.highorder = highorder 
 
         return None 
 
 
-    def low_g(self, g, loworder):
+    def low_g(self, g):
         
         '''
         A function to calculate the small-g divergent asymptotic expansion for a given range in the coupling 
@@ -56,24 +68,17 @@ class Models():
         -----------
         g : linspace
             The linspace of the coupling constant for this calculation. 
-            
-        loworder : numpy.ndarray, int, float 
-            The array of different expansion orders to calculate. These indicate the highest power the expansions 
-            are calculated up to. 
-            
+           
         Returns:
         --------
         output : numpy.ndarray
             The array of values of the expansion in small-g at each point in g_true space, for each value of 
             loworder (highest power the expansion reaches).
         '''
-        
-        #converts float or int to an array
-        if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
-            loworder = np.array([loworder])
+
         output = []
         
-        for order in loworder:
+        for order in self.loworder:
             low_c = np.empty([int(order)+1])
             low_terms = np.empty([int(order) + 1])
 
@@ -138,9 +143,6 @@ class Models():
             (highest power the expansion reaches).
         '''
 
-        #converts a float or int into an array
-        if isinstance(self.highorder, float) == True or isinstance(self.highorder, int) == True:
-            self.highorder = np.array([self.highorder])
         output = []
         
         for order in self.highorder:
@@ -221,7 +223,7 @@ class Models():
         return self.model 
    
 
-    def plot_models(self, g, loworder):
+    def plot_models(self, g):
         
         '''
         A plotting function to produce a figure of the model expansions calculated in Models.low_g and Models.high_g, 
@@ -235,9 +237,6 @@ class Models():
         g : linspace
             The linspace in on which the models will be plotted here. 
 
-        loworder : numpy.ndarray, int, float   
-            As in Models.low_g, the highest powers to calculate the series to for the asymptotic small-g expansion.
-                 
         Returns
         -------
         None.
@@ -270,9 +269,9 @@ class Models():
         linestyle_cycler = cycler(linestyle=['dashed', 'dotted', 'dashdot', 'dashed', 'dotted', 'dashdot'])
         ax.set_prop_cycle(linestyle_cycler)
                 
-        #for each small-g order, plot
-        for i in loworder:
-            ax.plot(g, self.low_g(g, i.item())[0], color='r', label=r'$f_s$ ($N_s$ = {})'.format(i))
+        #for each large-g order, calculate and plot
+        for i,j in zip(range(len(self.loworder)), self.loworder):
+            ax.plot(g, self.low_g(g)[i,:], color='r', label=r'$f_s$ ($N_s$ = {})'.format(j))
 
         #for each large-g order, calculate and plot
         for i,j in zip(range(len(self.highorder)), self.highorder):
@@ -293,7 +292,7 @@ class Models():
         return None
         
          
-    def residuals(self, loworder):
+    def residuals(self):
         
         '''
         A calculation and plot of the residuals of the model expansions vs the true model values at each point in g.
@@ -305,8 +304,7 @@ class Models():
             
         Parameters:
         -----------
-        loworder : int, float        
-            The array of highest power series orders for the asymptotic, small-g expansion.
+        None.
                   
         Returns:
         --------
@@ -338,10 +336,13 @@ class Models():
         value_true = self.true_model(g_ext)
         
         #for each small-g order, plot
-        for i in np.array([loworder]):
-            valuelow = self.low_g(g_ext, i)
-            residlow = (valuelow - value_true)/value_true
-            ax.loglog(g_ext, abs(residlow[0,:]), 'r', linestyle="None", label=r"$F_s({})$".format(i))
+        valuelow = np.zeros([len(self.loworder), len(g_ext)])
+        residlow = np.zeros([len(self.loworder), len(g_ext)])
+
+        for i,j in zip(range(len(self.loworder)), self.loworder):
+            valuelow[i,:] = self.low_g(g_ext)[i]
+            residlow[i,:] = (valuelow[i,:] - value_true)/value_true
+            ax.loglog(g_ext, abs(residlow[i,:]), 'r', linestyle="None", label=r"$F_s({})$".format(j))
 
         #for each large-g order, plot
         valuehi = np.zeros([len(self.highorder), len(g_ext)])
@@ -356,10 +357,10 @@ class Models():
         plt.show()
 
 
-class Mixing(Models, Priors): 
+class Mixing(Models): 
     
     
-    def __init__(self, highorder):
+    def __init__(self, loworder, highorder):
         
         '''
         This class is designed with all of the necessary functions for creating a data set, plotting it 
@@ -382,10 +383,18 @@ class Mixing(Models, Priors):
         print('Instantiating the linear mixture model method.')
 
         #check type and create class variables
+        if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
+            loworder = np.array([loworder])
+
         if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
             highorder = np.array([highorder])
 
+        self.loworder = loworder 
         self.highorder = highorder 
+
+        #instantiate the Models() and Priors() classes here
+        self.m = Models(self.loworder, self.highorder)
+        self.p = Priors()
 
         return None
         
@@ -543,7 +552,7 @@ class Mixing(Models, Priors):
         return interval
     
     
-    def likelihood_low(self, g_data, data, sigma, siglow, loworder):
+    def likelihood_low(self, g_data, data, sigma, siglow):
         
         '''
         The likelihood function for the data using the small-g expansion as the model in the 
@@ -564,9 +573,6 @@ class Mixing(Models, Priors):
         sigma : numpy.ndarray          
             An array of standard deviations at each point in 'data'. 
            
-        loworder : numpy.ndarray, int, float          
-            The specific small-g expansion order desired for calculating the mixed model. 
-            
         Returns:
         --------
             An array of the likelihood calculated at each data point. 
@@ -577,7 +583,7 @@ class Mixing(Models, Priors):
         sigma_t = np.sqrt(sigma**2.0 + siglow**2.0)
     
         prelow = (np.sqrt(2.0 * np.pi) * sigma_t)**(-1.0)
-        insidelow = -0.5 * ((data - Models.low_g(self, g_data, loworder))/(sigma_t))**2.0
+        insidelow = -0.5 * ((data - self.m.low_g(g_data))/(sigma_t))**2.0
         
         return prelow*np.exp(insidelow)
 
@@ -612,12 +618,12 @@ class Mixing(Models, Priors):
         sigma_t = np.sqrt(sigma**2.0 + sighigh**2.0)
     
         prehigh = (np.sqrt(2.0 * np.pi) * sigma_t)**(-1.0)
-        insidehigh = -0.5 * ((data - Models.high_g(self, g_data))/(sigma_t))**2.0
+        insidehigh = -0.5 * ((data - self.m.high_g(g_data))/(sigma_t))**2.0
     
         return prehigh*np.exp(insidehigh)
 
 
-    def sampler_mix(self, params, g_data, data, sigma, siglow, sighigh, loworder):
+    def sampler_mix(self, params, g_data, data, sigma, siglow, sighigh):
 
         '''
         The model mixing function sent to the sampler to find the values of the parameters in the 
@@ -625,7 +631,7 @@ class Mixing(Models, Priors):
 
         :Example:
             emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix,
-                                  args=[g_data, data, sigma, loworder, mu, sig])
+                                  args=[g_data, data, sigma])
 
         Parameters:
         -----------
@@ -641,9 +647,6 @@ class Mixing(Models, Priors):
         sigma : numpy.ndarray
             An array of standard deviations for each data point.
 
-        loworder : numpy.ndarray, int, float
-            The order of the small-g expansion desired for the mixing calculation.
-
         Returns:
         --------
         mixed_results : numpy.ndarray
@@ -655,7 +658,7 @@ class Mixing(Models, Priors):
         log_ml = np.empty([len(g_data)])
 
         #test prior first
-        logprior = Priors.lpdf(self, params)
+        logprior = self.p.lpdf(params)
 
         if math.isnan(logprior) == True or np.isinf(-logprior) == True:
             return -np.inf
@@ -665,7 +668,7 @@ class Mixing(Models, Priors):
             #likelihood mixing
             for i in range(len(g_data)):
                 mixed_likelihood[i] = self.f(params, g_data[i]) * \
-                                    Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], siglow[i], loworder) \
+                                    Mixing.likelihood_low(self, g_data[i], data[i], sigma[i], siglow[i]) \
                                     + (1.0- self.f(params, g_data[i])) * \
                                     Mixing.likelihood_high(self, g_data[i], data[i], sigma[i], sighigh[i])
 
@@ -677,12 +680,12 @@ class Mixing(Models, Priors):
             total_lml = np.sum(log_ml)
 
             #add the priors
-            mixed_results = total_lml + Priors.lpdf(self, params)
+            mixed_results = total_lml + self.p.lpdf(params)
 
             return mixed_results
 
         
-    def mixed_model(self, g_data, data, sigma, loworder):
+    def mixed_model(self, g_data, data, sigma):
         
         '''
         A function that will run the emcee ensemble sampler for a given mixed model to determine at least one
@@ -708,9 +711,6 @@ class Mixing(Models, Priors):
         sigma_t : numpy.ndarray
             A 2D array of standard deviations at each data point. The first column is those
             from the small-g expansion; the second column is those from the large-g expansion.
-            
-        loworder : numpy.ndarray, int, float          
-            The order of the small-g expansion desired for the mixed model to be calculated at.
             
         Returns:
         --------
@@ -738,7 +738,7 @@ class Mixing(Models, Priors):
 
         #call Uncertainties class for the theory errors (variances)
         err = Uncertainties()
-        siglow = np.sqrt(err.variance_low(g_data, loworder[0]))
+        siglow = np.sqrt(err.variance_low(g_data, self.loworder[0]))
         sighigh = np.sqrt(err.variance_high(g_data, self.highorder[0]))
 
         #set up sampler
@@ -760,7 +760,7 @@ class Mixing(Models, Priors):
         
         #call emcee
         sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix, \
-                                            args=[g_data, data, sigma, siglow, sighigh, loworder])
+                                            args=[g_data, data, sigma, siglow, sighigh])
         now = time.time()
         sampler_mixed.run_mcmc(starting_points, nsteps)
         stop = time.time()
@@ -1229,7 +1229,7 @@ class Mixing(Models, Priors):
             return 0.0
 
 
-    def ppd(self, trace, g, loworder):
+    def ppd(self, trace, g):
         
         '''
         A function to calculate the posterior predictive distribution (PPD) for any chosen mixing function 
@@ -1245,10 +1245,7 @@ class Mixing(Models, Priors):
             
         g : linspace
             The linspace desired to calculate the PPD across.
-            
-        loworder : numpy.ndarray, int, float
-            The order of the small-g expansion to be calculated in the mixing model.
-             
+           
         Returns:
         --------
         result_array : numpy.ndarray
@@ -1264,19 +1261,19 @@ class Mixing(Models, Priors):
             for i in range(len(g)):
                 for j in range(len(trace[0].T)):
             
-                    if (Models.low_g(self, g[i], loworder) - Models.high_g(self, g[i]))\
+                    if (self.m.low_g(g[i]) - self.m.high_g(g[i]))\
                     > 0.1 and g[i] > (0.25*gmax):
-                        result_array[i,j] = Models.high_g(self, g[i])
+                        result_array[i,j] = self.m.high_g(g[i])
                     
-                    elif (Models.low_g(self, g[i], loworder) - Models.high_g(self, g[i])) > 0.1:
-                        result_array[i,j] = Models.low_g(self, g[i], loworder)
+                    elif (self.m.low_g(g[i]) - self.m.high_g(g[i])) > 0.1:
+                        result_array[i,j] = self.m.low_g(g[i])
                     
                     else:
                         params = np.array([trace[0, j], trace[1, j]])
 
-                        result_array[i,j] = self.f(params, g[i])*Models.low_g(self, g[i], loworder) \
+                        result_array[i,j] = self.f(params, g[i])*self.m.low_g(g[i]) \
                                         + (1.0 - self.f(params, g[i])) \
-                                        *Models.high_g(self, g[i])
+                                        *self.m.high_g(g[i])
         
             return result_array    
 
@@ -1289,14 +1286,14 @@ class Mixing(Models, Priors):
                     
                     params = np.array([trace[0, j], trace[1, j], trace[2, j]])
                 
-                    result_array[i,j] = self.switchcos(params, g[i]) * Models.low_g(self, g[i], loworder) \
+                    result_array[i,j] = self.switchcos(params, g[i]) * self.m.low_g(g[i]) \
                                     + (1.0 - self.switchcos(params, g[i])) \
-                                    * Models.high_g(self, g[i])
+                                    * self.m.high_g(g[i])
 
             return result_array
     
     
-    def plot_ppd(self, results, g_data, g_true, g_ppd, data, ppd_results, ppd_intervals, percent, loworder):
+    def plot_ppd(self, results, g_data, g_true, g_ppd, data, ppd_results, ppd_intervals, percent):
         
         '''
         A plotting function that can be used to plot the posterior predictive distribution (PPD) results (mean and 
@@ -1305,8 +1302,7 @@ class Mixing(Models, Priors):
         
         :Example:
             Mixing.plot_ppd(g_data=np.linspace(0.0, 0.5, 20), g_true=np.linspace(0.0, 0.5, 100), 
-            g_ppd=np.linspace(0.0, 0.5, 200), data=np.array(), ppd_results=np.array(), ppd_intervals=np.array(),
-            loworder=5)
+            g_ppd=np.linspace(0.0, 0.5, 200), data=np.array(), ppd_results=np.array(), ppd_intervals=np.array())
             
         Parameters:
         -----------
@@ -1334,9 +1330,6 @@ class Mixing(Models, Priors):
         percent : float
             The percent credibility interval calculated for the variable ppd_intervals (used in the plot
             legend). 
-        
-        loworder : numpy.ndarray, int, float
-            The order of the small-g expansion used in the mixed model.
           
         Returns:
         --------
@@ -1353,16 +1346,17 @@ class Mixing(Models, Priors):
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
 
-        ax.set_xlim(0.0, 1.0)
- 
-        ax.set_ylim(1.2, 3.2)
-        ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
+      #  ax.set_xlim(0.0, 1.0)
+        ax.set_xlim(0.0, 0.4)
+        ax.set_ylim(2.2, 2.5)
+       # ax.set_ylim(1.2, 3.2)
+       # ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
 
         ax.plot(g_data, data, 'k.', label='Data set')  
-        ax.plot(g_true, Models.true_model(self, g_true), 'k', label='Exact')
+        ax.plot(g_true, self.m.true_model(g_true), 'k', label='True model')
 
-        ax.plot(g_true, Models.low_g(self, g_true, loworder)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
-        ax.plot(g_true, Models.high_g(self, g_true)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
+        ax.plot(g_true, self.m.low_g(g_true)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(self.loworder[0]))
+        ax.plot(g_true, self.m.high_g(g_true)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
 
         ax.plot(g_ppd, ppd_results, 'g', label='Mixed model')
         ax.plot(g_ppd, ppd_intervals[:,0], 'g', linestyle='dotted', label=r'{}\% CI (HPD)'.format(percent))

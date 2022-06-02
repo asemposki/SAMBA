@@ -2,7 +2,7 @@ import numpy as np
 import seaborn as sns
 import docrep
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
-from scipy import stats, misc
+from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from mixing import Models
@@ -12,7 +12,7 @@ from uncertainties import Uncertainties
 plt.rcParams['savefig.facecolor']='white'
 
 
-__all__ = ['GP', 'Diagnostics']
+__all__ = ['GP']
 
 docstrings = docrep.DocstringProcessor()
 
@@ -20,19 +20,18 @@ docstrings = docrep.DocstringProcessor()
 class GP(Models):
 
 
-    def __init__(self, g, highorder, kernel="RBF", fix_length=False):
+    def __init__(self, g, loworder, highorder, kernel="RBF", fix_length=False):
 
         '''
-        A class that will pull from the Models class
-        to perform GP emulation on two models from the small-g expansion region
-        to the large-g expansion region. The parameter settings of the kernel
-        will be set by the user in this initial function. This class 'wraps' the
-        scikit learn package. 
+        A class that will pull from the Models class to perform GP emulation on 
+        two models from the small-g expansion region to the large-g expansion region. 
+        The parameter settings of the kernel will be set by the user in this 
+        initial function. This class 'wraps' the scikit learn package. 
 
         :Example:
-            GP()
+            GP(g=np.linspace(1e-6,1.0,100), loworder=5, highorder=2, kernel="Matern")
 
-        Parameters:
+        Parameters:"
         -----------
         g : numpy linspace
             The linspace across the coupling constant space used for the GP.
@@ -54,13 +53,20 @@ class GP(Models):
         ''' 
         
         #set up the prediction array as a class variable for use later
-        self.gpredict = g
+        self.gpredict = np.copy(g)
 
         #check type and assign class variables
+        if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
+            loworder = np.array([loworder])
+        
         if isinstance(highorder, float) == True or isinstance(highorder, int) == True:
             highorder = np.array([highorder])
         
+        self.loworder = loworder 
         self.highorder = highorder 
+
+        #Models() class
+        self.m = Models(self.loworder, self.highorder)
 
         #integral length
         self.gint = np.empty([])
@@ -100,26 +106,24 @@ class GP(Models):
         return None
 
     
-    def training(self, loworder, error=False, method=1):
+    def training(self, error=False, method=2):
 
         '''
         A function that links the model data and the training function in 
         scikit learn.
 
         :Example:
-            GP.training(gdata=np.linspace(0.0, 0.5, 20), data=np.array())
+            GP.training(error=False, method=3)
 
         Parameters:
         -----------
-        loworder : numpy.ndarray, float, int
-            The truncation order for the low-g expansion.
-
         error : bool
             A boolean variable to toggle use of the data uncertainty in the 
             kernel during training. Default is False.
 
-        method : int    #TEMPORARY 
+        method : int  
             The method used for determining the training points. Options: 1,2,3.
+            For an extensive explanation of the methods, see the paper.
 
         Returns:
         --------
@@ -132,7 +136,7 @@ class GP(Models):
         self.method = method 
 
         #call the training set generator function
-        gs, datas, sigmas = self.training_set(loworder)
+        gs, datas, sigmas = self.training_set()
 
         #make column vectors for the regressor
         gc = gs.reshape(-1,1)
@@ -167,11 +171,11 @@ class GP(Models):
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): training set', fontsize=22)
-        ax.plot(self.gpredict, Models.true_model(self, self.gpredict), 'k', label='True model')
+        ax.plot(self.gpredict, self.m.true_model(self.gpredict), 'k', label='True model')
 
         #plot the data
         ax.errorbar(self.gtrlow, self.datatrlow, yerr=self.lowsigma, color='red', fmt='o', markersize=4, \
-                    capsize=4, label=r'$f_s$ ($N_s$ = {}) data'.format(loworder[0]))
+                    capsize=4, label=r'$f_s$ ($N_s$ = {}) data'.format(self.loworder[0]))
         ax.errorbar(self.gtrhigh, self.datatrhigh, yerr=self.highsigma, color='blue', fmt='o', markersize=4, \
                     capsize=4, label=r'$f_l$ ($N_l$ = {}) data'.format(self.highorder[0]))
 
@@ -191,7 +195,7 @@ class GP(Models):
         return sk
 
 
-    def validate(self, sk, loworder, interval=68):
+    def validate(self, sk, interval=68):
 
         '''
         A wrapper function for scikit learn's GP prediction function. This will 
@@ -204,9 +208,6 @@ class GP(Models):
         -----------
         sk : scikit learn object
             The GP object created from training the GP on the data. 
-
-        loworder : int
-            The order at which the small-g expansion data was generated.
 
         interval : float
             The credible interval desired. 68 or 95 available.
@@ -254,11 +255,11 @@ class GP(Models):
         ax.set_xlabel('g', fontsize=22)
         ax.set_ylabel('F(g)', fontsize=22)
         ax.set_title('F(g): GP predictions', fontsize=22)
-        ax.plot(self.gpredict, Models.true_model(self, self.gpredict), 'k', label='True model')
+        ax.plot(self.gpredict, self.m.true_model(self.gpredict), 'k', label='True model')
 
         #plot the data
         ax.errorbar(self.gtrlow, self.datatrlow, self.lowsigma, color="red", fmt='o', markersize=4, \
-            capsize=4, alpha = 0.4, label=r"$f_s$ ($N_s$ = {})".format(loworder[0]), zorder=1)
+            capsize=4, alpha = 0.4, label=r"$f_s$ ($N_s$ = {})".format(self.loworder[0]), zorder=1)
         ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, color="blue", fmt='o', markersize=4, \
              capsize=4, alpha=0.4, label=r"$f_l$ ($N_l$ = {})".format(self.highorder[0]), zorder=1)
         ax.plot(self.gpred, self.meanp, 'g', label='Predictions', zorder=2)
@@ -279,7 +280,7 @@ class GP(Models):
         return self.meanp, self.sigp, self.cov
 
     
-    def training_set(self, loworder):
+    def training_set(self):
 
         '''
         An internal function to calculate the necessary training data set from
@@ -290,8 +291,7 @@ class GP(Models):
 
         Parameters:
         -----------
-        loworder : numpy.ndarray
-            The truncation order of the small-g expansion.
+        None.
 
         Returns:
         -------
@@ -311,46 +311,25 @@ class GP(Models):
         #set up the training set from the prediction set (offset by midpoint)
         self.midpoint = (self.gpredict[1] - self.gpredict[0]) / 2.0
         gtrainingset = np.linspace(min(self.gpredict)+self.midpoint, max(self.gpredict)+self.midpoint, len(self.gpredict))
-
-        #stop the training sets using derivatives
-        dg = gtrainingset[1] - gtrainingset[0]
-        lowarray = Models.low_g(self, gtrainingset, loworder)[0]
-        higharray = Models.high_g(self, gtrainingset)[0]
-     #   dfsdg = np.gradient(lowarray, dg)
-     #   dfldg = np.gradient(higharray, dg)  
-
-        print('low-g: ', lowarray, '\nhigh-g: ', higharray)
-        
-        # #test derivatives
-        # for i in range(len(gtrainingset)):
-        #     if np.abs(dfsdg[i]) >= 10.0:
-        #         lowindex = i-1
-        #         break 
-
-        # for i in range(len(gtrainingset)-1, -1, -1):
-        #     if np.abs(dfldg[i]) >= 10.0:
-        #         highindex = i+1
-        #         print('Here is 10:', highindex)
-        #         break
-
+    
         #stop the training set, negative curvature
-        if loworder[0] % 4 == 2 or loworder[0] % 4 == 3:
+        if self.loworder[0] % 4 == 2 or self.loworder[0] % 4 == 3:
             for i in range(len(gtrainingset)):
-                if Models.low_g(self, gtrainingset[i], loworder) < -1.0:
+                if self.m.low_g(gtrainingset[i]) < -1.0:
                     lowindex = i-1
                     break
 
         #stop the training set, positive curvature
-        elif loworder[0] % 4 == 0 or loworder[0] % 4 == 1:
+        elif self.loworder[0] % 4 == 0 or self.loworder[0] % 4 == 1:
             for i in range(len(gtrainingset)):
-                if Models.low_g(self, gtrainingset[i], loworder) > 3.0:
+                if self.m.low_g(gtrainingset[i]) > 3.0:
                     lowindex = i-1
                     break
 
         #stop the training set, even orders (positive curvature)
         if self.highorder[0] % 2 == 0:
             for i in range(len(gtrainingset)):
-                if Models.high_g(self, gtrainingset[i]) > 3.0:
+                if self.m.high_g(gtrainingset[i]) > 3.0:
                     highindex = i+1
                 else:
                     break
@@ -358,7 +337,7 @@ class GP(Models):
         #stop the training set, odd orders (negative curvature)
         else:
             for i in range(len(gtrainingset)):
-                if Models.high_g(self, gtrainingset[i]) < -1.0:
+                if self.m.high_g(gtrainingset[i]) < -1.0:
                     highindex = i+1
                 else:
                     break
@@ -368,12 +347,12 @@ class GP(Models):
         self.gtrhigh = gtrainingset[highindex:]
 
         #calculate the data at each point
-        self.datatrlow = Models.low_g(self, self.gtrlow, loworder)[0,:]
-        self.datatrhigh = Models.high_g(self, self.gtrhigh)[0,:]
+        self.datatrlow = self.m.low_g(self.gtrlow)[0,:]
+        self.datatrhigh = self.m.high_g(self.gtrhigh)[0,:]
 
         #calculate the variance at each point from the next term
         obj = Uncertainties()
-        lowvariance = obj.variance_low(self.gtrlow, loworder[0])
+        lowvariance = obj.variance_low(self.gtrlow, self.loworder[0])
         self.lowsigma = np.sqrt(lowvariance)
         highvariance = obj.variance_high(self.gtrhigh, self.highorder[0])
         self.highsigma = np.sqrt(highvariance)
@@ -497,7 +476,7 @@ class GP(Models):
         return samples
 
 
-    def MD_set(self, loworder):
+    def MD_set(self):
 
         '''
         Takes the training set of points and uses them to cut the
@@ -505,15 +484,11 @@ class GP(Models):
         to the region of interest.  
 
         Example:
-            GP.MD_set(loworder=np.array([2]), highorder=np.array([2]))
+            GP.MD_set()
 
         Parameters:
         -----------
-        loworder : numpy.ndarray
-            The truncation order for the small-g expansion.
-  
-        test : bool
-            The option to use this function to create a test MD set. 
+        None.
 
         Returns:
         --------
@@ -538,7 +513,7 @@ class GP(Models):
 
         #calculate the variance at each expansion point from the next term
         mdobj = Uncertainties()
-        lowvar = mdobj.variance_low(self.gpredict, loworder[0])
+        lowvar = mdobj.variance_low(self.gpredict, self.loworder[0])
         lowerr = np.sqrt(lowvar)
         highvar = mdobj.variance_high(self.gpredict, self.highorder[0])
         hierr = np.sqrt(highvar)
@@ -714,39 +689,3 @@ class GP(Models):
                       'whislo': dist.ppf(whislo), 'whishi': dist.ppf(whishi)}]
     
         return ax.bxp(stat_dict, showfliers=False, **kwargs)
-
-
-    #function for paper plot (vertical)
-    def vertical_gp(self, g, loworder, highorder):
-
-        #set up the vertical subplots
-        
-
-        return None
-
-'''
-    def plotter(self, x_label, y_label, title, y_lim, *args, show_true=True, **kwargs):
-
-        #set up the simple bits
-        fig = plt.figure(figsize=(8,6), dpi=600)
-        ax = plt.axes()
-        ax.tick_params(axis='x', labelsize=18)
-        ax.tick_params(axis='y', labelsize=18)
-        ax.locator_params(nbins=8)
-        ax.xaxis.set_minor_locator(AutoMinorLocator())
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.set_xlim(0.0, max(self.gpredict))
-        #ax.set_ylim(-2.0,5.0)
-        ax.set_ylim(y_lim)
-        ax.set_xlabel(x_label, fontsize=22)
-        ax.set_ylabel(y_label, fontsize=22)
-        ax.set_title(title, fontsize=22)
-
-        #plot true model if indicated
-        if (show_true):
-            ax.plot(self.gpredict, Models.true_model(self, self.gpredict), 'k', label='True model')
-
-        #plot the rest
-
-        return None
-'''
