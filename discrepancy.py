@@ -1,13 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-from mixing import Models
-from uncertainties import Uncertainties
+from models import Models, Uncertainties
 
-__all__ = ['Discrepancy']
+__all__ = ['Bivariate']
 
 
-class Discrepancy(Models):
+class Bivariate(Models):
 
     def __init__(self, loworder, highorder):
 
@@ -16,7 +15,7 @@ class Discrepancy(Models):
         expansions. This class contains the fdagger function and the plotter.
 
         :Example:
-            Discrepancy(loworder=5, highorder=10)
+            Bivariate(loworder=5, highorder=10)
 
         Parameters:
         -----------
@@ -66,7 +65,7 @@ class Discrepancy(Models):
         and accept GP mean and variance arrays in the GP_mean and GP_var options.
 
         :Example:
-            Discrepancy.fdagger(g=np.linspace(1e-6, 0.5, 100), GP_mean=np.array([]), GP_var=np.array([]))
+            Bivariate.fdagger(g=np.linspace(1e-6, 0.5, 100), GP_mean=np.array([]), GP_var=np.array([]))
 
         Parameters:
         -----------
@@ -174,7 +173,7 @@ class Discrepancy(Models):
         model mixing in fdagger to test fdagger results.
 
         :Example:
-            Discrepancy.plot_mix(g=np.linspace(1e-6, 0.5, 100), plot_fdagger=True)
+            Bivariate.plot_mix(g=np.linspace(1e-6, 0.5, 100), plot_fdagger=True)
 
         Parameters:
         -----------
@@ -279,7 +278,7 @@ class Discrepancy(Models):
         of models side-by-side with the 2 model case to compare.
 
         :Example:
-            Discrepancy.subplot_mix(g=np.linspace(1e-6, 0.5, 100))
+            Bivariate.subplot_mix(g=np.linspace(1e-6, 0.5, 100))
 
         Parameters:
         -----------
@@ -438,7 +437,7 @@ class Discrepancy(Models):
         corresponds to the informative error model panel. 
 
         :Example:
-            Discrepancy.plot_error_models(g=np.linspace(1e-6, 0.5, 100))
+            Bivariate.plot_error_models(g=np.linspace(1e-6, 0.5, 100))
 
         Parameters:
         -----------
@@ -560,7 +559,7 @@ class Discrepancy(Models):
         Vertical panel plotter for the paper to generate two mixed model plots. 
 
         :Example:
-            Discrepancy.vertical_plot_fdagger(g=np.linspace(1e-6, 0.5, 100))
+            Bivariate.vertical_plot_fdagger(g=np.linspace(1e-6, 0.5, 100))
 
         Parameters:
         -----------

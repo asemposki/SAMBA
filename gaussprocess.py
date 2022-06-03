@@ -5,8 +5,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-from mixing import Models
-from uncertainties import Uncertainties
+from models import Models, Uncertainties
 
 #set savefig color for all plots
 plt.rcParams['savefig.facecolor']='white'

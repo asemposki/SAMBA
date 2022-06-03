@@ -43,15 +43,14 @@ class Priors:
             return (param_1 + param_2)
 
         elif len(params) == 3:
-
             #g1 truncated between (0, 0.35)
-            g1 = self.luniform(params[0], 0.1, 0.2) + stats.norm.logpdf(params[0], 0.1, 0.05)   #0.1 for 2 v 2, #0.1 for 5 v 5
+            g1 = self.luniform(params[0], 0.01, 0.3) + stats.norm.logpdf(params[0], 0.11, 0.01)   #0.1 for 2 v 2, #0.1 for 5 v 5
 
             #g3 truncated between (g1, 0.35)
-            g3 = self.luniform(params[2], params[0], 0.35) + stats.norm.logpdf(params[2], 0.25, 0.05)   #0.4 for 2 v 2, #0.25 for 5 v 5
+            g3 = self.luniform(params[2], params[0], 0.3) + stats.norm.logpdf(params[2], 0.16, 0.01)   #0.4 for 2 v 2, #0.25 for 5 v 5
 
             #g2 truncated between (g3, 0.35)
-            g2 = self.luniform(params[1], params[2], 0.6) + stats.norm.logpdf(params[1], 0.4, 0.05)  #0.6 for 2 v 2, #0.4 for 5 v 5
+            g2 = self.luniform(params[1], params[2], 0.3) + stats.norm.logpdf(params[1], 0.2, 0.01)  #0.6 for 2 v 2, #0.4 for 5 v 5
 
             return (g1 + g2 + g3)
 
