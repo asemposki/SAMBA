@@ -6,7 +6,7 @@ from models import Models, Uncertainties
 __all__ = ['Bivariate']
 
 
-class Bivariate(Models):
+class Bivariate(Models, Uncertainties):
 
     def __init__(self, loworder, highorder):
 
@@ -29,15 +29,10 @@ class Bivariate(Models):
         --------
         None. 
         '''
-        #assign the error model to be used
-        ans = input('Which error model would you like to use: uninformative (u) or informative (i)?')
 
-        if ans == 'u':
-            self.error_model = 1
-        elif ans == 'i':
-            self.error_model = 2
-        else:
-            raise ValueError('Please choose either uninformative or informative.')
+        #instantiate the Uncertainties class and error model 
+        self.u = Uncertainties()
+        self.error_model = self.u.error_model 
 
         #check type and assign class variables
         if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
@@ -99,8 +94,8 @@ class Bivariate(Models):
         '''
 
         #uncertainties
-        v_low = np.asarray([Uncertainties.variance_low(self, g, self.loworder[i]) for i in range(len(self.loworder))])
-        v_high = np.asarray([Uncertainties.variance_high(self, g, self.highorder[i]) for i in range(len(self.highorder))])
+        v_low = np.asarray([self.u.variance_low(g, self.loworder[i]) for i in range(len(self.loworder))])
+        v_high = np.asarray([self.u.variance_high(g, self.highorder[i]) for i in range(len(self.highorder))])
 
         #calculating models
         f_low = np.asarray([self.m.low_g(g)[i,:] for i in range(len(self.loworder))])

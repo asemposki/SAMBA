@@ -6,6 +6,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from models import Models, Uncertainties
+from discrepancy import Bivariate
 
 #set savefig color for all plots
 plt.rcParams['savefig.facecolor']='white'
@@ -16,7 +17,7 @@ __all__ = ['GP']
 docstrings = docrep.DocstringProcessor()
 
 
-class GP(Models):
+class GP(Bivariate):
 
 
     def __init__(self, g, loworder, highorder, kernel="RBF", fix_length=False):
@@ -66,6 +67,16 @@ class GP(Models):
 
         #Models() class
         self.m = Models(self.loworder, self.highorder)
+        self.u = Uncertainties()
+
+        #instantiate the class variable error_model for ease class crossing
+        self.error_model = self.u.error_model
+
+        #show user error model used for clarity
+        if self.error_model == 1:
+            print('Using the uninformative error model.')
+        elif self.error_model == 2:
+            print('Using the informative error model.')
 
         #integral length
         self.gint = np.empty([])
@@ -105,7 +116,7 @@ class GP(Models):
         return None
 
     
-    def training(self, error=False, method=2):
+    def training(self, error=True, method=2):
 
         '''
         A function that links the model data and the training function in 
@@ -117,8 +128,8 @@ class GP(Models):
         Parameters:
         -----------
         error : bool
-            A boolean variable to toggle use of the data uncertainty in the 
-            kernel during training. Default is False.
+            A boolean variable to toggle use of a truncation error model in the 
+            kernel during training. Default is True.
 
         method : int  
             The method used for determining the training points. Options: 1,2,3.
@@ -151,7 +162,7 @@ class GP(Models):
         m = GaussianProcessRegressor(kernel=self.kern, alpha=self.alpha, n_restarts_optimizer=20, normalize_y=True)
 
         #fit the GP to the training data
-        sk = m.fit(gc, datac)
+        self.sk = m.fit(gc, datac)
 
         #print the optimized parameters for the user
         print('Gaussian process parameters: {}'.format(m.kernel_))
@@ -191,23 +202,20 @@ class GP(Models):
             name = input('Enter a file name (include .jpg, .png, etc.)')
             fig.savefig(name, bbox_inches='tight')
 
-        return sk
+        return self.sk
 
 
-    def validate(self, sk, interval=68):
+    def validate(self, interval=68):
 
         '''
         A wrapper function for scikit learn's GP prediction function. This will 
         predict the GP results with an interval and plot against the expansions.
 
         :Example:
-            GP.validate(sk, loworder=5, highorder=5)
+            GP.validate(interval=68)
 
         Parameters:
         -----------
-        sk : scikit learn object
-            The GP object created from training the GP on the data. 
-
         interval : float
             The credible interval desired. 68 or 95 available.
 
@@ -227,8 +235,8 @@ class GP(Models):
         self.gpred = self.gpredict.reshape(-1,1)
 
         #predict the results for the validation data
-        self.meanp, self.sigp = sk.predict(self.gpred, return_std=True)
-        _, self.cov = sk.predict(self.gpred, return_cov=True)
+        self.meanp, self.sigp = self.sk.predict(self.gpred, return_std=True)
+        _, self.cov = self.sk.predict(self.gpred, return_cov=True)
         self.meanp = self.meanp[:,0]
 
         #calculate the interval for the predictions
@@ -350,10 +358,9 @@ class GP(Models):
         self.datatrhigh = self.m.high_g(self.gtrhigh)[0,:]
 
         #calculate the variance at each point from the next term
-        obj = Uncertainties()
-        lowvariance = obj.variance_low(self.gtrlow, self.loworder[0])
+        lowvariance = self.u.variance_low(self.gtrlow, self.loworder[0])
         self.lowsigma = np.sqrt(lowvariance)
-        highvariance = obj.variance_high(self.gtrhigh, self.highorder[0])
+        highvariance = self.u.variance_high(self.gtrhigh, self.highorder[0])
         self.highsigma = np.sqrt(highvariance)
 
         #find the values of g in the other set to determine location of points

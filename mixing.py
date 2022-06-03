@@ -13,7 +13,7 @@ from models import Models, Uncertainties
 __all__ = ['Mixing']
 
 
-class Mixing(Models): 
+class Mixing(Models, Uncertainties): 
     
     
     def __init__(self, loworder, highorder):
@@ -50,6 +50,7 @@ class Mixing(Models):
 
         #instantiate the Models() and Priors() classes here
         self.m = Models(self.loworder, self.highorder)
+        self.u = Uncertainties()
         self.p = Priors()
 
         return None
@@ -392,10 +393,9 @@ class Mixing(Models):
         else:
             raise ValueError('Mixing function requested is not found. Select one of the valid options.')
 
-        #call Uncertainties class for the theory errors (variances)
-        err = Uncertainties()
-        siglow = np.sqrt(err.variance_low(g_data, self.loworder[0]))
-        sighigh = np.sqrt(err.variance_high(g_data, self.highorder[0]))
+        #theory errors via error models
+        siglow = np.sqrt(self.u.variance_low(g_data, self.loworder[0]))
+        sighigh = np.sqrt(self.u.variance_high(g_data, self.highorder[0]))
 
         #set up sampler
         nwalkers = 2*int(3*ndim + 1)
