@@ -3,6 +3,8 @@ import seaborn as sns
 import docrep
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from scipy import stats
+from numpy.linalg import cholesky
+import scipy.linalg as scl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from models import Models, Uncertainties
@@ -120,7 +122,7 @@ class GP(Bivariate):
 
         '''
         A function that links the model data and the training function in 
-        scikit learn.
+        scikit learn, and plots the training data using GP.plot_training().
 
         :Example:
             GP.training(error=False, method=3)
@@ -168,6 +170,89 @@ class GP(Bivariate):
         print('Gaussian process parameters: {}'.format(m.kernel_))
 
         #plot the results
+        GP.plot_training(gs, datas, sigmas)
+
+        return self.sk
+
+
+    def validate(self, interval=68):
+
+        '''
+        A wrapper function for scikit learn's GP prediction function. This will 
+        predict the GP results with an interval and plot against the expansions
+        using GP.plot_validate().
+
+        :Example:
+            GP.validate(interval=68)
+
+        Parameters:
+        -----------
+        interval : float
+            The credible interval desired. 68 or 95 available.
+
+        Returns:
+        -------
+        meanp : numpy.ndarray
+            The mean array of the GP prediction results.
+
+        sigp : numpy.ndarray
+            The standard deviation array of the GP prediction results. 
+        
+        cov : numpy.ndarray
+            The covariance matrix of the GP prediction results. 
+        '''
+
+        #make the prediction values into a column vector
+        self.gpred = self.gpredict.reshape(-1,1)
+
+        #predict the results for the validation data
+        self.meanp, self.sigp = self.sk.predict(self.gpred, return_std=True)
+        _, self.cov = self.sk.predict(self.gpred, return_cov=True)
+        self.meanp = self.meanp[:,0]
+
+        #calculate the interval for the predictions
+        if interval == 68:
+            factor = 1.0
+        elif interval == 95:
+            factor = 1.96
+        intervals = np.zeros([len(self.meanp), 2])
+        intervals[:,0] = self.meanp - factor*self.sigp
+        intervals[:,1] = self.meanp + factor*self.sigp
+
+        #plot the results
+        GP.plot_validate(self, intervals)
+
+        return self.meanp, self.sigp, self.cov
+
+
+    def plot_training(self, gs, datas, sigmas):
+
+        '''
+        A simple plotter to plot the trained GP results and models, 
+        as well as the points at which the GP was trained. 
+
+        :Example:
+            GP.plot_training(gs=np.array([]), datas=np.array([]),
+            sigmas=np.array([]))
+
+        Parameters:
+        ------------
+        gs : numpy.ndarray
+            Points chosen by GP.training_set() in input space g.
+        
+        datas : numpy.ndarray
+            Corresponding values of the series expansions at gs.
+        
+        sigmas : numpy.ndarray
+            Corresponding error model results at each training
+            point.
+
+        Returns:
+        --------
+        None.
+        '''
+
+        #set up the plot
         fig = plt.figure(figsize=(8,6), dpi=600)
         ax = plt.axes()
         fig.patch.set_facecolor('white')
@@ -196,57 +281,33 @@ class GP(Bivariate):
         plt.show()
 
         #save figure option
-        response = input('Would you like to save this figure? (yes/no)')
+        # response = input('Would you like to save this figure? (yes/no)')
 
-        if response == 'yes':
-            name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name, bbox_inches='tight')
+        # if response == 'yes':
+        #     name = input('Enter a file name (include .jpg, .png, etc.)')
+        #     fig.savefig(name, bbox_inches='tight')
 
-        return self.sk
+        return None
 
-
-    def validate(self, interval=68):
+    
+    def plot_validate(self, intervals):
 
         '''
-        A wrapper function for scikit learn's GP prediction function. This will 
-        predict the GP results with an interval and plot against the expansions.
+        A simple plotter to show the results of the GP 
+        predictions at new points in g. 
 
         :Example:
-            GP.validate(interval=68)
+            GP.plot_validate(intervals=np.array([,]))
 
         Parameters:
         -----------
-        interval : float
-            The credible interval desired. 68 or 95 available.
+        intervals : numpy.ndarray
+            The uncertainty band around the prediction set.
 
-        Return:
-        -------
-        meanp : numpy.ndarray
-            The mean array of the GP prediction results.
-
-        sigp : numpy.ndarray
-            The standard deviation array of the GP prediction results. 
-        
-        cov : numpy.ndarray
-            The covariance matrix of the GP prediction results. 
+        Returns:
+        --------
+        None.
         '''
-
-        #make the prediction values into a column vector
-        self.gpred = self.gpredict.reshape(-1,1)
-
-        #predict the results for the validation data
-        self.meanp, self.sigp = self.sk.predict(self.gpred, return_std=True)
-        _, self.cov = self.sk.predict(self.gpred, return_cov=True)
-        self.meanp = self.meanp[:,0]
-
-        #calculate the interval for the predictions
-        if interval == 68:
-            factor = 1.0
-        elif interval == 95:
-            factor = 1.96
-        intervals = np.zeros([len(self.meanp), 2])
-        intervals[:,0] = self.meanp - factor*self.sigp
-        intervals[:,1] = self.meanp + factor*self.sigp
 
         #plot the results
         fig = plt.figure(figsize=(8,6), dpi=600)
@@ -278,13 +339,13 @@ class GP(Bivariate):
         plt.show()
 
         #save figure option
-        response = input('Would you like to save this figure? (yes/no)')
+        # response = input('Would you like to save this figure? (yes/no)')
 
-        if response == 'yes':
-            name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name, bbox_inches='tight')
+        # if response == 'yes':
+        #     name = input('Enter a file name (include .jpg, .png, etc.)')
+        #     fig.savefig(name, bbox_inches='tight')
 
-        return self.meanp, self.sigp, self.cov
+        return None
 
     
     def training_set(self):
@@ -294,7 +355,7 @@ class GP(Bivariate):
         the input prediction set. 
 
         :Example:
-            GP.training_set(loworder=np.array([2])) 
+            GP.training_set() 
 
         Parameters:
         -----------
@@ -412,77 +473,8 @@ class GP(Bivariate):
 
         return gtr, datatr, sigmatr 
 
-    @staticmethod
-    def nearest_value(array, value):
 
-        #calculate the difference between each point
-        abs_val = np.abs(array - value)
-
-        #find the smallest difference in the array
-        index = abs_val.argmin()
-
-        return index
-
-
-    def ref_dist(self, mean, cov):
-
-        '''
-        Constructs a multivariate normal distribution to act
-        as a reference distribution for the Mahalanobis distance
-        calculation. 
-
-        :Example:
-            Diagnostics.ref_dist(mean=np.array([]), cov=np.array([]))
-
-        Parameters:
-        -----------
-        mean : numpy.ndarray
-            The mean of the GP (given by the prediction set). 
-        
-        cov : numpy.ndarray
-            The covariance matrix of the GP (given by the prediction
-            set). 
-
-        Returns:
-        --------
-        dist : stats object
-            A multivariate normal distribution that can be used to 
-            generate samples for the reference distribution. 
-        '''
-
-        dist = stats.multivariate_normal(mean=mean, cov=cov)
-
-        return dist
-
-
-    def sample_ref(self, dist, n_curves):
-
-        '''
-        Generate some sample curves from the reference distribution.
-
-        :Example:
-            Diagnostics.sample_ref(dist, n_curves=10)
-
-        Parameters:
-        -----------
-        dist : stats object
-            The reference distribution object. 
-
-        n_curves : int
-            The number of draws from the reference distribution.
-
-        Returns:
-        --------
-        samples : numpy.ndarray
-            The array of curves from the distribution. 
-        '''
-
-        samples = dist.rvs(n_curves).T
-
-        return samples
-
-
-    def MD_set(self):
+    def MD_set(self, pts=3):
 
         '''
         Takes the training set of points and uses them to cut the
@@ -494,7 +486,9 @@ class GP(Bivariate):
 
         Parameters:
         -----------
-        None.
+        pts : int
+            The number of points to use to calculate the Mahalanobis
+            distance. Can be any number up to the size of self.gpredict. 
 
         Returns:
         --------
@@ -542,10 +536,10 @@ class GP(Bivariate):
         md_sig = GP_err[index_lowerr:index_hierr]
         md_cov = GP_cov[index_lowerr:index_hierr, index_lowerr:index_hierr]
 
-        #select 4 points in g
-        self.lenpts = int(input('Enter the number of training points.'))
+        #select points in g
+        self.lenpts = pts
         points = self.create_points(int(self.lenpts), md_g[0], md_g[-1])
-        print(points)
+        print('Location of MD points in g: ', points)
 
         #find the indices
         indices = np.zeros([self.lenpts])
@@ -568,60 +562,98 @@ class GP(Bivariate):
         return md_g, md_mean, md_sig, md_cov
 
 
-    @staticmethod
-    def create_points(N, a, b):
-        
-        #create the linspace with endpoints
-        pts_array = np.linspace(a, b, N+2)
-
-        #remove the first and last point
-        pts = pts_array[1:-1]
-
-        return pts
-
-
-    def Mahalanobis(self, y, mean, cov):
+    def md_squared(self, md_g, md_mean, md_cov, n_curves=1000):
 
         '''
-        A diagnostic testing function that can calculate the Mahalanobis 
-        distance for a given set of mean, covariance data and a vector. 
-
-        Uses: 1). Calculate the MD of the predictions of the GP;
-              2). Calculate the MD of the predictions to construct a 
-                  reference distribution. 
+        A wrapper for the Mahalanobis distance calculation for the
+        reference distribution and the GP curve. To calculate the 
+        Cholesky decomposition or to perform an SVD analysis, consult
+        GP.mahalanobis() below. 
 
         :Example:
-            GP.MD(y=np.array([]), mean=np.array([]), cov=np.array([2,2]))
+            GP.md_squared(md_g=np.linspace, md_mean=np.array([]), 
+                          md_cov=np.array([,]), n_curves=1000)
 
         Parameters:
         -----------
-        y : numpy.ndarray
-            An array of predicted values from the emulator.
+        md_g : numpy.linspace
+            The points in input space g from the GP.MD_set() function. 
 
-        mean : numpy.ndarray
-            An array of true values from the true model (simulator).
+        md_mean : numpy.ndarray
+            The values of the GP mean at the md_g points. 
 
-        cov : numpy.ndarray 
-            A 2D covariance matrix from the emulator. 
+        md_cov : numpy.ndarray
+            The values of the GP covariance matrix at the md_g points. 
+
+        n_curves : int
+            The number of curves from the reference distribution that
+            are drawn for the MD^2 calculation (md_ref). 
 
         Returns:
         --------
-        md : float
-            The Mahalanobis distance. 
+        md_gp : float
+            The individual MD^2 value for the GP curve. 
+
+        md_ref : numpy.ndarray  
+            The array of MD^2 values from the reference distribution.
         '''
 
-        y = np.atleast_2d(y)
+        #calculate the ref distribution MDs
+        dist = self.ref_dist(md_mean, md_cov, random_state=1)
+        y = self.sample_ref(dist, n_curves)
+        md = np.ones([n_curves])
+        for i in range(n_curves):
+            md[i] = self.mahalanobis(y[:,i].T, md_mean, inv=md_cov, chol=None, svd=False)
+        
+        #MD^2 (ref)
+        md_ref = md**2.0 
 
-        md = np.squeeze(np.sqrt(np.diag((y - mean) @ np.linalg.inv(cov) @ (y - mean).T)))
+        #calculate the GP MD 
+        fval = self.m.true_model(md_g)
+        mdgp = self.mahalanobis(fval.T, md_mean, inv=md_cov, chol=None, svd=True)
 
-        return md
+        #MD^2 (GP)
+        md_gp = mdgp**2.0
 
+        return md_gp, md_ref
 
-    #develop MD plotter and copy into the class
+    
     def md_plotter(self, dist, md_gp, md_ref, hist=True, box=False):
 
         '''
-        ***FINISH DOCUMENTATION***
+        A plotting function that allows the Mahalanobis distance
+        to be plotted using either a histogram or a box and whisker
+        plot, or both. 
+
+        Box and whisker plot code heavily drawn from J. Melendez' gsum
+        code (https://github.com/buqeye/gsum).
+
+        :Example:
+            GP.md_plotter(dist, md_gp=np.array([]), md_ref=np.array([]),
+            hist=False, box=True)
+        
+        Parameters:
+        -----------
+        dist : stats.multivariate_normal object
+            The reference distribution to draw the histogram
+            samples from. 
+
+        md_gp : float
+            The MD^2 value for the GP curve. 
+
+        md_ref : numpy.ndarray
+            The array of MD^2 values for the reference
+            distribution.
+
+        hist : bool
+            Toggle for plotting a histogram. Default is True. 
+
+        box : bool
+            Toggle for plotting a box plot. Default is False. 
+
+        Returns:
+        --------
+        None.
         '''
         
         title = 'Mahalanobis Distance'
@@ -684,11 +716,239 @@ class GP(Bivariate):
         
         return None
 
-
-    def ref_boxplot(self, dist, q1=0.25, q3=0.75, whislo=0.025, whishi=0.975, ax=None, **kwargs):
+    
+    @staticmethod
+    def mahalanobis(y, mean, cov, inv=None, chol=None, svd=False):
 
         '''
-        ***FINISH DOCUMENTATION***
+        A diagnostic testing function that can calculate the Mahalanobis 
+        distance for a given set of mean, covariance data and a vector. 
+
+        Uses: 1). Calculate the MD of the predictions of the GP using
+                  the inverse covariance matrix (usual method);
+              2). Calculate the MD of the predictions to construct a 
+                  reference distribution using the inverse covariance
+                  matrix (usual method);
+              3). Calculate the Cholesky decomposition of the MD
+                  information;
+              4). Perform an SVD analysis and send back the MD 
+                  calculated via SVD. 
+
+        :Example:
+            GP.MD(y=np.array([]), mean=np.array([]), cov=np.array([2,2]))
+
+        Parameters:
+        -----------
+        y : numpy.ndarray
+            An array of predicted values from the emulator.
+
+        mean : numpy.ndarray
+            An array of true values from the true model (simulator).
+
+        cov : numpy.ndarray 
+            A 2D covariance matrix from the emulator. 
+        
+        inv : numpy.ndarray
+            The covariance matrix to be inverted in the MD calculation.
+            Must be not equal to None to run either the MD standard
+            calculation OR the SVD analysis. 
+        
+        chol : bool
+            The option to calculate the Cholesky decomposition
+            of the data. 
+
+        svd : bool
+            An option to perform the SVD analysis of the MD data.
+            To use, must also have a covariance matrix sent to inv. 
+
+        Returns:
+        --------
+        md : float (if calculating MD or SVD)
+            The Mahalanobis distance. 
+
+        chol_decomp : numpy.ndarray (if calculating Cholesky
+                                     decomposition)
+            The Cholesky decomposition results. 
+        '''
+
+        y = np.atleast_2d(y)
+
+        #cholesky option (solves for Cholesky decomposition)
+        if (inv is None) and (chol is not None):
+
+            chol = cholesky(cov)
+            errs = scl.solve_triangular(chol, (y-mean).T, lower=True).T
+            chol_decomp = np.linalg.norm(errs, axis=-1)
+
+            return chol_decomp 
+
+        #SVD option
+        if (svd is True) and (inv is not None):
+        
+            #perform SVD
+            _, s, vh = np.linalg.svd(inv)
+            print('Eigenvalues: ',s)
+            sinv = np.linalg.inv(np.diag(s))   #inverse of eigenvalue matrix
+            one = vh @ (y-mean).T
+            svd_md = np.squeeze(one.T @ sinv @ one)
+            print('MD^2 (SVD): ', svd_md)
+            
+            #SVD errors
+            svderrs = np.zeros([len(s)])
+            for i in range(len(s)):
+                svderrs[i] = np.square(1.0/np.sqrt(s[i]) * np.dot(vh[i,:],(y-mean).T))
+            print('SVD Errors: ', np.sum(svderrs))
+            print('SVD individual errors: ', svderrs)
+
+            return svd_md
+    
+        #inverse option (normal MD calculation)
+        if (chol is None) and (inv is not None):
+            
+            md = np.squeeze(np.sqrt(np.diag((y - mean) @ np.linalg.inv(cov) @ (y - mean).T)))
+
+            return md
+
+        #if both are selected
+        if (chol is not None) and (inv is not None):
+            raise ValueError('Send either the cholesky matrix or covariance matrix, not both.')
+
+
+    @staticmethod
+    def nearest_value(array, value):
+
+        '''
+        A static method to find the index of the nearest value
+        of an array to a desired value. 
+
+        :Example:
+            GP.nearest_value(array=numpy.ndarray, value=5)
+
+        Parameters:
+        -----------
+        array : numpy.ndarray
+            The array of values to search. 
+
+        value : int
+            The desired value to search the array for. 
+
+        Returns:
+        --------
+        index : int
+            The index of the nearest value of the array
+            to the desired value. 
+        '''
+
+        #calculate the difference between each point
+        abs_val = np.abs(array - value)
+
+        #find the smallest difference in the array
+        index = abs_val.argmin()
+
+        return index
+
+
+    @staticmethod
+    def ref_dist(mean, cov):
+
+        '''
+        Constructs a multivariate normal distribution to act
+        as a reference distribution for the Mahalanobis distance
+        calculation. 
+
+        :Example:
+            Diagnostics.ref_dist(mean=np.array([]), cov=np.array([]))
+
+        Parameters:
+        -----------
+        mean : numpy.ndarray
+            The mean of the GP (given by the prediction set). 
+        
+        cov : numpy.ndarray
+            The covariance matrix of the GP (given by the prediction
+            set). 
+
+        Returns:
+        --------
+        dist : stats object
+            A multivariate normal distribution that can be used to 
+            generate samples for the reference distribution. 
+        '''
+
+        dist = stats.multivariate_normal(mean=mean, cov=cov)
+
+        return dist
+
+
+    @staticmethod
+    def sample_ref(dist, n_curves):
+
+        '''
+        Generate some sample curves from the reference distribution.
+
+        :Example:
+            Diagnostics.sample_ref(dist, n_curves=10)
+
+        Parameters:
+        -----------
+        dist : stats object
+            The reference distribution object. 
+
+        n_curves : int
+            The number of draws from the reference distribution.
+
+        Returns:
+        --------
+        samples : numpy.ndarray
+            The array of curves from the distribution. 
+        '''
+
+        samples = dist.rvs(n_curves).T
+
+        return samples
+
+
+    @staticmethod
+    def create_points(N, a, b):
+
+        '''
+        A code to create a given number of points from a 
+        linspace evenly from points a to b. 
+
+        :Example:
+            GP.create_points(N=3, a=0.0, b=1.0)
+
+        Parameters:
+        -----------
+        N : int
+            The number of points desired.
+
+        a : float, int
+            The left endpoint of the region of interest. 
+
+        b : float, int
+            The right endpoint of the region of interest. 
+
+        Returns:
+        --------
+        pts : numpy.ndarray
+            The resulting array of points. 
+        '''
+        
+        #create the linspace with endpoints
+        pts_array = np.linspace(a, b, N+2)
+
+        #remove the first and last point
+        pts = pts_array[1:-1]
+
+        return pts
+
+
+    @staticmethod 
+    def ref_boxplot(dist, q1=0.25, q3=0.75, whislo=0.025, whishi=0.975, ax=None, **kwargs):
+
+        '''
+        Taken from the gsum code written by J. Melendez (https://github.com/buqeye/gsum).
         '''
 
         stat_dict = [{'med': dist.median(), 'q1': dist.ppf(q1), 'q3': dist.ppf(q3),
