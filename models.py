@@ -17,7 +17,7 @@ class Models():
         and the means to plot them. 
 
         :Example:
-            Models()
+            Models(loworder=np.array([2]), highorder=np.array([5]))
 
         Parameters:
         -----------
@@ -55,7 +55,7 @@ class Models():
         constant, g.
         
         :Example:
-            Models.low_g(g=np.linspace(0.0, 0.5, 20), loworder=np.array([5, 10, 20]))
+            Models.low_g(g=np.linspace(0.0, 0.5, 20))
             
         Parameters:
         -----------
@@ -122,7 +122,7 @@ class Models():
         constant, g.
         
         :Example:
-            Models.high_g(highorder=np.array([5, 10, 20]))
+            Models.high_g(g=np.linspace(1e-6,1.0,100))
             
         Parameters:
         -----------
@@ -154,7 +154,7 @@ class Models():
 
                         high_c[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
 
-                        high_terms[k] = (high_c[k] * g[i]**(-k)) / np.sqrt(g[i]) #* np.sqrt(g[i])  #multiplying by sqrt(g)
+                        high_terms[k] = (high_c[k] * g[i]**(-k)) / np.sqrt(g[i])
 
                     #sum the terms for each value of g
                     value[i] = np.sum(high_terms)
@@ -172,7 +172,7 @@ class Models():
 
                     high_c[k] = special.gamma(k/2.0 + 0.25) * (-0.5)**k / (2.0 * math.factorial(k))
 
-                    high_terms[k] = (high_c[k] * g**(-k)) / np.sqrt(g) #* np.sqrt(g)  #multiplying by sqrt(g)
+                    high_terms[k] = (high_c[k] * g**(-k)) / np.sqrt(g) 
 
                 #sum the terms for each value of g
                 value = np.sum(high_terms)
@@ -223,7 +223,7 @@ class Models():
         and including the true model calculated using Mixing.true_model.
         
         :Example:
-            Mixing.plot_models(g=np.linspace(0.0, 0.5, 100), lowk=np.array([5, 23]), highk=np.array([5, 23]))
+            Mixing.plot_models(g=np.linspace(0.0, 0.5, 100))
             
         Parameters:
         -----------
@@ -274,13 +274,11 @@ class Models():
         plt.show()
 
         #save figure option
-        response = input('Would you like to save this figure? (yes/no)')
+        # response = input('Would you like to save this figure? (yes/no)')
 
-        if response == 'yes':
-            name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name, bbox_inches='tight')
-        else:
-            pass
+        # if response == 'yes':
+        #     name = input('Enter a file name (include .jpg, .png, etc.)')
+        #     fig.savefig(name, bbox_inches='tight')
 
         return None
         
@@ -293,7 +291,7 @@ class Models():
         residuals. 
         
         :Example:
-            Mixing.residuals(loworder=np.array([5, 10, 20]), highorder=np.array([5, 10, 20]))
+            Mixing.residuals()
             
         Parameters:
         -----------
@@ -393,7 +391,7 @@ class Uncertainties:
         A function to calculate the variance corresponding to the small-g expansion model.
 
         :Example:
-            Discrepancy.variance_low(g=np.linspace(1e-6, 0.5, 100), loworder=5)
+            Bivariate.variance_low(g=np.linspace(1e-6, 0.5, 100), loworder=5)
 
         Parameters:
         -----------
@@ -507,7 +505,7 @@ class Uncertainties:
         A function to calculate the variance corresponding to the large-g expansion model.
 
         :Example:
-            Discrepancy.variance_low(g=np.linspace(1e-6, 0.5, 100), highorder=23)
+            Bivariate.variance_low(g=np.linspace(1e-6, 0.5, 100), highorder=23)
 
         Parameters:
         -----------

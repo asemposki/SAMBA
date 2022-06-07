@@ -8,7 +8,7 @@ __all__ = ['Bivariate']
 
 class Bivariate(Models, Uncertainties):
 
-    def __init__(self, loworder, highorder):
+    def __init__(self, loworder, highorder, ci=68):
 
         '''
         The bivariate BMM method used to construct the mixed model of two series
@@ -24,12 +24,18 @@ class Bivariate(Models, Uncertainties):
 
         highorder : numpy.ndarray, int, float
             The value of N_l to be used to truncate the large-g expansion.
+        
+        ci : int
+            The value of the credibility interval desired (can be 68 or 95).
 
         Returns:
         --------
         None. 
         '''
 
+        #get interval
+        self.ci = ci
+        
         #instantiate the Uncertainties class and error model 
         self.u = Uncertainties()
         self.error_model = self.u.error_model 
@@ -66,7 +72,7 @@ class Bivariate(Models, Uncertainties):
         -----------
         g : numpy.linspace
             The linspace over which this calculation is performed.
-  
+
         GP_mean : numpy.ndarray
             An array of mean values from a Gaussian process to be mixed in
             as a third model (optional).  
@@ -92,6 +98,13 @@ class Bivariate(Models, Uncertainties):
             The variance interval for the large-g expansion (calculated from the
             next order after the truncation).
         '''
+
+        #check type
+        if isinstance(self.loworder, float) == True or isinstance(self.loworder, int) == True:
+            self.loworder = np.array([self.loworder])
+        
+        if isinstance(self.highorder, float) == True or isinstance(self.highorder, int) == True:
+            self.highorder = np.array([self.highorder])
 
         #uncertainties
         v_low = np.asarray([self.u.variance_low(g, self.loworder[i]) for i in range(len(self.loworder))])
@@ -132,7 +145,6 @@ class Bivariate(Models, Uncertainties):
         var = 1.0/np.sum(var, axis=0)
 
         #which credibility interval to use
-        self.ci = float(input('Which interval do you want to use: 68 or 95?'))
         if self.ci == 68:
             val = 1.0
         elif self.ci == 95:
@@ -191,7 +203,12 @@ class Bivariate(Models, Uncertainties):
 
         Returns:
         --------
-        None.
+        mean : numpy.ndarray    
+            The mean of the mixed model at each point in g.
+
+        intervals : numpy.ndarray
+            The values of the credibility intervals at each
+            point in g. 
         '''
 
         #set up plot configuration
@@ -252,25 +269,22 @@ class Bivariate(Models, Uncertainties):
         ax.legend(fontsize=18, loc='upper right')
         plt.show()
 
-        #save figure option
-        response = input('Would you like to save this figure? (yes/no)')
+        # #save figure option
+        # response = input('Would you like to save this figure? (yes/no)')
 
-        if response == 'yes':
-            name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name, bbox_inches='tight')
-        else:
-            pass
+        # if response == 'yes':
+        #     name = input('Enter a file name (include .jpg, .png, etc.)')
+        #     fig.savefig(name, bbox_inches='tight')
 
         return mean, intervals 
 
-###############################################################################################################
 
-
-    def subplot_mix(self, g, GP_mean=np.zeros([2]), GP_var=np.zeros([2])):  #TODO: Fix this whole function
+    def subplot_mix(self, g, GP_mean=np.zeros([2]), GP_var=np.zeros([2]), log=False): 
 
         '''
         An all-in-one plotting function that will plot the results of fdagger for N numbers
-        of models side-by-side with the 2 model case to compare.
+        of models side-by-side with the 2 model case to compare. Currently used to plot the GP
+        results alongside those without the GP; N models case not color-coded yet.  
 
         :Example:
             Bivariate.subplot_mix(g=np.linspace(1e-6, 0.5, 100))
@@ -279,7 +293,18 @@ class Bivariate(Models, Uncertainties):
         -----------
         g : numpy.linspace
             The space over which the models are calculated.
-        
+
+        GP_mean : numpy.ndarray
+            An array of GP PPD results (that MUST be at input points in g)
+            to be mixed in with the expansions chosen. Optional. 
+
+        GP_var : numpy.ndarray
+            An array of GP variance results (that MUST be at input points in g)
+            to be mixed in with the expansions chosen. Optional. 
+
+        log : bool
+            A toggle for logscale. Default is False. 
+
         Returns:
         --------
         None.
@@ -289,9 +314,7 @@ class Bivariate(Models, Uncertainties):
         fig = plt.figure(figsize=(16,6), dpi=600)
         gs = fig.add_gridspec(1, 2, hspace=0, wspace=0)
         (ax1, ax2) = gs.subplots(sharex='col', sharey='row')
-        xlim = input('\nx-limits (enter "auto" if unknown): ')
-        ylim = input('\ny-limits (enter "auto" if unknown): ')
-
+       
         for ax in (ax1, ax2):
 
             ax.tick_params(axis='x', labelsize=18)
@@ -299,18 +322,10 @@ class Bivariate(Models, Uncertainties):
             ax.locator_params(nbins=5)
             ax.xaxis.set_minor_locator(AutoMinorLocator())
             ax.yaxis.set_minor_locator(AutoMinorLocator())
+            ax.set_xlim(0.0,1.0)
+            ax.set_xticks([0.1, 0.3, 0.5, 0.7, 0.9])
+            ax.set_ylim(1.0,3.0)
             
-            if xlim == "auto":
-                ax.set_xlim(0.0,1.0)
-                ax.set_xticks([0.1, 0.3, 0.5, 0.7, 0.9])
-
-            else:
-                ax.set_xlim(tuple(map(float, xlim.split(','))))
-            if ylim == "auto":
-                ax.set_ylim(1.0,3.0)
-            else:
-                ax.set_ylim(tuple(map(float, ylim.split(','))))
-
             #labels and true model
             ax.set_xlabel('g', fontsize=22)
             ax.set_ylabel('F(g)', fontsize=22)
@@ -319,9 +334,8 @@ class Bivariate(Models, Uncertainties):
             #only label outer plot axes
             ax.label_outer()
 
-        #set log scale option (overwrite axes if yes)
-        ans = input('Log scale? (yes/no)')
-        if ans == 'yes':
+        #log scale option
+        if log is True:
             for ax in (ax1, ax2):
                 ax.set_yscale('log')
                 ax.set_ylim(1e-2, 10.0)
@@ -335,62 +349,34 @@ class Bivariate(Models, Uncertainties):
         else:
             mean, intervals, interval_low, interval_high = self.fdagger(g)
 
-        #plot the small-g expansions and error bands
+        #plot the small-g expansions and error bands (panel a)
         for i,j in zip(range(len(self.loworder)), self.loworder):
             ax1.plot(g, self.m.low_g(g)[i,:], 'r--', \
                 label=r'$f_s$ ($N_s$ = {})'.format(j))
             ax1.plot(g, interval_low[i, :, 0], 'r', linestyle='dotted',\
                 label=r'$f_s$ {}\% CI'.format(int(self.ci)))
             ax1.plot(g, interval_low[i, :, 1], 'r', linestyle='dotted')
-
-        a = 0
-
-        for j in loworder:
-            if a >= 1:
-                ax2.plot(g, self.m.low_g(g, j.item())[0,:], color='fuchsia', linestyle='dashed',\
-                     label=r'$f_s$ ($N_s$ = {})'.format(j))
-            else:
-                ax2.plot(g, self.m.low_g(g, j.item())[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
-            a += 1
-
-        for i in range(len(loworder)):
-
-            if i > 0:
-                ax2.plot(g, interval_low[i, :, 0], color='fuchsia', linestyle='dotted', \
+        
+        #plot the small-g expansions and error bands (panel b)
+        for i,j in zip(range(len(self.loworder)), self.loworder):
+            ax2.plot(g, self.m.low_g(g)[i,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(j))
+            ax2.plot(g, interval_low[i, :, 0], 'r', linestyle='dotted',\
                     label=r'$f_s$ {}\% CI'.format(int(self.ci)))
-                ax2.plot(g, interval_low[i, :, 1], color='fuchsia', linestyle='dotted')
-           
-            else:
-                ax2.plot(g, interval_low[i, :, 0], 'r', linestyle='dotted',\
-                     label=r'$f_s$ {}\% CI'.format(int(self.ci)))
-                ax2.plot(g, interval_low[i, :, 1], 'r', linestyle='dotted')
+            ax2.plot(g, interval_low[i, :, 1], 'r', linestyle='dotted')
 
-        #plot the large-g expansions and error bands
-        ax1.plot(g, self.m.high_g(g, highorder[0].item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
-        ax1.plot(g, interval_high[0, :, 0], 'b', linestyle='dotted', label=r'$f_l$ {}\% CI'.format(int(self.ci)))
-        ax1.plot(g, interval_high[0, :, 1], 'b', linestyle='dotted')
+        #plot the large-g expansions and error bands (panel a)
+        for i,j in zip(range(len(self.highorder)), self.highorder):
+            ax1.plot(g, self.m.high_g(g)[i,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+            ax1.plot(g, interval_high[i, :, 0], 'b', linestyle='dotted', \
+                label=r'$f_l$ {}\% CI'.format(int(self.ci)))
+            ax1.plot(g, interval_high[i, :, 1], 'b', linestyle='dotted')
 
-        b = 0
-
-        for j in highorder:
-
-            if b >= 1:
-                ax2.plot(g, self.m.high_g(g, j.item())[0,:], color='darkorange', linestyle='dashed', \
-                     label=r'$f_l$ ($N_l$ = {})'.format(j))
-            else:
-                ax2.plot(g, self.m.high_g(g, j.item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
-            b += 1
-            
-        for i in range(len(highorder)):
-
-            if i > 0:
-                ax2.plot(g, interval_high[i, :, 0], color='darkorange', linestyle='dotted', \
+        #plot the large-g expansions and error bands (panel b)
+        for i,j in zip(range(len(self.highorder)), self.highorder):
+            ax2.plot(g, self.m.high_g(g)[i,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(j))
+            ax2.plot(g, interval_high[i, :, 0], 'b', linestyle='dotted', \
                     label=r'$f_l$ {}\% CI'.format(int(self.ci)))
-                ax2.plot(g, interval_high[i, :, 1], color='darkorange', linestyle='dotted')
-            else:
-                ax2.plot(g, interval_high[i, :, 0], 'b', linestyle='dotted', \
-                    label=r'$f_l$ {}\% CI'.format(int(self.ci)))
-                ax2.plot(g, interval_high[i, :, 1], 'b', linestyle='dotted')
+            ax2.plot(g, interval_high[i, :, 1], 'b', linestyle='dotted')
 
         #2 model case
         ax1.plot(g, mean2, 'g', label='Mixed model')
@@ -414,16 +400,16 @@ class Bivariate(Models, Uncertainties):
         plt.show()
 
         #save figure option
-        response = input('Would you like to save this figure? (yes/no)')
+        # response = input('Would you like to save this figure? (yes/no)')
 
-        if response == 'yes':
-            name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name, bbox_inches='tight')
+        # if response == 'yes':
+        #     name = input('Enter a file name (include .jpg, .png, etc.)')
+        #     fig.savefig(name, bbox_inches='tight')
 
         return None
 
 
-    def plot_error_models(self, g):   #WORKS FOR 2 MODELS AT A TIME ONLY RIGHT NOW
+    def plot_error_models(self, g): 
 
         '''
         A plotter to compare the uninformative error model results of two models 
@@ -448,9 +434,7 @@ class Bivariate(Models, Uncertainties):
         fig = plt.figure(figsize=(16,6), dpi=600)
         gs = fig.add_gridspec(1, 2, hspace=0, wspace=0)
         (ax1, ax2) = gs.subplots(sharex='col', sharey='row')
-        xlim = input('\nx-limits (enter "auto" if unknown): ')
-        ylim = input('\ny-limits (enter "auto" if unknown): ')
-
+      
         for ax in (ax1, ax2):
 
             ax.tick_params(axis='x', labelsize=18)
@@ -458,17 +442,10 @@ class Bivariate(Models, Uncertainties):
             ax.locator_params(nbins=5)
             ax.xaxis.set_minor_locator(AutoMinorLocator())
             ax.yaxis.set_minor_locator(AutoMinorLocator())
-            
-            if xlim == "auto":
-                ax.set_xlim(0.0,1.0)
-                ax.set_xticks([0.1, 0.3, 0.5, 0.7, 0.9])
-            else:
-                ax.set_xlim(tuple(map(float, xlim.split(','))))
-            if ylim == "auto":
-                ax.set_ylim(1.0,3.0)
-            else:
-                ax.set_ylim(tuple(map(float, ylim.split(','))))
-
+            ax.set_xlim(0.0,1.0)
+            ax.set_xticks([0.1, 0.3, 0.5, 0.7, 0.9])
+            ax.set_ylim(1.0,3.0)
+         
             #labels and true model
             ax.set_xlabel('g', fontsize=22)
             ax.set_ylabel('F(g)', fontsize=22)
@@ -477,17 +454,14 @@ class Bivariate(Models, Uncertainties):
             #only label outer plot axes
             ax.label_outer()
 
-        #set log scale option (overwrite axes if yes)
-        ans = input('Log scale? (yes/no)')
-        if ans == 'yes':
-            for ax in (ax1, ax2):
-                ax.set_yscale('log')
-                ax.set_ylim(1e-2, 10.0)
-
         #call fdagger to calculate results (overwrite class variable)
-        self.error_model = 1
+        print('Panel (a):')
+        self.u = Uncertainties()
+        self.error_model = self.u.error_model
         mean_u, intervals_u, interval_low_u, interval_high_u = self.fdagger(g)
-        self.error_model = 2
+        print('\nPanel (b):')
+        self.u = Uncertainties()
+        self.error_model = self.u.error_model 
         mean_i, intervals_i, interval_low_i, interval_high_i = self.fdagger(g)
 
         #plot the small-g expansions and error bands (panel a)
@@ -536,30 +510,39 @@ class Bivariate(Models, Uncertainties):
         plt.show()
 
         #save figure option
-        response = input('Would you like to save this figure? (yes/no)')
+        # response = input('Would you like to save this figure? (yes/no)')
 
-        if response == 'yes':
-            name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name, bbox_inches='tight')
-        else:
-            pass
+        # if response == 'yes':
+        #     name = input('Enter a file name (include .jpg, .png, etc.)')
+        #     fig.savefig(name, bbox_inches='tight')
 
         return None
 
 
     def vertical_plot_fdagger(self, g1, g2, gp_mean1=np.zeros([2]), gp_mean2=np.zeros([2]), gp_var1=np.zeros([2]), gp_var2=np.zeros([2])):
-        #TODO: Fix this function!
 
         '''
         Vertical panel plotter for the paper to generate two mixed model plots. 
 
         :Example:
-            Bivariate.vertical_plot_fdagger(g=np.linspace(1e-6, 0.5, 100))
+            Bivariate.vertical_plot_fdagger(g1=np.linspace(1e-6, 0.5, 100), g2=np.linspace(1e-6,1.0,100),
+            gp_mean1=np.array([]), gp_mean2=np.array([]), gp_var1=np.array([,]), gp_var2=np.array([,]))
 
         Parameters:
         -----------
-        g : numpy.linspace
-            The space over which the models are calculated.
+        g1 : numpy.linspace
+            The space over which the models (and GP) were calculated for panel a. 
+
+        g2 : numpy.linspace
+            The space over which the models (and GP) were calculated for panel b. 
+
+        gp_mean1 : GP mean results to be mixed with the models in panel a. Optional. 
+
+        gp_mean2 : GP mean results to be mixed with the models in panel b. Optional.
+
+        gp_var1 : GP variance results for panel a. Optional.
+
+        gp_var2 : GP variance results for panel b. Optional. 
       
         Returns:
         --------
@@ -570,9 +553,7 @@ class Bivariate(Models, Uncertainties):
         fig = plt.figure(figsize=(8,12), dpi=600)
         gs = fig.add_gridspec(2,1, hspace=0, wspace=0)
         (ax1, ax2) = gs.subplots(sharex='col', sharey='row')
-        xlim = input('\nx-limits (enter "auto" if unknown): ')
-        ylim = input('\ny-limits (enter "auto" if unknown): ')
-        
+       
         for ax in (ax1, ax2):
 
             ax.tick_params(axis='x', labelsize=18)
@@ -580,16 +561,9 @@ class Bivariate(Models, Uncertainties):
             ax.locator_params(nbins=5)
             ax.xaxis.set_minor_locator(AutoMinorLocator())
             ax.yaxis.set_minor_locator(AutoMinorLocator())
-            
-            if xlim == "auto":
-                ax.set_xlim(0.0,1.0)
-            else:
-                ax.set_xlim(tuple(map(float, xlim.split(','))))
-            if ylim == "auto":
-                ax.set_ylim(1.2,3.2)
-                ax.set_yticks([1.4, 1.8, 2.2, 2.6, 3.0])
-            else:
-                ax.set_ylim(tuple(map(float, ylim.split(','))))
+            ax.set_xlim(0.0,1.0)
+            ax.set_ylim(1.2,3.2)
+            ax.set_yticks([1.4, 1.8, 2.2, 2.6, 3.0])
 
             #labels and true model
             ax.set_xlabel('g', fontsize=22)
@@ -599,42 +573,70 @@ class Bivariate(Models, Uncertainties):
             #only label outer plot axes
             ax.label_outer()
 
-        #call GP & fdagger to calculate results
+        #copy class variables to force changes
+        loworder = self.loworder.copy()
+        highorder = self.highorder.copy()
+
+        #call GP & fdagger to calculate results (only works if both are nonzero)
         if gp_mean1.any() and gp_mean2.any() != 0:
             
-            #then get plot results
-            mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g1, loworder[0], \
-                highorder[0], GP_mean=gp_mean1, GP_var=gp_var1) 
-
-            mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g2, loworder[1], \
-                highorder[1], GP_mean=gp_mean2, GP_var=gp_var2)
+            #mixed results (panel a)
+            self.loworder = np.array([loworder[0]])
+            self.highorder = np.array([highorder[0]])
+            self.m = Models(self.loworder, self.highorder)
+            mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g1, \
+                GP_mean=gp_mean1, GP_var=gp_var1) 
+            
+            #mixed results (panel b)
+            self.loworder = np.array([loworder[1]])
+            self.highorder = np.array([highorder[1]])
+            self.m = Models(self.loworder, self.highorder)
+            mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g2, \
+                GP_mean=gp_mean2, GP_var=gp_var2)
 
         else:
-            mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g1, loworder[0], highorder[0])
-            mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g2, loworder[1], highorder[1])
+            #mixed results (panel a)
+            self.loworder = np.array([loworder[0]])
+            self.highorder = np.array([highorder[0]])
+            self.m = Models(self.loworder, self.highorder)
+            mean_1, intervals_1, interval_low_1, interval_high_1 = self.fdagger(g1)
+
+            #mixed results (panel b)
+            self.loworder = np.array([loworder[1]])
+            self.highorder = np.array([highorder[1]])
+            self.m = Models(self.loworder, self.highorder)
+            mean_2, intervals_2, interval_low_2, interval_high_2 = self.fdagger(g2)
 
         #plot the small-g expansions and error bands (panel a)
-        ax1.plot(g1, self.m.low_g(g1, loworder[0].item())[0,:], 'r--', \
-            label=r'$f_s$ ($N_s$ = {})'.format(loworder[0]))
+        self.loworder = np.array([loworder[0]])
+        self.m = Models(self.loworder, self.highorder)
+        ax1.plot(g1, self.m.low_g(g1)[0,:], 'r--', \
+            label=r'$f_s$ ($N_s$ = {})'.format(self.loworder[0]))
         ax1.plot(g1, interval_low_1[0, :, 0], 'r', linestyle='dotted',\
              label=r'$f_s$ {}\% CI'.format(int(self.ci)))
         ax1.plot(g1, interval_low_1[0, :, 1], 'r', linestyle='dotted')
 
         #plot the small-g expansions and error bands (panel b)
-        ax2.plot(g2, self.m.low_g(g2, loworder[1].item())[0,:], color='r', linestyle='dashed',\
-                label=r'$f_s$ ($N_s$ = {})'.format(loworder[1]))
+        self.loworder = np.array([loworder[1]])
+        self.m = Models(self.loworder, self.highorder)
+        ax2.plot(g2, self.m.low_g(g2)[0,:], color='r', linestyle='dashed',\
+                label=r'$f_s$ ($N_s$ = {})'.format(self.loworder[0]))
         ax2.plot(g2, interval_low_2[0, :, 0], color='r', linestyle='dotted', \
             label=r'$f_s$ {}\% CI'.format(int(self.ci)))
         ax2.plot(g2, interval_low_2[0, :, 1], color='r', linestyle='dotted')
 
         #plot the large-g expansions and error bands (panel a)
-        ax1.plot(g1, self.m.high_g(g1, highorder[0].item())[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(highorder[0]))
+        self.highorder = np.array([highorder[0]])
+        self.m = Models(self.loworder, self.highorder)
+        ax1.plot(g1, self.m.high_g(g1)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
         ax1.plot(g1, interval_high_1[0, :, 0], 'b', linestyle='dotted', label=r'$f_l$ {}\% CI'.format(int(self.ci)))
         ax1.plot(g1, interval_high_1[0, :, 1], 'b', linestyle='dotted')
        
         #plot the large-g expansions and error bands (panel b)
-        ax2.plot(g2, self.m.high_g(g2, highorder[1].item())[0,:], color='b', linestyle='dashed', \
-                label=r'$f_l$ ($N_l$ = {})'.format(highorder[1]))
+        self.highorder = np.array([highorder[1]])
+        self.m = Models(self.loworder, self.highorder)
+        ax2.plot(g2, self.m.high_g(g2)[0,:], color='b', linestyle='dashed', \
+                label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
         ax2.plot(g2, interval_high_2[0, :, 0], color='b', linestyle='dotted', \
             label=r'$f_l$ {}\% CI'.format(int(self.ci)))
         ax2.plot(g2, interval_high_2[0, :, 1], color='b', linestyle='dotted')
@@ -661,12 +663,10 @@ class Bivariate(Models, Uncertainties):
         plt.show()
 
         #save figure option
-        response = input('Would you like to save this figure? (yes/no)')
+        # response = input('Would you like to save this figure? (yes/no)')
 
-        if response == 'yes':
-            name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name, bbox_inches='tight')
-        else:
-            pass
-
+        # if response == 'yes':
+        #     name = input('Enter a file name (include .jpg, .png, etc.)')
+        #     fig.savefig(name, bbox_inches='tight')
+    
         return None

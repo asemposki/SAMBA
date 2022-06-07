@@ -22,7 +22,7 @@ docstrings = docrep.DocstringProcessor()
 class GP(Bivariate):
 
 
-    def __init__(self, g, loworder, highorder, kernel="RBF", fix_length=False):
+    def __init__(self, g, loworder, highorder, kernel="RBF", ci=68, fix_length=False):
 
         '''
         A class that will pull from the Models class to perform GP emulation on 
@@ -33,7 +33,7 @@ class GP(Bivariate):
         :Example:
             GP(g=np.linspace(1e-6,1.0,100), loworder=5, highorder=2, kernel="Matern")
 
-        Parameters:"
+        Parameters:
         -----------
         g : numpy linspace
             The linspace across the coupling constant space used for the GP.
@@ -44,6 +44,9 @@ class GP(Bivariate):
         kernel : str
             The type of kernel the user wishes to use. Default is the RBF kernel;
             possible choices are RBF, Matern, and Rational Quadratic. 
+
+        ci : int
+            The uncertainty interval to use. Must be 68 or 95. 
 
         fix_length : bool
             If True, will fix the lengthscale to a specific value entered. 
@@ -57,6 +60,9 @@ class GP(Bivariate):
         #set up the prediction array as a class variable for use later
         self.gpredict = np.copy(g)
 
+        #extract uncertainty interval for later use
+        self.ci = ci 
+
         #check type and assign class variables
         if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
             loworder = np.array([loworder])
@@ -67,7 +73,7 @@ class GP(Bivariate):
         self.loworder = loworder 
         self.highorder = highorder 
 
-        #Models() class
+        #Models(), Uncertainties()
         self.m = Models(self.loworder, self.highorder)
         self.u = Uncertainties()
 
@@ -170,12 +176,12 @@ class GP(Bivariate):
         print('Gaussian process parameters: {}'.format(m.kernel_))
 
         #plot the results
-        GP.plot_training(gs, datas, sigmas)
+        self.plot_training(gs, datas, sigmas)
 
         return self.sk
 
 
-    def validate(self, interval=68):
+    def validate(self):
 
         '''
         A wrapper function for scikit learn's GP prediction function. This will 
@@ -183,12 +189,11 @@ class GP(Bivariate):
         using GP.plot_validate().
 
         :Example:
-            GP.validate(interval=68)
+            GP.validate()
 
         Parameters:
         -----------
-        interval : float
-            The credible interval desired. 68 or 95 available.
+        None.
 
         Returns:
         -------
@@ -211,16 +216,16 @@ class GP(Bivariate):
         self.meanp = self.meanp[:,0]
 
         #calculate the interval for the predictions
-        if interval == 68:
+        if self.ci == 68:
             factor = 1.0
-        elif interval == 95:
+        elif self.ci == 95:
             factor = 1.96
         intervals = np.zeros([len(self.meanp), 2])
         intervals[:,0] = self.meanp - factor*self.sigp
         intervals[:,1] = self.meanp + factor*self.sigp
 
         #plot the results
-        GP.plot_validate(self, intervals)
+        self.plot_validate(intervals)
 
         return self.meanp, self.sigp, self.cov
 
@@ -331,7 +336,7 @@ class GP(Bivariate):
         ax.errorbar(self.gtrhigh, self.datatrhigh, self.highsigma, color="blue", fmt='o', markersize=4, \
              capsize=4, alpha=0.4, label=r"$f_l$ ($N_l$ = {})".format(self.highorder[0]), zorder=1)
         ax.plot(self.gpred, self.meanp, 'g', label='Predictions', zorder=2)
-        ax.plot(self.gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ CI'.format(interval), zorder=2)
+        ax.plot(self.gpred, intervals[:,0], color='green', linestyle='dotted', label=r'{}$\%$ CI'.format(self.ci), zorder=2)
         ax.plot(self.gpred, intervals[:,1], color='green', linestyle='dotted', zorder=2)
         ax.fill_between(self.gpred[:,0], intervals[:,0], intervals[:,1], color='green', alpha=0.3, zorder=10)
 
@@ -435,7 +440,7 @@ class GP(Bivariate):
         pttest = 0.6  
         indexptest = self.nearest_value(self.gtrhigh, pttest) 
 
-       #method 3: finding based on error (5%)
+        #method 3: finding based on error (5%)
         for i in range(len(self.gtrhigh)-1, -1, -1):
             if self.highsigma[i] >= 0.05*self.datatrhigh[i]:
                 indexerror = i
@@ -512,10 +517,9 @@ class GP(Bivariate):
         GP_cov = self.cov
 
         #calculate the variance at each expansion point from the next term
-        mdobj = Uncertainties()
-        lowvar = mdobj.variance_low(self.gpredict, self.loworder[0])
+        lowvar = self.u.variance_low(self.gpredict, self.loworder[0])
         lowerr = np.sqrt(lowvar)
-        highvar = mdobj.variance_high(self.gpredict, self.highorder[0])
+        highvar = self.u.variance_high(self.gpredict, self.highorder[0])
         hierr = np.sqrt(highvar)
 
         #compare the values and choose where the gap is
@@ -599,26 +603,29 @@ class GP(Bivariate):
         '''
 
         #calculate the ref distribution MDs
-        dist = self.ref_dist(md_mean, md_cov, random_state=1)
+        dist = self.ref_dist(md_mean, md_cov)
         y = self.sample_ref(dist, n_curves)
         md = np.ones([n_curves])
         for i in range(n_curves):
-            md[i] = self.mahalanobis(y[:,i].T, md_mean, inv=md_cov, chol=None, svd=False)
+            md[i] = self.mahalanobis(y[:,i].T, md_mean, inv=md_cov, chol=False, svd=False)
         
         #MD^2 (ref)
         md_ref = md**2.0 
 
         #calculate the GP MD 
         fval = self.m.true_model(md_g)
-        mdgp = self.mahalanobis(fval.T, md_mean, inv=md_cov, chol=None, svd=True)
+        mdgp = self.mahalanobis(fval.T, md_mean, inv=md_cov, chol=False, svd=False)
 
         #MD^2 (GP)
         md_gp = mdgp**2.0
 
+        #print the result
+        print('The squared Mahalanobis distance: {}'.format(md_gp))
+
         return md_gp, md_ref
 
     
-    def md_plotter(self, dist, md_gp, md_ref, hist=True, box=False):
+    def md_plotter(self, md_gp, md_ref, md_mean=None, md_cov=None, hist=True, box=False):
 
         '''
         A plotting function that allows the Mahalanobis distance
@@ -629,21 +636,25 @@ class GP(Bivariate):
         code (https://github.com/buqeye/gsum).
 
         :Example:
-            GP.md_plotter(dist, md_gp=np.array([]), md_ref=np.array([]),
+            GP.md_plotter(md_gp=np.array([]), md_ref=np.array([]),
             hist=False, box=True)
         
         Parameters:
         -----------
-        dist : stats.multivariate_normal object
-            The reference distribution to draw the histogram
-            samples from. 
-
         md_gp : float
             The MD^2 value for the GP curve. 
 
         md_ref : numpy.ndarray
             The array of MD^2 values for the reference
             distribution.
+        
+        md_mean : numpy.ndarray
+            The values of the GP mean at the md_g points. Only used
+            for box and whisker option; default is None. 
+
+        md_cov : numpy.ndarray
+            The values of the GP covariance matrix at the md_g points. 
+            Only used for box and whisker option; default is None.
 
         hist : bool
             Toggle for plotting a histogram. Default is True. 
@@ -676,8 +687,13 @@ class GP(Bivariate):
             x = np.linspace(0.0, max(md_ref), n)
             ax.plot(x, stats.chi2.pdf(x, df=self.lenpts), 'r', linewidth=2, label=r'$\chi^2$ (df={})'.format(self.lenpts))
 
+            #include legend
+            legend = True
+
         #box-and-whisker option
         if box is True:
+
+            dist = self.ref_dist(md_mean, md_cov)
             
             legend = False
         
@@ -718,7 +734,7 @@ class GP(Bivariate):
 
     
     @staticmethod
-    def mahalanobis(y, mean, cov, inv=None, chol=None, svd=False):
+    def mahalanobis(y, mean, inv=None, chol=False, svd=False):
 
         '''
         A diagnostic testing function that can calculate the Mahalanobis 
@@ -735,7 +751,8 @@ class GP(Bivariate):
                   calculated via SVD. 
 
         :Example:
-            GP.MD(y=np.array([]), mean=np.array([]), cov=np.array([2,2]))
+            GP.MD(y=np.array([]), mean=np.array([]), inv=numpy.ndarray([]),
+            chol=False, svd=False)
 
         Parameters:
         -----------
@@ -745,13 +762,8 @@ class GP(Bivariate):
         mean : numpy.ndarray
             An array of true values from the true model (simulator).
 
-        cov : numpy.ndarray 
-            A 2D covariance matrix from the emulator. 
-        
         inv : numpy.ndarray
             The covariance matrix to be inverted in the MD calculation.
-            Must be not equal to None to run either the MD standard
-            calculation OR the SVD analysis. 
         
         chol : bool
             The option to calculate the Cholesky decomposition
@@ -774,9 +786,9 @@ class GP(Bivariate):
         y = np.atleast_2d(y)
 
         #cholesky option (solves for Cholesky decomposition)
-        if (inv is None) and (chol is not None):
+        if (inv is not None) and (chol is True):
 
-            chol = cholesky(cov)
+            chol = cholesky(inv)
             errs = scl.solve_triangular(chol, (y-mean).T, lower=True).T
             chol_decomp = np.linalg.norm(errs, axis=-1)
 
@@ -803,15 +815,15 @@ class GP(Bivariate):
             return svd_md
     
         #inverse option (normal MD calculation)
-        if (chol is None) and (inv is not None):
+        if (chol is False) and (svd is False) and (inv is not None):
             
-            md = np.squeeze(np.sqrt(np.diag((y - mean) @ np.linalg.inv(cov) @ (y - mean).T)))
+            md = np.squeeze(np.sqrt(np.diag((y - mean) @ np.linalg.inv(inv) @ (y - mean).T)))
 
             return md
 
-        #if both are selected
-        if (chol is not None) and (inv is not None):
-            raise ValueError('Send either the cholesky matrix or covariance matrix, not both.')
+        #if nothing is selected
+        if (inv is None):
+            raise ValueError('Please input a covariance matrix.')
 
 
     @staticmethod

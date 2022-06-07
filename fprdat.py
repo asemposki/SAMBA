@@ -1,3 +1,11 @@
+##################################################
+# Code originally written for Mathematica by 
+# Masazumi Honda. The function fprset() below is 
+# adapted from his code entirely. The rest is 
+# written as a wrapper by Alexandra Semposki for 
+# this BMM package.
+##################################################
+
 #Explicit formula for interpolating functions
 #in the paper "On Pertubation theory improved by Strong coupling expansion"
 #by Masazumi Honda (Harish-Chandra Research Institute)
@@ -6,7 +14,6 @@
 #We denote this by FPR[\[Alpha],m,n,g]
 #Zero-dimensional \[Phi]**4-theory
 
-#packages needed
 import numpy as np
 import scipy.special as sp
 import matplotlib.pyplot as plt
@@ -22,6 +29,30 @@ __all__ = ['FPR']
 class FPR(Models):
 
     def __init__(self, g, loworder, highorder):
+
+        '''
+        A class to calculate the FPR method curves for comparison
+        to the mixed models in the three BMM methods of this package.
+        
+        :Example:
+            FPR(g=np.linspace(1e-6,1.0,100), loworder=np.array([5]),
+                highorder=np.array([5]))
+
+        Parameters:
+        -----------
+        g : numpy.linspace
+            The input space array over which the models are mixed.
+
+        loworder : numpy.ndarray 
+            The highest order considered in the small-g expansion.
+        
+        highorder : numpy.ndarray
+            The highest order considered in the large-g expansion.
+
+        Returns:
+        --------
+        None.
+        '''
 
         self.g = g
         self.loworder = loworder
@@ -155,6 +186,31 @@ class FPR(Models):
         '''
         A plotter for the overlay of the GP results and the FPR results
         from Honda (2014). 
+
+        :Example:
+            FPR.fpr_plot(mean=np.array(), intervals=np.array([,]), 
+            fpr_keys=['(3,3)^(1/6)'], ci=95)
+
+        Parameters:
+        -----------
+        mean : numpy.ndarray
+            A PPD mean to be compared to the FPR results.
+        
+        intervals : numpy.ndarray
+            A 2D array to plot a UQ band around the PPD. 
+
+        fpr_keys : list
+            A list of strings of fpr keys to be read in 
+            by the function and calculated using the fprset()
+            function above.
+
+        ci : int
+            The uncertainty calculated on the expansions. Can
+            be either 68 or 95. 
+
+        Returns:
+        --------
+        None.
         '''
 
         #set up plot configuration
@@ -167,21 +223,12 @@ class FPR(Models):
         ax1.yaxis.set_minor_locator(AutoMinorLocator())
         ax1.yaxis.set_label_coords(-.05, .5)
 
-
         #set up x and y limits
-        xlim = input('\nx-limits (enter "auto" if unknown): ')
-        ylim = input('\ny-limits (enter "auto" if unknown): ')
-        if xlim == "auto":
-            ax1.set_xlim(0,1)
-            ax1.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1])
-        else:
-            ax1.set_xlim(tuple(map(float, xlim.split(','))))
-        if ylim == "auto":
-            ax1.set_ylim(1.2,3.2)
-            ax1.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
-        else:
-            ax1.set_ylim(tuple(map(float, ylim.split(','))))
-
+        ax1.set_xlim(0,1)
+        ax1.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1])
+        ax1.set_ylim(1.2,3.2)
+        ax1.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
+    
         #labels and true model
         ax1.set_xlabel('g', fontsize=22)
         ax1.set_ylabel('F(g)', fontsize=22)
@@ -241,12 +288,10 @@ class FPR(Models):
         plt.show()
 
         #save figure option
-        response = input('Would you like to save this figure? (yes/no)')
+        # response = input('Would you like to save this figure? (yes/no)')
 
-        if response == 'yes':
-            name = input('Enter a file name (include .jpg, .png, etc.)')
-            fig.savefig(name, bbox_inches='tight')
-        else:
-            pass
+        # if response == 'yes':
+        #     name = input('Enter a file name (include .jpg, .png, etc.)')
+        #     fig.savefig(name, bbox_inches='tight')
 
         return None
