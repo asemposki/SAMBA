@@ -1,0 +1,13 @@
+numpy >= 1.20.3
+matplotlib
+scipy
+math
+emcee
+corner
+scikit-learn
+mpl_toolkits
+cycler
+seaborn
+statistics
+time
+warnings
