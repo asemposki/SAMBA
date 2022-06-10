@@ -351,7 +351,7 @@ class Models():
 class Uncertainties:
 
 
-    def __init__(self):
+    def __init__(self, error_model='informative'):
 
         '''
         An accompanying class to Models() that possesses the truncation error models
@@ -362,24 +362,24 @@ class Uncertainties:
 
         Parameters:
         -----------
-        None.
+        error_model : str
+            The name of the error model to use in the calculation. Options are
+            'uninformative' and 'informative'. Default is 'informative'.
 
         Returns:
         --------
         None.
         '''
 
-        #initialize the variance function used
-        model = input('Which error model do you want to use, uninformative or informative? (u/i)')
-
-        if model == 'u':
+        #assign error model 
+        if error_model == 'uninformative':
            self.error_model = 1
 
-        elif model == 'i':
+        elif error_model == 'informative':
             self.error_model = 2
 
         else:
-            raise ValueError('Please select one of the options listed.')
+            raise ValueError("Please choose 'uninformative' or 'informative'.")
 
         return None
 

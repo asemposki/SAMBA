@@ -16,7 +16,7 @@ __all__ = ['LMM']
 class LMM(Models, Uncertainties): 
     
     
-    def __init__(self, loworder, highorder):
+    def __init__(self, loworder, highorder, error_model='informative'):
         
         '''
         This class is designed with all of the necessary functions for creating a data set, plotting it 
@@ -24,19 +24,26 @@ class LMM(Models, Uncertainties):
         Dependent on the Models class to run the expansion functions. 
     
         :Example:            
-            LMM()
+            LMM(loworder=np.array([2]), highorder=np.array([2]), error_model='informative')
             
         Parameters:
         -----------
-        None.
+        loworder : numpy.ndarray, int
+            The truncation order to which we calculate the small-g
+            expansion. 
+
+        highorder : numpy.ndarray, int
+            The truncation order to which we calculate the large-g
+            expansion. 
+
+        error_model : str
+            The error model chosen for this calculation. Can be either 
+            'uninformative' or 'informative'. Default is 'informative'. 
             
         Returns:
         --------
         None.
-        
         '''    
-
-        print('Instantiating the linear mixture model method.')
 
         #check type and create class variables
         if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
@@ -46,17 +53,17 @@ class LMM(Models, Uncertainties):
             highorder = np.array([highorder])
 
         self.loworder = loworder 
-        self.highorder = highorder 
+        self.highorder = highorder
 
         #instantiate the Models() and Priors() classes here
         self.m = Models(self.loworder, self.highorder)
-        self.u = Uncertainties()
+        self.u = Uncertainties(error_model)
         self.p = Priors()
 
         return None
         
         
-    def add_data(self, g_true, g_data, data=None, sigma=None):
+    def add_data(self, g_true, g_data, data=None, sigma=None, error=None, plot=True):
         
         '''
         A data generation function that generates data based on the g_data linspace provided (with the number of 
@@ -64,7 +71,8 @@ class LMM(Models, Uncertainties):
         user's input of an array of data and standard deviations of the data points. 
         
         :Example:
-            LMM.add_data(g_true=np.linspace(0.0, 0.5, 100), g_data=np.linspace(0.0, 0.5, 20))
+            LMM.add_data(g_true=np.linspace(0.0, 0.5, 100), g_data=np.linspace(0.0, 0.5, 20),
+            error=0.01, plot=False)
         
         Parameters:
         -----------
@@ -80,6 +88,13 @@ class LMM(Models, Uncertainties):
         sigma : numpy.ndarray
             The standard deviation array entered by the user; if user wishes to generate data, this will
             remain set to None. 
+
+        error : float
+            The error to put on the data set if the data set is not being given by
+            the user. Enter in decimal form (0.01 = 1%). Default is None. 
+
+        plot : bool
+            The option to plot the data. Default is True. 
             
         Returns:
         --------
@@ -92,10 +107,12 @@ class LMM(Models, Uncertainties):
         
         #if user has an array of data, skip data generation
         if data is None:
-           
-            #ask for error desired
-            error = float(input('Data will be generated. What percent error would you like on your data (please enter a decimal)?'))
-        
+
+            if error is None:
+                raise ValueError('Please enter a error in decimal form for the data set generation.')
+            elif error < 0.0 or error > 1.0:
+                raise ValueError('Error must be between 0.0 and 1.0.')
+
             #generate fake data  
             data = self.true_model(g_data)
             rand = np.random.RandomState()
@@ -106,7 +123,8 @@ class LMM(Models, Uncertainties):
             sigma = error*data
         
         #plot the data and true model
-        self.plot_data(g_true, g_data, data)
+        if plot is True:
+            self.plot_data(g_true, g_data, data)
     
         return data, sigma
     
@@ -297,7 +315,7 @@ class LMM(Models, Uncertainties):
             return mixed_results
 
         
-    def mixed_model(self, g_data, data, sigma):
+    def mixed_model(self, g_data, data, sigma, mixing_function='cosine', nsteps=1000):
         
         '''
         A function that will run the emcee ensemble sampler for a given mixed model to determine at least one
@@ -306,7 +324,8 @@ class LMM(Models, Uncertainties):
         static methods defined at the end of this class.
         
         :Example:
-            LMM.mixed_model(g_data=np.linspace(0.0, 0.5, 20), data=np.array(), sigma=np.array())
+            LMM.mixed_model(g_data=np.linspace(0.0, 0.5, 20), data=np.array(), sigma=np.array(),
+            mixing_function='cosine', nsteps=3000)
             
         Parameters:
         -----------
@@ -318,6 +337,13 @@ class LMM(Models, Uncertainties):
             
         sigma : numpy.ndarray     
             An array of standard deviations at each data point.
+
+        mixing_function : str
+            The name of the mixing function to use for the LMM method. 
+            Default is the piecewise cosine. 
+
+        nsteps : int
+            The number of steps per walker for the sampler to use. 
    
         Returns:
         --------
@@ -337,14 +363,14 @@ class LMM(Models, Uncertainties):
         }
         
         #ask user which mixing function to use
-        self.choice = input('What mixing function would you like to use: logistic, cdf, or cosine?')
+        self.choice = mixing_function
         
         if self.choice == 'logistic' or self.choice == 'cdf':
             ndim = 2 
         elif self.choice == 'cosine':
             ndim = 3
         else:
-            raise ValueError('Mixing function requested is not found. Select one of the valid options.')
+            raise ValueError('Mixing function requested is not found. Enter one of the valid options.')
 
         #theory errors via error models
         siglow = np.sqrt(self.u.variance_low(g_data, self.loworder[0]))
@@ -352,11 +378,9 @@ class LMM(Models, Uncertainties):
 
         #set up sampler
         nwalkers = 2*int(3*ndim + 1)
-        nsteps = int(input('Enter the number of steps per walker.'))
 
-        total_samples = nwalkers * nsteps
-
-        print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
+       # total_samples = nwalkers * nsteps
+       # print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
 
         #set starting points per parameter
         starting_points = np.zeros((nwalkers, ndim))
@@ -385,13 +409,13 @@ class LMM(Models, Uncertainties):
             print(f"Duration = {minutes} min, {seconds} sec.")
 
         #find the trace
-        emcee_trace_mixed = self.burnin_trace(sampler_mixed, nwalkers, ndim)
-        print(np.shape(emcee_trace_mixed))
+        emcee_trace_mixed = self.burnin_trace(sampler_mixed, nsteps, ndim)
+      #  print(np.shape(emcee_trace_mixed))
 
         return sampler_mixed, emcee_trace_mixed
 
     
-    def ppd(self, trace, param_values, g_data, g, data, ci):
+    def ppd(self, trace, param_values, g_data, g, data, ci, plot=True):
         
         '''
         A function to calculate the posterior predictive distribution (PPD) 
@@ -420,6 +444,10 @@ class LMM(Models, Uncertainties):
 
         ci : int
             The desired credibility interval. Can be either 68 or 95.
+
+        plot : bool
+            The option to plot the PPD result with the series expansions
+            and true model. Default is True. 
            
         Returns:
         --------
@@ -481,7 +509,8 @@ class LMM(Models, Uncertainties):
             switch_g_intervals[i, :] = self.hpd_interval(result_array[i,:], ci)
 
         #plot the PPD results
-        self.plot_ppd(param_values, g_data, g, data, switch_med_results, switch_g_intervals, percent=68)
+        if plot is True:
+            self.plot_ppd(param_values, g_data, g, data, switch_med_results, switch_g_intervals, percent=68)
 
         return switch_med_results, switch_g_intervals
     
@@ -628,7 +657,6 @@ class LMM(Models, Uncertainties):
         '''
 
         #determine the autocorrelation length
-        dimension = len(chain)
         acors = np.empty(max_lag+1)
         if max_lag > len(chain)/5:
             warnings.warn('max_lag is more than one fifth the chain length')
@@ -649,7 +677,7 @@ class LMM(Models, Uncertainties):
         return acors
      
 
-    def burnin_trace(self, sampler_object, nwalkers, ndim):
+    def burnin_trace(self, sampler_object, nsteps, ndim):
         
         '''
         A small function to take the burn-in samples off of the sampler chain from the LMM.mixed_model
@@ -662,9 +690,9 @@ class LMM(Models, Uncertainties):
         -----------
         sampler_object : emcee object         
             The chain sent back by the emcee sampler after it finishes running through the samples and walkers.
-            
-        nwalkers : int     
-            The number of walkers for the sampler to use.
+
+        nsteps : int
+            The number of steps per walker.
             
         ndim : int            
             The number of parameters the sampler is determining.
@@ -675,11 +703,7 @@ class LMM(Models, Uncertainties):
             The trace of the sampler chain with the user's desired number of burn-in samples removed.
         '''
         
-        nburnin = int(input('How many burn-in samples per walker?'))
-
-        total_burnin = nburnin * nwalkers
-
-        print('Using {} samples as burn-in, for a total of {} burn-in samples.'.format(nburnin, total_burnin))
+        nburnin = int((1/15) * nsteps)
 
         #throw out the burn-in and reshape again
         emcee_trace_mixed = sampler_object.chain[:, nburnin:, :].reshape(-1, ndim).T
@@ -687,7 +711,7 @@ class LMM(Models, Uncertainties):
         return emcee_trace_mixed
 
 
-    def stats_chain(self, chain, parameters=3):
+    def stats_chain(self, chain, parameters=3, plot=True):
 
         '''
         Calculates the autocorrelation time and thins the samples
@@ -704,7 +728,12 @@ class LMM(Models, Uncertainties):
             from it. 
 
         parameters : int
-            The initial parameter array given to emcee. 
+            The initial parameter array given to emcee.
+
+        plot : bool
+            The option to plot the traces of the sample
+            chains and the corner plot of the parameter
+            distributions. Default is True.  
 
         Returns:
         --------
@@ -752,10 +781,8 @@ class LMM(Models, Uncertainties):
             p2, cov2 = np.polyfit(post_x2, post_y, 1, cov=True)
 
             #combine for printing
-            p = np.array([p1, p2])
-            cov = np.array([cov1, cov2])
-            #print('The autocorrelation information is: p = {}; cov = {}'.format(p, cov))
-            print('The autocorrelation times are: {}'.format(p[:,0]))
+            #p = np.array([p1, p2])
+            #print('The autocorrelation times are: {}'.format(p[:,0]))
 
             #thin the samples given the determined autocorrelation time
             thin1 = []
@@ -782,7 +809,8 @@ class LMM(Models, Uncertainties):
             thin = np.vstack((thin1, thin2))
 
             #call stats_trace for plots
-            _, _ = LMM.stats_trace(self, thin, 2)
+            if plot is True:
+                _, _ = LMM.stats_trace(self, thin, 2)
 
             #median calculation
             median_1 = statistics.median(thin[0,:])
@@ -795,9 +823,7 @@ class LMM(Models, Uncertainties):
             #arrays
             mean_results = np.array([mean_1, mean_2])
             median_results = np.array([median_1, median_2])
-            print('The median values are: {}'.format(median_results))
-            print('The mean values are: {}'.format(mean_results))
-
+          
             return thin, mean_results, median_results
 
         elif parameters == 3:
@@ -833,10 +859,8 @@ class LMM(Models, Uncertainties):
             p3, cov3 = np.polyfit(post_x3, post_y, 1, cov=True)
 
             #combine for printing
-            p = np.array([p1, p2, p3])
-            cov = np.array([cov1, cov2, cov3])
-            #print('The autocorrelation information is: p = {}; cov = {}'.format(p, cov))
-            print('The autocorrelation times are: {}'.format(p[:,0]))
+            #p = np.array([p1, p2, p3])
+            #print('The autocorrelation times are: {}'.format(p[:,0]))
 
             #thin the samples given the determined autocorrelation time
             thin1 = []
@@ -867,7 +891,8 @@ class LMM(Models, Uncertainties):
             thin = np.vstack((thin1, thin2, thin3))
 
             #call stats_trace for plots
-            _, _ = LMM.stats_trace(self, thin, 3)
+            if plot is True:
+                _, _ = LMM.stats_trace(self, thin, 3)
 
             #median calculation
             median_1 = statistics.median(thin[0,:])
@@ -882,13 +907,11 @@ class LMM(Models, Uncertainties):
             #arrays
             mean_results = np.array([mean_1, mean_2, mean_3])
             median_results = np.array([median_1, median_2, median_3])
-            print('The median values are: {}'.format(median_results))
-            print('The mean values are: {}'.format(mean_results))
-
+           
             return thin, mean_results, median_results
 
 
-    def MAP_values(self, thin, g, g_data, data, sigma):
+    def MAP_values(self, thin, g, g_data, data, sigma, plot=True):
 
         '''
         A function to calculate the MAP values of sampled distributions 
@@ -917,6 +940,10 @@ class LMM(Models, Uncertainties):
         sigma : numpy.ndarray
             The data error set being used for the mixing calculation.
 
+        plot : bool
+            The option to plot the weights over the input space in g. 
+            Default is True. 
+
         Returns:
         --------
         map_values : numpy.ndarray
@@ -936,10 +963,10 @@ class LMM(Models, Uncertainties):
         #MAP value calculation
         theta_index = np.argmax(posterior)
         map_values = thetas[:, theta_index]
-        print('MAP values: ', map_values)
 
         #plot the weight function and MAP values
-        self.plot_MAP(g, map_values)
+        if plot is True:
+            self.plot_MAP(g, map_values)
 
         return map_values
 

@@ -8,7 +8,7 @@ __all__ = ['Bivariate']
 
 class Bivariate(Models, Uncertainties):
 
-    def __init__(self, loworder, highorder, ci=68):
+    def __init__(self, loworder, highorder, error_model='informative', ci=68):
 
         '''
         The bivariate BMM method used to construct the mixed model of two series
@@ -24,6 +24,10 @@ class Bivariate(Models, Uncertainties):
 
         highorder : numpy.ndarray, int, float
             The value of N_l to be used to truncate the large-g expansion.
+
+        error_model : str
+            The error model to be used in the calculation. Options are
+            'uninformative' and 'informative'. Default is 'informative'. 
         
         ci : int
             The value of the credibility interval desired (can be 68 or 95).
@@ -37,7 +41,7 @@ class Bivariate(Models, Uncertainties):
         self.ci = ci
         
         #instantiate the Uncertainties class and error model 
-        self.u = Uncertainties()
+        self.u = Uncertainties(error_model)
         self.error_model = self.u.error_model 
 
         #check type and assign class variables
@@ -49,8 +53,6 @@ class Bivariate(Models, Uncertainties):
 
         self.loworder = loworder 
         self.highorder = highorder
-
-        print('Instantiating the bivariate BMM method.') 
 
         #instantiate Models() class here
         self.m = Models(self.loworder, self.highorder)
@@ -455,12 +457,10 @@ class Bivariate(Models, Uncertainties):
             ax.label_outer()
 
         #call fdagger to calculate results (overwrite class variable)
-        print('Panel (a):')
-        self.u = Uncertainties()
+        self.u = Uncertainties(error_model='uninformative')
         self.error_model = self.u.error_model
         mean_u, intervals_u, interval_low_u, interval_high_u = self.fdagger(g)
-        print('\nPanel (b):')
-        self.u = Uncertainties()
+        self.u = Uncertainties(error_model='informative')
         self.error_model = self.u.error_model 
         mean_i, intervals_i, interval_low_i, interval_high_i = self.fdagger(g)
 

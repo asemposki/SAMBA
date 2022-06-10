@@ -3,7 +3,7 @@
 # Masazumi Honda. The function fprset() below is 
 # adapted from his code entirely. The rest is 
 # written as a wrapper by Alexandra Semposki for 
-# this BMM package.
+# this BMM package. Notes below by Honda.
 ##################################################
 
 #Explicit formula for interpolating functions

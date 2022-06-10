@@ -1,6 +1,6 @@
 import numpy as np 
 import seaborn as sns
-import docrep
+#import docrep
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from scipy import stats
 from numpy.linalg import cholesky
@@ -16,13 +16,13 @@ plt.rcParams['savefig.facecolor']='white'
 
 __all__ = ['GP']
 
-docstrings = docrep.DocstringProcessor()
+#docstrings = docrep.DocstringProcessor()
 
 
 class GP(Bivariate):
 
 
-    def __init__(self, g, loworder, highorder, kernel="RBF", ci=68, fix_length=False):
+    def __init__(self, g, loworder, highorder, kernel="RBF", nu=None, ci=68, error_model='informative'):
 
         '''
         A class that will pull from the Models class to perform GP emulation on 
@@ -31,7 +31,8 @@ class GP(Bivariate):
         initial function. This class 'wraps' the scikit learn package. 
 
         :Example:
-            GP(g=np.linspace(1e-6,1.0,100), loworder=5, highorder=2, kernel="Matern")
+            GP(g=np.linspace(1e-6,1.0,100), loworder=5, highorder=2, kernel="Matern",
+            ci=68, error_model='informative')
 
         Parameters:
         -----------
@@ -45,12 +46,16 @@ class GP(Bivariate):
             The type of kernel the user wishes to use. Default is the RBF kernel;
             possible choices are RBF, Matern, and Rational Quadratic. 
 
+        nu : float
+            The value of the Matern kernel used, if kernel="Matern". Otherwise, 
+            default is None.
+
         ci : int
             The uncertainty interval to use. Must be 68 or 95. 
 
-        fix_length : bool
-            If True, will fix the lengthscale to a specific value entered. 
-            If False, will optimize the lengthscale (default). 
+        error_model : str
+            The error model to be used in the calculation. Options are
+            'uninformative' and 'informative'. Default is 'informative'. 
 
         Returns:
         -------
@@ -75,16 +80,10 @@ class GP(Bivariate):
 
         #Models(), Uncertainties()
         self.m = Models(self.loworder, self.highorder)
-        self.u = Uncertainties()
+        self.u = Uncertainties(error_model)
 
         #instantiate the class variable error_model for ease class crossing
         self.error_model = self.u.error_model
-
-        #show user error model used for clarity
-        if self.error_model == 1:
-            print('Using the uninformative error model.')
-        elif self.error_model == 2:
-            print('Using the informative error model.')
 
         #integral length
         self.gint = np.empty([])
@@ -92,39 +91,24 @@ class GP(Bivariate):
         #kernel set-up for the rest of the class (one-dimensional)
         kconstant = kernels.ConstantKernel(1.0)
 
-        #fix lengthscale option
-        if fix_length == True:
-            lsc = float(input('Enter the lengthscale value.'))
-
-            if kernel == "RBF":
-                k = kernels.RBF(length_scale=lsc, length_scale_bounds=(lsc,lsc))
-            elif kernel == "Matern":
-                nu = float(input('Enter a value for nu (standard: 0.5, 1.5, 2.5).'))
-                k = kernels.Matern(length_scale=lsc, length_scale_bounds=(lsc,lsc), nu=nu)
-            elif kernel == "Rational Quadratic":
-                k = kernels.RationalQuadratic(length_scale=lsc, length_scale_bounds=(lsc,lsc), alpha=1)
+        if kernel == "RBF":
+            k = kernels.RBF(length_scale=0.5, length_scale_bounds=(1e-5,1e5))
+        elif kernel == "Matern":
+            if nu is None:
+                raise ValueError('Matern kernel must be supplied a value for nu.')
             else:
-                raise ValueError('Please choose an available kernel.')
-
-        else:
-            if kernel == "RBF":
-                k = kernels.RBF(length_scale=0.5, length_scale_bounds=(1e-5,1e5))
-            elif kernel == "Matern":
-                nu = float(input('Enter a value for nu (standard: 0.5, 1.5, 2.5).'))
                 k = kernels.Matern(length_scale=0.4, length_scale_bounds=(1e-5,1e5), nu=nu)
-            elif kernel == "Rational Quadratic":
-                k = kernels.RationalQuadratic(length_scale=1.0, alpha=1)
-            else:
-                raise ValueError('Please choose an available kernel.')
-            
+        elif kernel == "Rational Quadratic":
+            k = kernels.RationalQuadratic(length_scale=1.0, alpha=1)
+        else:
+            raise ValueError('Please choose an available kernel.')
+        
         self.kern = kconstant * k
-
-        print('Initializing standard Constant * {} kernel.'.format(kernel))
 
         return None
 
     
-    def training(self, error=True, method=2):
+    def training(self, error=True, method=2, plot=True):
 
         '''
         A function that links the model data and the training function in 
@@ -142,6 +126,10 @@ class GP(Bivariate):
         method : int  
             The method used for determining the training points. Options: 1,2,3.
             For an extensive explanation of the methods, see the paper.
+
+        plot : bool
+            Option to plot the training set with series expansions and true model.
+            Default is True. 
 
         Returns:
         --------
@@ -176,12 +164,13 @@ class GP(Bivariate):
         print('Gaussian process parameters: {}'.format(m.kernel_))
 
         #plot the results
-        self.plot_training(gs, datas, sigmas)
+        if plot is True:
+            self.plot_training(gs, datas, sigmas)
 
         return self.sk
 
 
-    def validate(self):
+    def validate(self, plot=True):
 
         '''
         A wrapper function for scikit learn's GP prediction function. This will 
@@ -193,7 +182,9 @@ class GP(Bivariate):
 
         Parameters:
         -----------
-        None.
+        plot : bool
+            The option to plot the GP mean and variance over the testing
+            set and true model. Default is True. 
 
         Returns:
         -------
@@ -225,7 +216,8 @@ class GP(Bivariate):
         intervals[:,1] = self.meanp + factor*self.sigp
 
         #plot the results
-        self.plot_validate(intervals)
+        if plot is True:
+            self.plot_validate(intervals)
 
         return self.meanp, self.sigp, self.cov
 
@@ -364,7 +356,7 @@ class GP(Bivariate):
 
         Parameters:
         -----------
-        None.
+        None. 
 
         Returns:
         -------
@@ -377,9 +369,6 @@ class GP(Bivariate):
         sigmas : numpy.ndarray 
             The modified array of the truncation errors for the training. 
         '''
-
-        #print the method used for training
-        print('Current training method: {}'.format(self.method))
 
         #set up the training set from the prediction set (offset by midpoint)
         self.midpoint = (self.gpredict[1] - self.gpredict[0]) / 2.0
@@ -479,7 +468,7 @@ class GP(Bivariate):
         return gtr, datatr, sigmatr 
 
 
-    def MD_set(self, pts=3):
+    def MD_set(self, pts=3, plot=False):
 
         '''
         Takes the training set of points and uses them to cut the
@@ -494,6 +483,10 @@ class GP(Bivariate):
         pts : int
             The number of points to use to calculate the Mahalanobis
             distance. Can be any number up to the size of self.gpredict. 
+
+        plot : bool
+            The option to plot the MD points across the input space. 
+            Default is False. 
 
         Returns:
         --------
@@ -543,7 +536,7 @@ class GP(Bivariate):
         #select points in g
         self.lenpts = pts
         points = self.create_points(int(self.lenpts), md_g[0], md_g[-1])
-        print('Location of MD points in g: ', points)
+        #print('Location of MD points in g: ', points)
 
         #find the indices
         indices = np.zeros([self.lenpts])
@@ -560,8 +553,9 @@ class GP(Bivariate):
         md_cov = md_cov[np.ix_(indices, indices)]
 
         #plot the check the location of the points
-        plt.xlim(0.,1.)
-        plt.plot(md_g, np.ones(len(md_g)), 'k.')
+        if plot is True:
+            plt.xlim(0.,1.)
+            plt.plot(md_g, np.ones(len(md_g)), 'k.')
 
         return md_g, md_mean, md_sig, md_cov
 
@@ -618,9 +612,6 @@ class GP(Bivariate):
 
         #MD^2 (GP)
         md_gp = mdgp**2.0
-
-        #print the result
-        print('The squared Mahalanobis distance: {}'.format(md_gp))
 
         return md_gp, md_ref
 
@@ -775,12 +766,18 @@ class GP(Bivariate):
 
         Returns:
         --------
-        md : float (if calculating MD or SVD)
+        md : float (if calculating MD)
             The Mahalanobis distance. 
 
         chol_decomp : numpy.ndarray (if calculating Cholesky
                                      decomposition)
             The Cholesky decomposition results. 
+
+        svderrs : numpy.ndarray (if calculating SVD)
+            The SVD errors at each point in the MD testing set. 
+
+        svd_md : float (if calculating SVD)
+            The Mahalanobis distance. 
         '''
 
         y = np.atleast_2d(y)
@@ -809,10 +806,8 @@ class GP(Bivariate):
             svderrs = np.zeros([len(s)])
             for i in range(len(s)):
                 svderrs[i] = np.square(1.0/np.sqrt(s[i]) * np.dot(vh[i,:],(y-mean).T))
-            print('SVD Errors: ', np.sum(svderrs))
-            print('SVD individual errors: ', svderrs)
 
-            return svd_md
+            return svderrs, svd_md
     
         #inverse option (normal MD calculation)
         if (chol is False) and (svd is False) and (inv is not None):
