@@ -1,5 +1,5 @@
 ###########################################################
-# Tutorial example for Bivariate BMM
+# Tutorial example for Bivariate BMM (simplified)
 ###########################################################
 
 #import packages
@@ -33,7 +33,7 @@ nl = 2
 error_model='informative'
 model1 = Bivariate(ns, nl, error_model)
 
-
+##
 #test class object
 @contextmanager
 def does_not_raise():
@@ -47,45 +47,31 @@ def does_not_raise():
 def test_Bivariate(ns, nl, error_model, expectation):
     with expectation:
         assert Bivariate(ns, nl, error_model) is not None
-
+##
 
 #call plot_models() from Models() class
 model1.plot_models(g)
 
-#TODO: check ns, nl passing
+##
+#test ns, nl passing
+def test_class_variables(expectation):
+    with expectation:
+        assert Models.loworder == ns
+        assert Models.highorder == nl
 
 #check figure generation
 def test_plot_models(g, expectation):
     with expectation:
         assert model1.plot_models(g) is not None
-
+##
 
 #call plot_mix() function to mix
 mean1, intervals1 = model1.plot_mix(g, plot_fdagger=True)
 
-#TODO: check mean and interval and see what is going on inside here (check ns, nl passing)
-
-
-#instantiate a new object for N_s = N_l = 5
-ns = 5
-nl = 5
-error_model = 'informative'
-model2 = Bivariate(ns, nl, error_model)
-
-
-#check class object again
-@pytest.mark.parametrize(
-    "ns, nl, error_model, expectation",
-    [(ns, nl, error_model, does_not_raise()),],
-)
-
-def test_Bivariate(ns, nl, error_model, expectation):
+##
+#check mean and interval
+def test_plot_mix(ns, nl, error_model, expectation):
     with expectation:
-        assert Bivariate(ns, nl, error_model) is not None
-
-
-#call plot_mix()
-mean2, intervals2 = model2.plot_mix(g, plot_fdagger=True)
-
-#TODO: again check mean2, interval2
-#TODO: again check ns, nl passing 
+        assert mean1 is not None
+        assert intervals1 is not None
+##
