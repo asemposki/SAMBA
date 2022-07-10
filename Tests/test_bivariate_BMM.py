@@ -1,17 +1,10 @@
 ###########################################################
-# Tutorial example for Bivariate BMM (simplified)
+# Tutorial example for Bivariate BMM 
 ###########################################################
 
 #import packages
 import numpy as np
-import math
-import pytest
 from contextlib import contextmanager
-import statistics
-from scipy import stats, special, integrate
-
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
 
 #matplotlib settings for Latex plots
 import matplotlib
@@ -21,7 +14,6 @@ matplotlib.rcParams.update({
 })
 
 #load SAMBA classes
-from samba.models import Models, Uncertainties
 from samba.discrepancy import Bivariate
 
 #set up linspace and expansions
@@ -35,18 +27,17 @@ model1 = Bivariate(ns, nl, error_model)
 
 ##
 #test class object
-@contextmanager
-def does_not_raise():
-    yield
+# @contextmanager
+# def does_not_raise():
+#     yield
 
-@pytest.mark.parametrize(
-    "ns, nl, error_model, expectation",
-    [(ns, nl, error_model, does_not_raise()),],
-)
+# @pytest.mark.parametrize(
+#     "ns, nl, error_model, expectation",
+#     [(ns, nl, error_model, does_not_raise()),],
+# )
 
-def test_Bivariate(ns, nl, error_model, expectation):
-    with expectation:
-        assert Bivariate(ns, nl, error_model) is not None
+def test_Bivariate():
+    assert Bivariate(ns, nl, error_model) is not None
 ##
 
 #call plot_models() from Models() class
@@ -54,15 +45,19 @@ model1.plot_models(g)
 
 ##
 #test ns, nl passing
-def test_class_variables(expectation):
-    with expectation:
-        assert Models.loworder == ns
-        assert Models.highorder == nl
+def test_class_variables():
+    if isinstance(ns, int) or isinstance(ns, float):
+        assert model1.loworder[0] == ns
+    else:
+        assert np.array_equal(model1.loworder, ns)
+    if isinstance(nl, int) or isinstance(nl, float):
+        assert model1.highorder[0] == nl
+    else:
+        assert np.array_equal(model1.highorder, nl)
 
-#check figure generation
-def test_plot_models(g, expectation):
-    with expectation:
-        assert model1.plot_models(g) is not None
+#check NoneType object
+def test_plot_models():
+    assert model1.plot_models(g) is None
 ##
 
 #call plot_mix() function to mix
@@ -70,8 +65,7 @@ mean1, intervals1 = model1.plot_mix(g, plot_fdagger=True)
 
 ##
 #check mean and interval
-def test_plot_mix(ns, nl, error_model, expectation):
-    with expectation:
-        assert mean1 is not None
-        assert intervals1 is not None
+def test_plot_mix():
+    assert mean1 is not None
+    assert intervals1 is not None
 ##
