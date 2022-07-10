@@ -5,7 +5,7 @@ setup(
     packages=['SAMBA'],
     # cmdclass={'build_ext': CustomBuildExtCommand},
     # ext_modules=ext_modules,
-    version='0.1',
+    version='0.1.0',
     description='Sandbox for testing methods of Bayesian Model Mixing',
     author='Alexandra Semposki',
     author_email='as727414@ohio.edu',
