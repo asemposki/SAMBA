@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid.inset_locator import (zoomed_inset_axes, mark_inset)
 from cycler import cycler
 from matplotlib.ticker import AutoMinorLocator
-from mixing import Models 
+from samba.mixing import Models 
 
 
 __all__ = ['FPR']
@@ -232,16 +232,16 @@ class FPR(Models):
         #labels and true model
         ax1.set_xlabel('g', fontsize=22)
         ax1.set_ylabel('F(g)', fontsize=22)
-        ax1.plot(self.g, Models.true_model(self, self.g), 'k', label='True model')
+        ax1.plot(self.g, self.m.true_model(self.g), 'k', label='True model')
 
         #unpack ci
         self.ci = ci 
 
         #plot the small-g expansions and error bands
-        ax1.plot(self.g, Models.low_g(self, self.g)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(self.loworder[0]))
+        ax1.plot(self.g, self.m.low_g(self.g)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(self.m.loworder[0]))
         
         #plot the large-g expansions and error bands
-        ax1.plot(self.g, Models.high_g(self, self.g)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
+        ax1.plot(self.g, self.m.high_g(self.g)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.m.highorder[0]))
         
         #plot the GP results (mixed model)
         ax1.plot(self.g, mean, 'g', label='Mean')
@@ -266,9 +266,9 @@ class FPR(Models):
         y1 = 2.15
         y2 = 2.25
         axins = zoomed_inset_axes(ax1, 6, loc=9) 
-        axins.plot(self.g, Models.true_model(self, self.g), 'k', label='True model')
-        axins.plot(self.g, Models.low_g(self, self.g)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(self.loworder[0]))
-        axins.plot(self.g, Models.high_g(self, self.g)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.highorder[0]))
+        axins.plot(self.g, self.m.true_model(self.g), 'k', label='True model')
+        axins.plot(self.g, self.m.low_g(self.g)[0,:], 'r--', label=r'$f_s$ ($N_s$ = {})'.format(self.m.loworder[0]))
+        axins.plot(self.g, self.m.high_g(self.g)[0,:], 'b--', label=r'$f_l$ ($N_l$ = {})'.format(self.m.highorder[0]))
         axins.plot(self.g, mean, 'g', label='Mean')
         axins.plot(self.g, intervals[:,0], 'g', linestyle='dotted', label=r'{}$\%$ interval'.format(int(self.ci)))
         axins.plot(self.g, intervals[:,1], 'g', linestyle='dotted')
