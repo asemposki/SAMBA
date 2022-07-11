@@ -8,8 +8,6 @@ Bayesian model mixing is a novel concept that surpasses the more widely used Bay
 
 This package is intended to contain a variety of methods to perform Bayesian Model Mixing on a given set of data points and errors across an input space. In the current version, it can apply three different BMM methods to series expansions in the limits of a coupling constant. In future versions, we will include the option for users to implement their own functions or data sets to mix using SAMBA. 
 
-Current repo location (private): https://www.github.com/asemposki/SAMBA. 
-
 
 ## Workflow 
 
@@ -18,10 +16,14 @@ Current repo location (private): https://www.github.com/asemposki/SAMBA.
 
 - Mix the models using the provided functions in the method classes listed above. 
 
-Refer to the Tutorials folder in the repo for more detailed information on how to implement SAMBA. 
+Refer to the Tutorials folder in the repo for a comprehensive set of notebooks on how to implement SAMBA on the current toy model setup. 
 
 
-## Accessing the repo
+## Testing
 
-At this point in time, the repo is set to private. This will soon be changed, but if you would like access to it now please email as727414@ohio.edu or message Alexandra Semposki on Slack to gain access. 
+At its present status, there are two ways to test SAMBA:
+
+- After cloning this repo, make sure you have all of the required packages installed (see requirements.txt for a list of external packages needed) and open the Tutorials folder. Open the 3 notebooks there and run each notebook. If each cell is free of any errors, SAMBA is working correctly!
+
+- After cloning this repo, open a terminal and go to the Tests folder. This contains two pytest-compatible files (stay tuned for more!) that test the Bivariate and GP methods. Type `pytest` in your terminal and it should run both of the files. If all tests are passing and only a couple of warnings (about external packages) show up, SAMBA is passing its tests!
 <!-- #endregion -->
