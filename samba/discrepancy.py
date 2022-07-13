@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-from models import Models, Uncertainties
+from samba.models import Models, Uncertainties
 
 __all__ = ['Bivariate']
 

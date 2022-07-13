@@ -7,8 +7,8 @@ from numpy.linalg import cholesky
 import scipy.linalg as scl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-from models import Models, Uncertainties
-from discrepancy import Bivariate
+from samba.models import Models, Uncertainties
+from samba.discrepancy import Bivariate
 
 #set savefig color for all plots
 plt.rcParams['savefig.facecolor']='white'

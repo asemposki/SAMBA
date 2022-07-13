@@ -7,8 +7,8 @@ import warnings
 import statistics
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-from priors import Priors
-from models import Models, Uncertainties
+from samba.priors import Priors
+from samba.models import Models, Uncertainties
 
 __all__ = ['LMM']
 

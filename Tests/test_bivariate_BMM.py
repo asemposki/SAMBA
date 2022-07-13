@@ -4,7 +4,6 @@
 
 #import packages
 import numpy as np
-from contextlib import contextmanager
 
 #matplotlib settings for Latex plots
 import matplotlib
