@@ -37,12 +37,7 @@ model1 = Bivariate(ns, nl, error_model)
 
 def test_Bivariate():
     assert Bivariate(ns, nl, error_model) is not None
-##
 
-#call plot_models() from Models() class
-model1.plot_models(g)
-
-##
 #test ns, nl passing
 def test_class_variables():
     if isinstance(ns, int) or isinstance(ns, float):
@@ -53,18 +48,16 @@ def test_class_variables():
         assert model1.highorder[0] == nl
     else:
         assert np.array_equal(model1.highorder, nl)
-
-#check NoneType object
-def test_plot_models():
-    assert model1.plot_models(g) is None
 ##
 
 #call plot_mix() function to mix
-mean1, intervals1 = model1.plot_mix(g, plot_fdagger=True)
+mean1, intervals1, interval_low, interval_high = model1.fdagger(g)
 
 ##
 #check mean and interval
-def test_plot_mix():
+def test_fdagger():
     assert mean1 is not None
     assert intervals1 is not None
+    assert interval_low is not None 
+    assert interval_high is not None 
 ##

@@ -47,7 +47,7 @@ obj_tr1 = obj1.training(error=True, method=2, plot=False)
 ##
 #check return object
 def test_training():
-    assert obj1.training() is not None
+    assert obj_tr1 is not None
 ##
 
 #call the validate() function
@@ -62,24 +62,16 @@ def test_validate():
 ##
 
 #call plot_mix() to mix in the GP
-mixed_mean, mixed_intervals = obj1.plot_mix(g, plot_fdagger=True, \
-    plot_true=True, GP_mean=mean1, GP_var=np.square(sig1))
+mixed_mean, mixed_intervals, interval_low, interval_high = \
+    obj1.fdagger(g, GP_mean=mean1, GP_var=np.square(sig1))
 
 ##
 #check returned variables
-def test_plot_mix():
+def test_fdagger():
     assert mixed_mean is not None
     assert mixed_intervals is not None
-##
-
-#call subplot_mix() and plot no GP results next to GP results
-obj1.subplot_mix(g, GP_mean=mean1, GP_var=np.square(sig1))
-
-##
-#check NoneType object
-def test_subplot_mix():
-    assert obj1.subplot_mix(g, GP_mean=mean1, GP_var=np.square(sig1)) \
-        is None
+    assert interval_low is not None 
+    assert interval_high is not None 
 ##
 
 #calculate the Mahalanobis points
@@ -102,13 +94,4 @@ md_gp, md_ref = obj1.md_squared(md_g, md_mean, md_cov, n_curves=1000)
 def test_md_squared():
     assert md_gp is not None 
     assert md_ref is not None 
-##
-
-#call 
-obj1.md_plotter(md_gp, md_ref, hist=True)
-
-##
-#check NoneType object
-def test_md_plotter():
-    assert obj1.md_plotter(md_gp, md_ref) is None
 ##
