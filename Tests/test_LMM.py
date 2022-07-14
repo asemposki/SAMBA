@@ -57,7 +57,7 @@ def test_mixed_model():
     assert trace is not None 
 ##
 
-thin_array, mean, median = m.stats_chain(chain, parameters=3)
+thin_array, mean, median = m.stats_chain(chain, parameters=3, plot=False)
 
 ##
 #simple check of results
@@ -79,7 +79,7 @@ def test_MAP_values():
 g_ppd = np.linspace(1e-6, 1.0, 200)
 
 #PPD calculation using ppd() and MAP parameter values
-ppd_result = m.ppd(thin_array, map_values, g_data, g_ppd, data, 0.68)
+ppd_result = m.ppd(thin_array, map_values, g_data, g_ppd, data, 0.68, plot=False)
 
 ##
 #check PPD
