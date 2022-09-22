@@ -1,4 +1,4 @@
-# BAND SDK v0.1 Community Policy Compatibility for SAMBA
+# BAND SDK v0.2 Community Policy Compatibility for SAMBA
 
 
 > This document summarizes the efforts of current and future BAND member packages to achieve compatibility with the BAND SDK community policies.  Additional details on the BAND SDK are available [here](https://raw.githubusercontent.com/bandframework/bandframework/main/resources/sdkpolicies/bandsdk.md) and should be considered when filling out this form. The most recent copy of this template exists [here](https://raw.githubusercontent.com/bandframework/bandframework/main/resources/sdkpolicies/template.md).
@@ -23,7 +23,7 @@
 | # | Policy                 |Support| Notes                   |
 |---|-----------------------|-------|-------------------------|
 | 1. | Support BAND community GNU Autoconf, CMake, or other build options. |Full| SAMBA is written in Python, so it does not have compatibility with CMake (a C++ builder) or need for GNU Autoconf.|
-| 2. | Provide a comprehensive test suite for correctness of installation verification. |Full| SAMBA possesses a basic `pytest` suite to test for simple errors.|
+| 2. | Have a README file in the top directory that states a specific set of testing procedures for a user to verify the software was installed and run correctly. |Full| None.|
 | 3. | Provide a documented, reliable way to contact the development team. |Full| The contact is as727414@ohio.edu, given on the README.md of the package repo and in the docs.|
 | 4. | Come with an open-source license |Full| Uses an MIT license.|
 | 5. | Provide a runtime API to return the current version number of the software. |Full| None.|
@@ -40,7 +40,7 @@
 |**R2.**| Free all system resources acquired as soon as they are no longer needed. |Full| None. |
 |**R3.**| Provide a mechanism to export ordered list of library dependencies. |None| None. |
 |**R4.**| Document versions of packages that it works with or depends upon, preferably in machine-readable form.  |Partial| setup.py file contains dependency list. |
-|**R5.**| Have README, SUPPORT, LICENSE, and CHANGELOG files in top directory.  |Partial| Possesses README and LICENSE files in the top directory. |
+|**R5.**| Have SUPPORT, LICENSE, and CHANGELOG files in top directory.  |Partial| Possesses LICENSE file in the top directory. |
 |**R6.**| Have sufficient documentation to support use and further development.  |Partial| Possesses full docstrings in the source code; development of a ReadtheDocs page is ongoing. |
 |**R7.**| Be buildable using 64-bit pointers; 32-bit is optional. |Full| Package supports both 32 and 64 bit under same API.|
 |**R8.**| Do not assume a full MPI communicator; allow for user-provided MPI communicator. |N/a| None. |
@@ -49,6 +49,7 @@
 |**R11.**| Install headers and libraries under `<prefix>/include` and `<prefix>/lib`, respectively. |Full| None.|
 |**R12.**| All BAND compatibility changes should be sustainable. |Full| None.|
 |**R13.**| Respect system resources and settings made by other previously called packages. |Full| None.|
+|**R14.**| Provide a comprehensive test suite for correctness of installation verification. |Partial| SAMBA possesses a basic `pytest` suite to test for simple errors.|
 <!-- #endregion -->
 
 ```python
