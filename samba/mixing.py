@@ -7,6 +7,7 @@ import warnings
 import statistics
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
+
 from samba.priors import Priors
 from samba.models import Models, Uncertainties
 
@@ -357,6 +358,7 @@ class LMM(Models, Uncertainties):
 
         #dictionary of LMM functions
         self.function_mappings = {
+            'step': self.step,
             'logistic': self.logistic,
             'cdf': self.cdf,
             'cosine': self.switchcos,
@@ -364,8 +366,10 @@ class LMM(Models, Uncertainties):
         
         #ask user which mixing function to use
         self.choice = mixing_function
-        
-        if self.choice == 'logistic' or self.choice == 'cdf':
+
+        if self.choice == 'step':
+            ndim = 1
+        elif self.choice == 'logistic' or self.choice == 'cdf':
             ndim = 2 
         elif self.choice == 'cosine':
             ndim = 3
@@ -379,14 +383,24 @@ class LMM(Models, Uncertainties):
         #set up sampler
         nwalkers = 2*int(3*ndim + 1)
 
-       # total_samples = nwalkers * nsteps
-       # print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
+        #show total samples while running
+        total_samples = nwalkers * nsteps
+        print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
 
         #set starting points per parameter
         starting_points = np.zeros((nwalkers, ndim))
-        starting_points[:,0] = np.random.uniform(0.12, 0.18, nwalkers)
-        starting_points[:,2] = np.random.uniform(0.19, 0.24, nwalkers)
-        starting_points[:,1] = np.random.uniform(0.25, 0.30, nwalkers)
+
+        if ndim == 1:
+            starting_points[:,0] = np.random.uniform(0.0, 1.0, nwalkers)
+
+        elif ndim == 2:
+            starting_points[:,0] = np.random.uniform(0.0, 1.0, nwalkers)
+            starting_points[:,1] = np.random.uniform(0.0, 1.0, nwalkers)
+
+        elif ndim == 3:
+            starting_points[:,0] = np.random.uniform(0.12, 0.18, nwalkers)
+            starting_points[:,2] = np.random.uniform(0.19, 0.24, nwalkers)
+            starting_points[:,1] = np.random.uniform(0.25, 0.30, nwalkers)
 
         #set the mixing function
         self.f = self._select_function(self.choice)
@@ -464,11 +478,21 @@ class LMM(Models, Uncertainties):
         elif ci == 95:
             ci = 0.95
 
-        result_array = np.empty([len(g), len(trace[0].T)])
+        if self.choice == 'logistic' or self.choice == 'cdf' or self.choice == 'cosine':
+            result_array = np.empty([len(g), len(trace[0].T)])
+        elif self.choice == 'step':
+            result_array = np.empty([len(g), len(trace)])
         gmax = max(g)
 
         #determine which mixing function was used
-        if self.choice == 'logistic' or self.choice == 'cdf':
+        if self.choice == 'step':
+            for i in range(len(g)):
+                for j in range(len(trace)):
+                    result_array[i,j] = self.step(trace[j], g[i]) * self.m.low_g(g[i]) \
+                        + (1.0 - self.step(trace[j], g[i])) \
+                            * self.m.high_g(g[i])
+
+        elif self.choice == 'logistic' or self.choice == 'cdf':
     
             for i in range(len(g)):
                 for j in range(len(trace[0].T)):
@@ -585,9 +609,14 @@ class LMM(Models, Uncertainties):
         ax.fill_between(g_ppd, ppd_intervals[:,0], ppd_intervals[:,1], color='green', alpha=0.2)
 
         #parameter results (vertical lines)
-        ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{2}$, $\theta_{3}$")
-        ax.axvline(x=results[1], color='darkviolet', alpha=0.35)
-        ax.axvline(x=results[2], color='darkviolet', alpha=0.35)
+        if self.choice == 'step':
+            ax.axvline(x=results, color='darkviolet', alpha=0.35, label=r'$\theta_{1}$')
+        else:
+            ax.axvline(x=results[0], color='darkviolet', alpha=0.35, label=r"$\theta_{1}$, $\theta_{2}$, $\theta_{3}$")
+            ax.axvline(x=results[1], color='darkviolet', alpha=0.35)
+
+        if len(results) == 3:
+            ax.axvline(x=results[2], color='darkviolet', alpha=0.35)
 
         ax.legend(fontsize=18, loc='upper right')
         plt.show()
@@ -754,6 +783,55 @@ class LMM(Models, Uncertainties):
         chain_result = chain.chain[:,:,:]
 
         #"quick and dirty" method; will finish later more generally
+        if parameters == 1:
+            
+            #set up arrays
+            chain1 = chain_result[:,:,0]
+            
+            #flatten each individual array
+            flat1 = chain1.flatten()
+
+            #call autocorrelation to find the lengths
+            post_acors1 = self._autocorrelation(flat1, max_lag=200)
+
+            #determine the autocorrelation time
+            post_rho1 = post_acors1[25:35]
+
+            post_y = np.arange(10)
+            post_x1 = -np.log(post_rho1)
+
+            #linear fits
+            p1, cov1 = np.polyfit(post_x1, post_y, 1, cov=True)
+
+            #thin the samples given the determined autocorrelation time
+            thin1 = []
+            time = p1[0]
+
+            time = int(time)
+                    
+            for i in range(len(flat1)):
+                if i % time == 0:
+                    thin1.append(flat1[i])
+                                
+            #array thinned samples
+            thin = np.array(thin1)
+
+            #call stats_trace for plots
+            if plot is True:
+                _, _ = LMM.stats_trace(self, thin, 1)
+
+            #median calculation
+            median_1 = statistics.median(thin)
+
+            #mean calculation
+            mean_1 = np.mean(thin)
+
+            #arrays
+            mean_results = np.array([mean_1])
+            median_results = np.array([median_1])
+          
+            return thin, mean_results, median_results
+            
         if parameters == 2:
 
             #set up arrays
@@ -956,13 +1034,24 @@ class LMM(Models, Uncertainties):
 
         #find the posterior using the parameters
         thetas = thin
-        posterior = np.zeros([len(thetas[0,:])])
-        for i in range(len(thetas[0,:])):
-            posterior[i] = self.sampler_mix(thetas[:,i], g_data, data, sigma, siglow, sighigh)
+
+        if self.choice == 'step':
+            posterior = np.zeros(len(thetas))
+            for i in range(len(thetas)):
+                posterior[i] = self.sampler_mix(thetas[i], g_data, data, sigma, siglow, sighigh)
             
-        #MAP value calculation
-        theta_index = np.argmax(posterior)
-        map_values = thetas[:, theta_index]
+            #MAP value for parameter
+            theta_index = np.argmax(posterior)
+            map_values = np.array([thetas[theta_index]])
+
+        else:
+            posterior = np.zeros([len(thetas[0,:])])
+            for i in range(len(thetas[0,:])):
+                posterior[i] = self.sampler_mix(thetas[:,i], g_data, data, sigma, siglow, sighigh)
+            
+            #MAP value calculation
+            theta_index = np.argmax(posterior)
+            map_values = thetas[:, theta_index]
 
         #plot the weight function and MAP values
         if plot is True:
@@ -1012,7 +1101,10 @@ class LMM(Models, Uncertainties):
         ax.plot(g, switch, 'k', linewidth=3, label=r'$\alpha(g; \theta)$') 
 
         #plot the MAP value lines
-        if len(map_values) == 2:
+        if len(map_values) == 1:
+            ax.axvline(x=map_values, color='darkorange', linestyle='dashed', label=r'$\theta_{1}$')
+
+        elif len(map_values) == 2:
             ax.axvline(x=map_values[0], color='darkorange', linestyle='dashed', label=r'$\theta_{1}$')
             ax.axvline(x=map_values[1], color='darkviolet', linestyle='dashdot', label=r'$\theta_{2}$')
 
@@ -1062,47 +1154,74 @@ class LMM(Models, Uncertainties):
         mean = []
         ci = []
 
-        for i in range(ndim):
-            mean.append(np.mean(trace[i].T))
-            ci.append(self.hpd_interval(trace[i], 0.95))
+        if ndim == 1:
+            mean.append(np.mean(trace))
+            ci.append(self.hpd_interval(trace, 0.95))
+        else:
+            for i in range(ndim):
+                mean.append(np.mean(trace[i].T))
+                ci.append(self.hpd_interval(trace[i], 0.95))
 
         mean = np.asarray(mean)
         ci = np.asarray(ci)
 
+        print(trace, mean, ci)
+
         #plot traces with mean and credible intervals
         fig, ax = plt.subplots(ndim,1,figsize=(7,4*ndim), dpi=600)
 
-        for irow in range(ndim):
-            ax[irow].plot(trace[irow].T, 'k')
-            ax[irow].set_ylabel('Parameter {0}'.format(irow+1), fontsize=22)
-            ax[irow].set_title('Trace plot: Parameter {0}'.format(irow+1), fontsize=22)
+        if ndim == 1:
+            ax.plot(trace, 'k')
+            ax.set_ylabel('Parameter 1', fontsize=22)
+            ax.set_title('Trace plot: Parameter 1', fontsize=22)
 
-            ax[irow].axhline(y=mean[irow], color='b', linestyle='solid', label='Mean')
-            ax[irow].axhline(y=ci[irow, 0], color='b', linestyle='dashed')
-            ax[irow].axhline(y=ci[irow, 1], color='b', linestyle='dashed')
+            ax.axhline(y=mean, color='b', linestyle='solid', label='Mean')
+            ax.axhline(y=ci[0, 0], color='b', linestyle='dashed')
+            ax.axhline(y=ci[0, 1], color='b', linestyle='dashed')
 
-        #plot the median over the mean
-        med = []
+            #plot the median over the mean
+            med = []
+            med.append(np.median(trace[0].T))
+            med = np.asarray(med)
 
-        for i in range(ndim):
-            med.append(np.median(trace[i].T))
+            ax.axhline(y=med, color='r', linestyle='solid', label='Median')
+            ax.legend(loc='upper right')
 
-        med = np.asarray(med)
+            plt.show()
+            
 
-        for irow in range(ndim):
-            ax[irow].axhline(y=med[irow], color='r', linestyle='solid', label='Median')
+        if ndim > 1:
+            for irow in range(ndim):
+                ax[irow].plot(trace[irow].T, 'k')
+                ax[irow].set_ylabel('Parameter {0}'.format(irow+1), fontsize=22)
+                ax[irow].set_title('Trace plot: Parameter {0}'.format(irow+1), fontsize=22)
 
-            ax[irow].legend(loc='upper right')
+                ax[irow].axhline(y=mean[irow], color='b', linestyle='solid', label='Mean')
+                ax[irow].axhline(y=ci[irow, 0], color='b', linestyle='dashed')
+                ax[irow].axhline(y=ci[irow, 1], color='b', linestyle='dashed')
 
-        plt.show()
+            #plot the median over the mean
+            med = []
 
-        #corner plots
-        fig, axs = plt.subplots(ndim,ndim, figsize=(8,8), dpi=600)
-        label = ["Parameter 1", "Parameter 2", "Parameter 3"]
-        corner.corner(trace.T,labels=label, \
-            quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True, label_kwargs=dict(fontsize=16))
-        plt.show()
-        
+            for i in range(ndim):
+                med.append(np.median(trace[i].T))
+
+            med = np.asarray(med)
+
+            for irow in range(ndim):
+                ax[irow].axhline(y=med[irow], color='r', linestyle='solid', label='Median')
+
+                ax[irow].legend(loc='upper right')
+
+            plt.show()
+
+            #corner plots for hyperparameter posteriors
+            fig, axs = plt.subplots(ndim,ndim, figsize=(8,8), dpi=600)
+            label = ["Parameter 1", "Parameter 2", "Parameter 3"]
+            corner.corner(trace.T,labels=label, \
+                quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True, label_kwargs=dict(fontsize=16))
+            plt.show()
+            
         return mean, ci 
 
     
@@ -1196,7 +1315,7 @@ class LMM(Models, Uncertainties):
         '''
         beta0, beta1 = params
     
-        function = (1.0 + math.erf(beta0 + g*beta1)/np.sqrt(2.0)) / 2.0
+        function = (1.0 + math.erf((beta0 + g*beta1)/np.sqrt(2.0))) / 2.0
     
         return function
 
@@ -1244,3 +1363,34 @@ class LMM(Models, Uncertainties):
     
         else:
             return 0.0
+
+    @staticmethod
+    def step(params, g):
+
+        '''
+        A step mixing function to switch between two models. 
+        ***Only useful for two models.***
+
+        :Example:
+            step(params, g=0.2)
+        
+        Parameters:
+        -----------
+        params : np.ndarray 
+            One single parameter to determine where the step
+            function will break from one model to the other.
+
+        g : float
+            One value of the input space. 
+
+        Returns:
+        --------
+            The value of the step function at a specific 
+            point in g. 
+        '''
+
+        #enable step function
+        if g < params:
+            return 1.0 
+        else:
+            return 0.0 

@@ -48,7 +48,17 @@ class Priors:
         for the sampler to walk in valid regions. 
         '''
 
+        if isinstance(params, float) == True:
+            params = np.array([params])
+
+        if len(params) == 1:
+            param_1 = self.luniform(params[0], 0.0, 1.0)
+
+            return param_1
+
         if len(params) == 2:
+            # param_1 = self.luniform(params[0], -20, 20) #0, 10
+            # param_2 = self.luniform(params[1], -20, 20) #-50, 0
             param_1 = stats.norm.logpdf(params[0], 10.0, 2.0)
             param_2 = stats.norm.logpdf(params[1], -20.0, 10.0)
 
