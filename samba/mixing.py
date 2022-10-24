@@ -261,7 +261,7 @@ class LMM(Models, Uncertainties):
         selected mixing function. 
 
         :Example:
-            emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix,
+            emcee.EnsembleSampler(nwalkers, self.sampler_mix,
                                   args=[g_data, data, sigma])
 
         Parameters:
@@ -367,12 +367,13 @@ class LMM(Models, Uncertainties):
         #ask user which mixing function to use
         self.choice = mixing_function
 
+        #determine number of hyperparameters 
         if self.choice == 'step':
-            ndim = 1
+            self.ndim = 1
         elif self.choice == 'logistic' or self.choice == 'cdf':
-            ndim = 2 
+            self.ndim = 2 
         elif self.choice == 'cosine':
-            ndim = 3
+            self.ndim = 3
         else:
             raise ValueError('Mixing function requested is not found. Enter one of the valid options.')
 
@@ -381,23 +382,20 @@ class LMM(Models, Uncertainties):
         sighigh = np.sqrt(self.u.variance_high(g_data, self.highorder[0]))
 
         #set up sampler
-        nwalkers = 2*int(3*ndim + 1)
+        nwalkers = 2*int(3*self.ndim + 1)
 
         #show total samples while running
         total_samples = nwalkers * nsteps
         print('Using {} walkers with {} steps each, for a total of {} samples.'.format(nwalkers, nsteps, total_samples))
 
         #set starting points per parameter
-        starting_points = np.zeros((nwalkers, ndim))
+        starting_points = np.zeros((nwalkers, self.ndim))
 
-        if ndim == 1:
-            starting_points[:,0] = np.random.uniform(0.0, 1.0, nwalkers)
-
-        elif ndim == 2:
-            starting_points[:,0] = np.random.uniform(0.0, 1.0, nwalkers)
-            starting_points[:,1] = np.random.uniform(0.0, 1.0, nwalkers)
-
-        elif ndim == 3:
+        #generalise for ndim=1,2,...!=3 and specify for 3
+        if self.ndim != 3:
+            for i in range(self.ndim):
+                starting_points[:,i] = np.random.uniform(0.0, 1.0, nwalkers)
+        elif self.ndim == 3:
             starting_points[:,0] = np.random.uniform(0.12, 0.18, nwalkers)
             starting_points[:,2] = np.random.uniform(0.19, 0.24, nwalkers)
             starting_points[:,1] = np.random.uniform(0.25, 0.30, nwalkers)
@@ -406,7 +404,7 @@ class LMM(Models, Uncertainties):
         self.f = self._select_function(self.choice)
         
         #call emcee
-        sampler_mixed = emcee.EnsembleSampler(nwalkers, ndim, self.sampler_mix, \
+        sampler_mixed = emcee.EnsembleSampler(nwalkers, self.ndim, self.sampler_mix, \
                                             args=[g_data, data, sigma, siglow, sighigh])
         now = time.time()
         sampler_mixed.run_mcmc(starting_points, nsteps)
@@ -423,7 +421,7 @@ class LMM(Models, Uncertainties):
             print(f"Duration = {minutes} min, {seconds} sec.")
 
         #find the trace
-        emcee_trace_mixed = self.burnin_trace(sampler_mixed, nsteps, ndim)
+        emcee_trace_mixed = self.burnin_trace(sampler_mixed, nsteps)
       #  print(np.shape(emcee_trace_mixed))
 
         return sampler_mixed, emcee_trace_mixed
@@ -436,7 +434,7 @@ class LMM(Models, Uncertainties):
         for any chosen mixing function defined in this class. 
         
         :Example:
-            LMM.ppd(trace, g_data=np.linspace(1e-6,1.0,10), 
+            LMM.ppd(trace, param_values=np.array([]),g_data=np.linspace(1e-6,1.0,10), 
                     g_ppd=np.linspace(0.0, 0.5, 100), ci=68)
             
         Parameters:
@@ -706,14 +704,14 @@ class LMM(Models, Uncertainties):
         return acors
      
 
-    def burnin_trace(self, sampler_object, nsteps, ndim):
+    def burnin_trace(self, sampler_object, nsteps):
         
         '''
         A small function to take the burn-in samples off of the sampler chain from the LMM.mixed_model
         function, and to send back the trace of the sampler chain to LMM.mixed_model.
         
         :Example:
-            LMM.burnin_trace(sampler_object=sampler_mixed, nwalkers=10, ndim=1)
+            LMM.burnin_trace(sampler_object=sampler_mixed, nsteps=3000)
             
         Parameters:
         -----------
@@ -722,9 +720,6 @@ class LMM(Models, Uncertainties):
 
         nsteps : int
             The number of steps per walker.
-            
-        ndim : int            
-            The number of parameters the sampler is determining.
             
         Returns:
         ---------
@@ -735,19 +730,19 @@ class LMM(Models, Uncertainties):
         nburnin = int((1/15) * nsteps)
 
         #throw out the burn-in and reshape again
-        emcee_trace_mixed = sampler_object.chain[:, nburnin:, :].reshape(-1, ndim).T
+        emcee_trace_mixed = sampler_object.chain[:, nburnin:, :].reshape(-1, self.ndim).T
         
         return emcee_trace_mixed
 
 
-    def stats_chain(self, chain, parameters=3, plot=True):
+    def stats_chain(self, chain, plot=True):
 
         '''
         Calculates the autocorrelation time and thins the samples
         accordingly for a better estimate of the mean, median, and MAP values. 
 
         :Example: 
-            LMM.stats_chain(chain=emcee.object)
+            LMM.stats_chain(chain=emcee.object, plot=False)
 
         Parameters:
         -----------
@@ -755,9 +750,6 @@ class LMM(Models, Uncertainties):
             The object resulting from sampling the parameters
             using emcee. The chain of samples must be extracted
             from it. 
-
-        parameters : int
-            The initial parameter array given to emcee.
 
         plot : bool
             The option to plot the traces of the sample
@@ -783,7 +775,7 @@ class LMM(Models, Uncertainties):
         chain_result = chain.chain[:,:,:]
 
         #"quick and dirty" method; will finish later more generally
-        if parameters == 1:
+        if self.ndim == 1:
             
             #set up arrays
             chain1 = chain_result[:,:,0]
@@ -801,7 +793,7 @@ class LMM(Models, Uncertainties):
             post_x1 = -np.log(post_rho1)
 
             #linear fits
-            p1, cov1 = np.polyfit(post_x1, post_y, 1, cov=True)
+            p1, _ = np.polyfit(post_x1, post_y, 1, cov=True)
 
             #thin the samples given the determined autocorrelation time
             thin1 = []
@@ -818,7 +810,7 @@ class LMM(Models, Uncertainties):
 
             #call stats_trace for plots
             if plot is True:
-                _, _ = LMM.stats_trace(self, thin, 1)
+                _, _ = LMM.stats_trace(self, thin)
 
             #median calculation
             median_1 = statistics.median(thin)
@@ -831,55 +823,93 @@ class LMM(Models, Uncertainties):
             median_results = np.array([median_1])
           
             return thin, mean_results, median_results
-            
-        if parameters == 2:
 
-            #set up arrays
-            chain1 = chain_result[:,:,0]
-            chain2 = chain_result[:,:,1]
-            
-            #flatten each individual array
-            flat1 = chain1.flatten()
-            flat2 = chain2.flatten()
+        else:
 
-            #call autocorrelation to find the lengths
-            post_acors1 = self._autocorrelation(flat1, max_lag=200)
-            post_acors2 = self._autocorrelation(flat2, max_lag=200)
-
-            #determine the autocorrelation time
-            post_rho1 = post_acors1[25:35]
-            post_rho2 = post_acors2[25:35]
+            #set up lists of arrays
+            chains = []
+            post_acors = []
+            post_rho = []
+            post_x = []
+            p = []
 
             post_y = np.arange(10)
-            post_x1 = -np.log(post_rho1)
-            post_x2 = -np.log(post_rho2)
+
+            #create list using parameter arrays and flatten
+            for i in range(self.ndim):
+                chains.append([chain_result[:,:,i].flatten()])   #check this!
+
+            #determine autocorrelation
+            for i in range(len(chains)):
+                post_acors.append(self._autocorrelation(chains[i], max_lag=200))
+                post_rho.append(post_acors[i][25:35])
+                post_x.append(-np.log(post_rho[i]))
+                p.append(np.polyfit(post_x[i], post_y, 1, cov=False))
+
+        print(p, len(p))
+
+        #thin the samples based on the results above
+        thinned = []
+
+        #get the autocorrelation time for all parameters
+        for i in range(len(chains)-1):
+            if p[i] > p[i+1]:
+                time = int(p[i])
+            else:
+                time = int(p[i+1])
+                
+        for i, j in zip(len(chains), len(chains[0])):
+            if j % time == 0:
+                thin.append(chains[i][j])
+            
+        if self.ndim == 2:
+
+            # #set up arrays
+            # chain1 = chain_result[:,:,0]
+            # chain2 = chain_result[:,:,1]
+            
+            # #flatten each individual array
+            # flat1 = chain1.flatten()
+            # flat2 = chain2.flatten()
+
+            # #call autocorrelation to find the lengths
+            # post_acors1 = self._autocorrelation(flat1, max_lag=200)
+            # post_acors2 = self._autocorrelation(flat2, max_lag=200)
+
+            # #determine the autocorrelation time
+            # post_rho1 = post_acors1[25:35]
+            # post_rho2 = post_acors2[25:35]
+
+            # post_y = np.arange(10)
+            # post_x1 = -np.log(post_rho1)
+            # post_x2 = -np.log(post_rho2)
 
             #linear fits
-            p1, cov1 = np.polyfit(post_x1, post_y, 1, cov=True)
-            p2, cov2 = np.polyfit(post_x2, post_y, 1, cov=True)
+            # p1, _ = np.polyfit(post_x1, post_y, 1, cov=True)
+            # p2, _ = np.polyfit(post_x2, post_y, 1, cov=True)
 
             #combine for printing
             #p = np.array([p1, p2])
             #print('The autocorrelation times are: {}'.format(p[:,0]))
 
-            #thin the samples given the determined autocorrelation time
-            thin1 = []
-            thin2 = []
+            # #thin the samples given the determined autocorrelation time
+            # thin1 = []
+            # thin2 = []
 
-            #get the autocorrelation time we use for all 3 parameters
-            if p1[0] > p2[0]:
-                time = p1[0]
-            else:
-                time = p2[0]
+            # #get the autocorrelation time we use for all 3 parameters
+            # if p1[0] > p2[0]:
+            #     time = p1[0]
+            # else:
+            #     time = p2[0]
 
-            time = int(time)
+            # time = int(time)
                     
-            for i in range(len(flat2)):
-                if i % time == 0:
-                    thin1.append(flat1[i])
-                    thin2.append(flat2[i])
+            # for i in range(len(flat2)):
+            #     if i % time == 0:
+            #         thin1.append(flat1[i])
+            #         thin2.append(flat2[i])
                                 
-            #array thinned samples
+            #array thinned samples  --> is an array necessary here?
             thin1 = np.array(thin1)
             thin2 = np.array(thin2)
 
@@ -888,7 +918,7 @@ class LMM(Models, Uncertainties):
 
             #call stats_trace for plots
             if plot is True:
-                _, _ = LMM.stats_trace(self, thin, 2)
+                _, _ = LMM.stats_trace(self, thin)
 
             #median calculation
             median_1 = statistics.median(thin[0,:])
@@ -904,7 +934,7 @@ class LMM(Models, Uncertainties):
           
             return thin, mean_results, median_results
 
-        elif parameters == 3:
+        elif self.ndim == 3:
 
             #set up arrays
             chain1 = chain_result[:,:,0]
@@ -932,9 +962,9 @@ class LMM(Models, Uncertainties):
             post_x3 = -np.log(post_rho3)
 
             #linear fits
-            p1, cov1 = np.polyfit(post_x1, post_y, 1, cov=True)
-            p2, cov2 = np.polyfit(post_x2, post_y, 1, cov=True)
-            p3, cov3 = np.polyfit(post_x3, post_y, 1, cov=True)
+            p1, _ = np.polyfit(post_x1, post_y, 1, cov=True)
+            p2, _ = np.polyfit(post_x2, post_y, 1, cov=True)
+            p3, _ = np.polyfit(post_x3, post_y, 1, cov=True)
 
             #combine for printing
             #p = np.array([p1, p2, p3])
@@ -970,7 +1000,7 @@ class LMM(Models, Uncertainties):
 
             #call stats_trace for plots
             if plot is True:
-                _, _ = LMM.stats_trace(self, thin, 3)
+                _, _ = LMM.stats_trace(self, thin)
 
             #median calculation
             median_1 = statistics.median(thin[0,:])
@@ -1122,24 +1152,20 @@ class LMM(Models, Uncertainties):
         return None 
 
     
-    def stats_trace(self, trace, ndim):
+    def stats_trace(self, trace):
 
         '''
         A function to calculate the mean and credible intervals corresponding to
         each parameter. The trace plots for each parameter are plotted. 
 
         :Example:
-            LMM.stats_trace(trace=np.array([]), ndim=len(trace))
+            LMM.stats_trace(trace=np.array([]))
 
         Parameters:
         -----------
         trace : numpy.ndarray
             The trace from the sampler object that was generated when estimating the
             parameters of the mixing function.
-
-        ndim : int
-            The number of parameters in the mixing function that were sampled. To
-            find this, simply use len(trace) in the main code and pass it here.
 
         Returns:
         --------
@@ -1154,11 +1180,11 @@ class LMM(Models, Uncertainties):
         mean = []
         ci = []
 
-        if ndim == 1:
+        if self.ndim == 1:
             mean.append(np.mean(trace))
             ci.append(self.hpd_interval(trace, 0.95))
         else:
-            for i in range(ndim):
+            for i in range(self.ndim):
                 mean.append(np.mean(trace[i].T))
                 ci.append(self.hpd_interval(trace[i], 0.95))
 
@@ -1168,9 +1194,9 @@ class LMM(Models, Uncertainties):
         print(trace, mean, ci)
 
         #plot traces with mean and credible intervals
-        fig, ax = plt.subplots(ndim,1,figsize=(7,4*ndim), dpi=600)
+        fig, ax = plt.subplots(self.ndim,1,figsize=(7,4*self.ndim), dpi=600)
 
-        if ndim == 1:
+        if self.ndim == 1:
             ax.plot(trace, 'k')
             ax.set_ylabel('Parameter 1', fontsize=22)
             ax.set_title('Trace plot: Parameter 1', fontsize=22)
@@ -1190,8 +1216,8 @@ class LMM(Models, Uncertainties):
             plt.show()
             
 
-        if ndim > 1:
-            for irow in range(ndim):
+        if self.ndim > 1:
+            for irow in range(self.ndim):
                 ax[irow].plot(trace[irow].T, 'k')
                 ax[irow].set_ylabel('Parameter {0}'.format(irow+1), fontsize=22)
                 ax[irow].set_title('Trace plot: Parameter {0}'.format(irow+1), fontsize=22)
@@ -1203,12 +1229,12 @@ class LMM(Models, Uncertainties):
             #plot the median over the mean
             med = []
 
-            for i in range(ndim):
+            for i in range(self.ndim):
                 med.append(np.median(trace[i].T))
 
             med = np.asarray(med)
 
-            for irow in range(ndim):
+            for irow in range(self.ndim):
                 ax[irow].axhline(y=med[irow], color='r', linestyle='solid', label='Median')
 
                 ax[irow].legend(loc='upper right')
@@ -1216,7 +1242,7 @@ class LMM(Models, Uncertainties):
             plt.show()
 
             #corner plots for hyperparameter posteriors
-            fig, axs = plt.subplots(ndim,ndim, figsize=(8,8), dpi=600)
+            fig, axs = plt.subplots(self.ndim,self.ndim, figsize=(8,8), dpi=600)
             label = ["Parameter 1", "Parameter 2", "Parameter 3"]
             corner.corner(trace.T,labels=label, \
                 quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True, label_kwargs=dict(fontsize=16))
