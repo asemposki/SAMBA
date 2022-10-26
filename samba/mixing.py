@@ -826,7 +826,7 @@ class LMM(Models, Uncertainties):
 
         else:
 
-            #set up lists of arrays
+            #set up lists and arrays
             chains = []
             post_acors = []
             post_rho = []
@@ -837,19 +837,24 @@ class LMM(Models, Uncertainties):
 
             #create list using parameter arrays and flatten
             for i in range(self.ndim):
-                chains.append([chain_result[:,:,i].flatten()])   #check this!
+                chains.append(chain_result[:,:,i].flatten())
+
+            #max lag determination
+            max_lag = 200
+            if max_lag > int(0.2*len(chains[0])):
+                max_lag = int(0.15*len(chains[0]))
 
             #determine autocorrelation
             for i in range(len(chains)):
-                post_acors.append(self._autocorrelation(chains[i], max_lag=200))
+                post_acors.append(self._autocorrelation(chains[i], max_lag=max_lag))
                 post_rho.append(post_acors[i][25:35])
                 post_x.append(-np.log(post_rho[i]))
-                p.append(np.polyfit(post_x[i], post_y, 1, cov=False))
-
-        print(p, len(p))
+                p_temp, _ = np.polyfit(post_x[i], post_y, 1, cov=True)
+                p.append(p_temp[0])
 
         #thin the samples based on the results above
-        thinned = []
+        thin = []
+        thin_temp = []
 
         #get the autocorrelation time for all parameters
         for i in range(len(chains)-1):
@@ -858,56 +863,66 @@ class LMM(Models, Uncertainties):
             else:
                 time = int(p[i+1])
                 
-        for i, j in zip(len(chains), len(chains[0])):
-            if j % time == 0:
-                thin.append(chains[i][j])
+        #thin the samples for each parameter  ---> double counting, need to separate params correctly
+        for i in range(self.ndim):
+            for j in range(len(chains[0])):
+                if j % time == 0:
+                    thin_temp.append(chains[i][j])
+            
+            thin.append(thin_temp)
+
+        #plot the traces
+        if plot is True:
+                _, _ = LMM.stats_trace(self, thin)
+
+        return None  
             
         if self.ndim == 2:
 
-            # #set up arrays
-            # chain1 = chain_result[:,:,0]
-            # chain2 = chain_result[:,:,1]
+            #set up arrays
+            chain1 = chain_result[:,:,0]
+            chain2 = chain_result[:,:,1]
             
-            # #flatten each individual array
-            # flat1 = chain1.flatten()
-            # flat2 = chain2.flatten()
+            #flatten each individual array
+            flat1 = chain1.flatten()
+            flat2 = chain2.flatten()
 
-            # #call autocorrelation to find the lengths
-            # post_acors1 = self._autocorrelation(flat1, max_lag=200)
-            # post_acors2 = self._autocorrelation(flat2, max_lag=200)
+            #call autocorrelation to find the lengths
+            post_acors1 = self._autocorrelation(flat1, max_lag=200)
+            post_acors2 = self._autocorrelation(flat2, max_lag=200)
 
-            # #determine the autocorrelation time
-            # post_rho1 = post_acors1[25:35]
-            # post_rho2 = post_acors2[25:35]
+            #determine the autocorrelation time
+            post_rho1 = post_acors1[25:35]
+            post_rho2 = post_acors2[25:35]
 
-            # post_y = np.arange(10)
-            # post_x1 = -np.log(post_rho1)
-            # post_x2 = -np.log(post_rho2)
+            post_y = np.arange(10)
+            post_x1 = -np.log(post_rho1)
+            post_x2 = -np.log(post_rho2)
 
             #linear fits
-            # p1, _ = np.polyfit(post_x1, post_y, 1, cov=True)
-            # p2, _ = np.polyfit(post_x2, post_y, 1, cov=True)
+            p1, _ = np.polyfit(post_x1, post_y, 1, cov=True)
+            p2, _ = np.polyfit(post_x2, post_y, 1, cov=True)
 
             #combine for printing
-            #p = np.array([p1, p2])
-            #print('The autocorrelation times are: {}'.format(p[:,0]))
+            p = np.array([p1, p2])
+            print('The autocorrelation times are: {}'.format(p[:,0]))
 
-            # #thin the samples given the determined autocorrelation time
-            # thin1 = []
-            # thin2 = []
+            #thin the samples given the determined autocorrelation time
+            thin1 = []
+            thin2 = []
 
-            # #get the autocorrelation time we use for all 3 parameters
-            # if p1[0] > p2[0]:
-            #     time = p1[0]
-            # else:
-            #     time = p2[0]
+            #get the autocorrelation time we use for all 3 parameters
+            if p1[0] > p2[0]:
+                time = p1[0]
+            else:
+                time = p2[0]
 
-            # time = int(time)
+            time = int(time)
                     
-            # for i in range(len(flat2)):
-            #     if i % time == 0:
-            #         thin1.append(flat1[i])
-            #         thin2.append(flat2[i])
+            for i in range(len(flat2)):
+                if i % time == 0:
+                    thin1.append(flat1[i])
+                    thin2.append(flat2[i])
                                 
             #array thinned samples  --> is an array necessary here?
             thin1 = np.array(thin1)
@@ -965,10 +980,6 @@ class LMM(Models, Uncertainties):
             p1, _ = np.polyfit(post_x1, post_y, 1, cov=True)
             p2, _ = np.polyfit(post_x2, post_y, 1, cov=True)
             p3, _ = np.polyfit(post_x3, post_y, 1, cov=True)
-
-            #combine for printing
-            #p = np.array([p1, p2, p3])
-            #print('The autocorrelation times are: {}'.format(p[:,0]))
 
             #thin the samples given the determined autocorrelation time
             thin1 = []
@@ -1185,13 +1196,11 @@ class LMM(Models, Uncertainties):
             ci.append(self.hpd_interval(trace, 0.95))
         else:
             for i in range(self.ndim):
-                mean.append(np.mean(trace[i].T))
+                mean.append(np.mean(trace[i]))
                 ci.append(self.hpd_interval(trace[i], 0.95))
 
         mean = np.asarray(mean)
         ci = np.asarray(ci)
-
-        print(trace, mean, ci)
 
         #plot traces with mean and credible intervals
         fig, ax = plt.subplots(self.ndim,1,figsize=(7,4*self.ndim), dpi=600)
@@ -1207,7 +1216,7 @@ class LMM(Models, Uncertainties):
 
             #plot the median over the mean
             med = []
-            med.append(np.median(trace[0].T))
+            med.append(np.median(trace[0]))
             med = np.asarray(med)
 
             ax.axhline(y=med, color='r', linestyle='solid', label='Median')
@@ -1218,7 +1227,7 @@ class LMM(Models, Uncertainties):
 
         if self.ndim > 1:
             for irow in range(self.ndim):
-                ax[irow].plot(trace[irow].T, 'k')
+                ax[irow].plot(trace[irow], 'k')
                 ax[irow].set_ylabel('Parameter {0}'.format(irow+1), fontsize=22)
                 ax[irow].set_title('Trace plot: Parameter {0}'.format(irow+1), fontsize=22)
 
@@ -1230,7 +1239,7 @@ class LMM(Models, Uncertainties):
             med = []
 
             for i in range(self.ndim):
-                med.append(np.median(trace[i].T))
+                med.append(np.median(trace[i]))
 
             med = np.asarray(med)
 
@@ -1244,7 +1253,7 @@ class LMM(Models, Uncertainties):
             #corner plots for hyperparameter posteriors
             fig, axs = plt.subplots(self.ndim,self.ndim, figsize=(8,8), dpi=600)
             label = ["Parameter 1", "Parameter 2", "Parameter 3"]
-            corner.corner(trace.T,labels=label, \
+            corner.corner(trace,labels=label, \
                 quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True, label_kwargs=dict(fontsize=16))
             plt.show()
             
