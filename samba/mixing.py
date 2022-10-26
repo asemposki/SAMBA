@@ -470,13 +470,16 @@ class LMM(Models, Uncertainties):
             The array of credibility interval values for the median results of the PPD.
         '''
 
+        #convert list to array
+        trace = np.asarray(trace)
+
         #check interval
         if ci == 68:
             ci = 0.68
         elif ci == 95:
             ci = 0.95
 
-        if self.choice == 'logistic' or self.choice == 'cdf' or self.choice == 'cosine':
+        if self.choice != 'step':
             result_array = np.empty([len(g), len(trace[0].T)])
         elif self.choice == 'step':
             result_array = np.empty([len(g), len(trace)])
@@ -854,7 +857,6 @@ class LMM(Models, Uncertainties):
 
         #thin the samples based on the results above
         thin = []
-        thin_temp = []
 
         #get the autocorrelation time for all parameters
         for i in range(len(chains)-1):
@@ -865,6 +867,7 @@ class LMM(Models, Uncertainties):
                 
         #thin the samples for each parameter  ---> double counting, need to separate params correctly
         for i in range(self.ndim):
+            thin_temp = []
             for j in range(len(chains[0])):
                 if j % time == 0:
                     thin_temp.append(chains[i][j])
@@ -875,159 +878,15 @@ class LMM(Models, Uncertainties):
         if plot is True:
                 _, _ = LMM.stats_trace(self, thin)
 
-        return None  
-            
-        if self.ndim == 2:
+        #median, mean calculations
+        median = []
+        mean = []
 
-            #set up arrays
-            chain1 = chain_result[:,:,0]
-            chain2 = chain_result[:,:,1]
-            
-            #flatten each individual array
-            flat1 = chain1.flatten()
-            flat2 = chain2.flatten()
-
-            #call autocorrelation to find the lengths
-            post_acors1 = self._autocorrelation(flat1, max_lag=200)
-            post_acors2 = self._autocorrelation(flat2, max_lag=200)
-
-            #determine the autocorrelation time
-            post_rho1 = post_acors1[25:35]
-            post_rho2 = post_acors2[25:35]
-
-            post_y = np.arange(10)
-            post_x1 = -np.log(post_rho1)
-            post_x2 = -np.log(post_rho2)
-
-            #linear fits
-            p1, _ = np.polyfit(post_x1, post_y, 1, cov=True)
-            p2, _ = np.polyfit(post_x2, post_y, 1, cov=True)
-
-            #combine for printing
-            p = np.array([p1, p2])
-            print('The autocorrelation times are: {}'.format(p[:,0]))
-
-            #thin the samples given the determined autocorrelation time
-            thin1 = []
-            thin2 = []
-
-            #get the autocorrelation time we use for all 3 parameters
-            if p1[0] > p2[0]:
-                time = p1[0]
-            else:
-                time = p2[0]
-
-            time = int(time)
-                    
-            for i in range(len(flat2)):
-                if i % time == 0:
-                    thin1.append(flat1[i])
-                    thin2.append(flat2[i])
-                                
-            #array thinned samples  --> is an array necessary here?
-            thin1 = np.array(thin1)
-            thin2 = np.array(thin2)
-
-            #stack traces back together
-            thin = np.vstack((thin1, thin2))
-
-            #call stats_trace for plots
-            if plot is True:
-                _, _ = LMM.stats_trace(self, thin)
-
-            #median calculation
-            median_1 = statistics.median(thin[0,:])
-            median_2 = statistics.median(thin[1,:])
-
-            #mean calculation
-            mean_1 = np.mean(thin[0,:])
-            mean_2 = np.mean(thin[1,:])
-
-            #arrays
-            mean_results = np.array([mean_1, mean_2])
-            median_results = np.array([median_1, median_2])
-          
-            return thin, mean_results, median_results
-
-        elif self.ndim == 3:
-
-            #set up arrays
-            chain1 = chain_result[:,:,0]
-            chain2 = chain_result[:,:,1]
-            chain3 = chain_result[:,:,2]
-            
-            #flatten each individual array
-            flat1 = chain1.flatten()
-            flat2 = chain2.flatten()
-            flat3 = chain3.flatten()
-
-            #call autocorrelation to find the lengths
-            post_acors1 = self._autocorrelation(flat1, max_lag=200)
-            post_acors2 = self._autocorrelation(flat2, max_lag=200)
-            post_acors3 = self._autocorrelation(flat3, max_lag=200)
-
-            #determine the autocorrelation time
-            post_rho1 = post_acors1[25:35]
-            post_rho2 = post_acors2[25:35]
-            post_rho3 = post_acors3[25:35]
-
-            post_y = np.arange(10)
-            post_x1 = -np.log(post_rho1)
-            post_x2 = -np.log(post_rho2)
-            post_x3 = -np.log(post_rho3)
-
-            #linear fits
-            p1, _ = np.polyfit(post_x1, post_y, 1, cov=True)
-            p2, _ = np.polyfit(post_x2, post_y, 1, cov=True)
-            p3, _ = np.polyfit(post_x3, post_y, 1, cov=True)
-
-            #thin the samples given the determined autocorrelation time
-            thin1 = []
-            thin2 = []
-            thin3 = []
-
-            #get the autocorrelation time we use for all 3 parameters
-            if p1[0] > p2[0]:
-                time = p1[0]
-            else:
-                time = p2[0]
-                if p3[0] > time:
-                    time = p3[0]
-            time = int(time)
-                    
-            for i in range(len(flat2)):
-                if i % time == 0:
-                    thin1.append(flat1[i])
-                    thin2.append(flat2[i])
-                    thin3.append(flat3[i])
-                                
-            #array thinned samples
-            thin1 = np.array(thin1)
-            thin2 = np.array(thin2)
-            thin3 = np.array(thin3)
-
-            #stack traces back together
-            thin = np.vstack((thin1, thin2, thin3))
-
-            #call stats_trace for plots
-            if plot is True:
-                _, _ = LMM.stats_trace(self, thin)
-
-            #median calculation
-            median_1 = statistics.median(thin[0,:])
-            median_2 = statistics.median(thin[1,:])
-            median_3 = statistics.median(thin[2,:])
-
-            #mean calculation
-            mean_1 = np.mean(thin[0,:])
-            mean_2 = np.mean(thin[1,:])
-            mean_3 = np.mean(thin[2,:])
-
-            #arrays
-            mean_results = np.array([mean_1, mean_2, mean_3])
-            median_results = np.array([median_1, median_2, median_3])
-           
-            return thin, mean_results, median_results
+        for i in range(len(thin)):
+            median.append(statistics.median(thin[i]))
+            mean.append(np.mean(thin[i]))
+    
+        return thin, mean, median
 
 
     def MAP_values(self, thin, g, g_data, data, sigma, plot=True):
@@ -1074,7 +933,7 @@ class LMM(Models, Uncertainties):
         sighigh = np.sqrt(self.u.variance_high(g_data, self.highorder[0]))
 
         #find the posterior using the parameters
-        thetas = thin
+        thetas = np.asarray(thin)
 
         if self.choice == 'step':
             posterior = np.zeros(len(thetas))
@@ -1253,7 +1112,8 @@ class LMM(Models, Uncertainties):
             #corner plots for hyperparameter posteriors
             fig, axs = plt.subplots(self.ndim,self.ndim, figsize=(8,8), dpi=600)
             label = ["Parameter 1", "Parameter 2", "Parameter 3"]
-            corner.corner(trace,labels=label, \
+            trace = np.asarray(trace)
+            corner.corner(trace.T,labels=label, \
                 quantiles=[0.16, 0.5, 0.84],fig=fig,show_titles=True, label_kwargs=dict(fontsize=16))
             plt.show()
             
