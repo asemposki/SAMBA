@@ -1,6 +1,5 @@
-import numpy as np 
+import numpy as np
 import seaborn as sns
-#import docrep
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from scipy import stats
 from numpy.linalg import cholesky
@@ -10,13 +9,10 @@ from matplotlib.ticker import AutoMinorLocator
 from samba.models import Models, Uncertainties
 from samba.discrepancy import Bivariate
 
-#set savefig color for all plots
+# set savefig color for all plots
 plt.rcParams['savefig.facecolor']='white'
 
-
 __all__ = ['GP']
-
-#docstrings = docrep.DocstringProcessor()
 
 
 class GP(Bivariate):
@@ -144,6 +140,9 @@ class GP(Bivariate):
         #call the training set generator function
         gs, datas, sigmas = self.training_set()
 
+        #make a gs class variable for weights use
+        self.gs = gs 
+
         #make column vectors for the regressor
         gc = gs.reshape(-1,1)
         datac = datas.reshape(-1,1)
@@ -204,7 +203,9 @@ class GP(Bivariate):
         #predict the results for the validation data
         self.meanp, self.sigp = self.sk.predict(self.gpred, return_std=True)
         _, self.cov = self.sk.predict(self.gpred, return_cov=True)
-        self.meanp = self.meanp[:,0]
+        
+        if np.shape(self.meanp)[0] != 1:
+            self.meanp = self.meanp[:,0]
 
         #calculate the interval for the predictions
         if self.ci == 68:
