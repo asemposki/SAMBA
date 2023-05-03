@@ -169,7 +169,7 @@ class GP(Bivariate):
         return self.sk
 
 
-    def validate(self, plot=True):
+    def validate(self, plot=True, run_taweret=False):
 
         '''
         A wrapper function for scikit learn's GP prediction function. This will 
@@ -204,7 +204,8 @@ class GP(Bivariate):
         self.meanp, self.sigp = self.sk.predict(self.gpred, return_std=True)
         _, self.cov = self.sk.predict(self.gpred, return_cov=True)
         
-        if np.shape(self.meanp)[0] != 1:
+        # issues right here when running wrapped in Taweret
+        if run_taweret is False:
             self.meanp = self.meanp[:,0]
 
         #calculate the interval for the predictions
