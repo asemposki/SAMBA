@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-from samba.models import Models, Uncertainties
+from .models import Models, Uncertainties
 
 __all__ = ['Bivariate']
 
@@ -34,15 +34,15 @@ class Bivariate(Models, Uncertainties):
 
         Returns:
         --------
-        None. 
+        None.
         '''
 
         #get interval
         self.ci = ci
         
-        #instantiate the Uncertainties class and error model 
+        #instantiate the Uncertainties class and error model
         self.u = Uncertainties(error_model)
-        self.error_model = self.u.error_model 
+        self.error_model = self.u.error_model
 
         #check type and assign class variables
         if isinstance(loworder, float) == True or isinstance(loworder, int) == True:
@@ -118,10 +118,10 @@ class Bivariate(Models, Uncertainties):
 
         #concatenate models and variances
         if GP_mean.any() and GP_var.any() != 0:
-            f = np.concatenate((f_low, f_high, GP_mean.reshape(-1,1).T), axis=0) 
+            f = np.concatenate((f_low, f_high, GP_mean.reshape(-1,1).T), axis=0)
             v = np.concatenate((v_low, v_high, GP_var.reshape(-1,1).T), axis=0)
         else:
-            f = np.concatenate((f_low, f_high), axis=0) 
+            f = np.concatenate((f_low, f_high), axis=0)
             v = np.concatenate((v_low, v_high), axis=0)
 
         #initialise arrays
@@ -150,7 +150,7 @@ class Bivariate(Models, Uncertainties):
         if self.ci == 68:
             val = 1.0
         elif self.ci == 95:
-            val = 1.96 
+            val = 1.96
         else:
             raise ValueError('Please enter either 68 or 95.')
 
@@ -159,14 +159,14 @@ class Bivariate(Models, Uncertainties):
         interval_low = np.zeros([len(self.loworder), len(g), 2])
         interval_high = np.zeros([len(self.highorder), len(g), 2])
 
-        #calculate credibility intervals 
+        #calculate credibility intervals
         intervals[:, 0] = (mean - val * np.sqrt(var))
         intervals[:, 1] = (mean + val * np.sqrt(var))
 
         for i in range(len(self.loworder)):
             interval_low[i,:,0] = (self.m.low_g(g)[i,:] - val * np.sqrt(v_low[i,:]))
             interval_low[i,:,1] = (self.m.low_g(g)[i,:] + val * np.sqrt(v_low[i,:]))
-          
+         
         for i in range(len(self.highorder)):
             interval_high[i,:,0] = (self.m.high_g(g)[i,:] - val * np.sqrt(v_high[i,:]))
             interval_high[i,:,1] = (self.m.high_g(g)[i,:] + val * np.sqrt(v_high[i,:]))
@@ -226,6 +226,7 @@ class Bivariate(Models, Uncertainties):
         ax.set_xlim(0.0,1.0)
        # ax.set_xlim(0.0,0.5)
         ax.set_ylim(1.2,3.2)
+       # ax.set_ylim(1.0,3.0)
         ax.set_yticks([1.2, 1.6, 2.0, 2.4, 2.8, 3.2])
       #  ax.set_ylim(2.0,2.8)
        # ax.set_yticks([2.0, 2.2, 2.4, 2.6, 2.8])
@@ -268,7 +269,7 @@ class Bivariate(Models, Uncertainties):
             ax.plot(g, intervals[:,1], 'g', linestyle='dotted')
             ax.fill_between(g, intervals[:,0], intervals[:,1], color='green', alpha=0.2)
         
-        ax.legend(fontsize=18, loc='upper right')
+        ax.legend(fontsize=16, loc='upper right')
         plt.show()
 
         # #save figure option

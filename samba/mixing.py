@@ -8,8 +8,8 @@ import statistics
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
-from samba.priors import Priors
-from samba.models import Models, Uncertainties
+from .priors import Priors
+from .models import Models, Uncertainties
 
 __all__ = ['LMM']
 
@@ -392,13 +392,13 @@ class LMM(Models, Uncertainties):
         starting_points = np.zeros((nwalkers, self.ndim))
 
         #generalise for ndim=1,2,...!=3 and specify for 3
-        if self.ndim != 3:
-            for i in range(self.ndim):
-                starting_points[:,i] = np.random.uniform(0.0, 1.0, nwalkers)
-        elif self.ndim == 3:
+        if self.ndim == 3:
             starting_points[:,0] = np.random.uniform(0.12, 0.18, nwalkers)
             starting_points[:,2] = np.random.uniform(0.19, 0.24, nwalkers)
             starting_points[:,1] = np.random.uniform(0.25, 0.30, nwalkers)
+        else:
+            for i in range(self.ndim):
+                starting_points[:,i] = np.random.uniform(0.0, 1.0, nwalkers)
 
         #set the mixing function
         self.f = self._select_function(self.choice)
@@ -422,7 +422,6 @@ class LMM(Models, Uncertainties):
 
         #find the trace
         emcee_trace_mixed = self.burnin_trace(sampler_mixed, nsteps)
-      #  print(np.shape(emcee_trace_mixed))
 
         return sampler_mixed, emcee_trace_mixed
 

@@ -4,7 +4,7 @@
 # adapted from his code entirely. The rest is 
 # written as a wrapper by Alexandra Semposki for 
 # this BMM package. Notes below by Honda.
-##################################################
+# #################################################
 
 #Explicit formula for interpolating functions
 #in the paper "On Pertubation theory improved by Strong coupling expansion"
@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid.inset_locator import (zoomed_inset_axes, mark_inset)
 from cycler import cycler
 from matplotlib.ticker import AutoMinorLocator
-from samba.mixing import Models 
+from .mixing import Models 
 
 
 __all__ = ['FPR']
