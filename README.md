@@ -34,7 +34,3 @@ At its present status, there are two ways to test SAMBA:
 
 - After cloning this repo, open a terminal and go to the Tests folder. This contains two pytest-compatible files (stay tuned for more!) that test the Bivariate and GP methods. Type `pytest` in your terminal and it should run both of the files. If all tests are passing and only a couple of warnings (about external packages) show up, SAMBA is passing its tests!
 <!-- #endregion -->
-
-```python
-
-```
