@@ -1,6 +1,6 @@
 ###########################################################
 # Tutorial example for LMM BMM
-###########################################################
+# ##########################################################
 
 import numpy as np
 import pytest 
@@ -57,7 +57,7 @@ def test_mixed_model():
     assert trace is not None 
 ##
 
-thin_array, mean, median = m.stats_chain(chain, parameters=3, plot=False)
+thin_array, mean, median = m.stats_chain(chain, plot=False)
 
 ##
 #simple check of results
