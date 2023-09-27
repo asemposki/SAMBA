@@ -4,9 +4,6 @@ scipy
 emcee
 corner
 scikit-learn
-mpl_toolkits
 cycler
 seaborn
 statistics
-time
-warnings
