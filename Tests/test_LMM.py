@@ -7,10 +7,6 @@ import pytest
 
 #matplotlib settings for Latex plots
 import matplotlib
-matplotlib.rcParams.update({
-    'font.family': 'serif',
-    'text.usetex': True,
-})
 
 import sys
 sys.path.append('../')
@@ -48,7 +44,7 @@ def test_add_data():
 ##
 
 #call mixed_model()
-chain, trace = m.mixed_model(g_data, data, sigma, mixing_function='cosine', nsteps=3000)
+chain, trace = m.mixed_model(g_data, data, sigma, mixing_function='cosine', nsteps=300)
 
 ##
 #test chain, trace

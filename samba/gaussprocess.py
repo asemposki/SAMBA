@@ -15,6 +15,7 @@ plt.rcParams['savefig.facecolor']='white'
 __all__ = ['GP']
 
 
+# +
 class GP(Bivariate):
 
 
@@ -140,11 +141,11 @@ class GP(Bivariate):
         #call the training set generator function
         gs, datas, sigmas = self.training_set()
         
-        ### new line to use only one point per model! ###
-        # split up the set
-        gs = np.array([gs[1], gs[2], gs[3]])
-        datas = np.array([datas[1], datas[2], datas[3]])
-        sigmas = np.array([sigmas[1], sigmas[2], sigmas[3]])
+#         ### specific test ###
+#         # split up the set
+#         gs = np.array([gs[1], gs[2], gs[3]])
+#         datas = np.array([datas[1], datas[2], datas[3]])
+#         sigmas = np.array([sigmas[1], sigmas[2], sigmas[3]])
 
         #make a gs class variable for weights use
         self.gs = gs 
