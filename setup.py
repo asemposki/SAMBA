@@ -1,8 +1,8 @@
 from distutils.core import setup, Extension
 
 setup(
-    name='SAMBA',
-    packages=['SAMBA'],
+    name='samba',
+    packages=['samba'],
     # cmdclass={'build_ext': CustomBuildExtCommand},
     # ext_modules=ext_modules,
     version='0.1.0',
@@ -28,14 +28,10 @@ setup(
         'matplotlib',
         'scipy>=1.7.0',
         'seaborn',
-        'math',
         'emcee',
         'corner',
         'scikit-learn',
-        'mpl_toolkits',
         'cycler',
         'statistics',
-        'time',
-        'warnings'
     ]
 )
