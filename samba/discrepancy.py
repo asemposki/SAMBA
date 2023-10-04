@@ -264,8 +264,9 @@ class Bivariate(Models, Uncertainties):
             ax.plot(g, interval_high[i, :, 1], 'b', linestyle='dotted')
             
         # GP
-        ax.plot(g, mean, 'm')
-        ax.fill_between(g, GP_mean-np.sqrt(GP_var), GP_mean+np.sqrt(GP_var), color='m', alpha=0.2)
+#         if GP_mean.any() and GP_var.any() != 0:
+#             ax.plot(g, GP_mean, 'm')
+#             ax.fill_between(g, GP_mean-np.sqrt(GP_var), GP_mean+np.sqrt(GP_var), color='m', alpha=0.2)
 
         if plot_fdagger == True:
             ax.plot(g, mean, 'g', label='Mean')

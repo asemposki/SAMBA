@@ -17,7 +17,7 @@
 import numpy as np
 import scipy.special as sp
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid.inset_locator import (zoomed_inset_axes, mark_inset)
+from mpl_toolkits.axes_grid1.inset_locator import (zoomed_inset_axes, mark_inset)
 from cycler import cycler
 from matplotlib.ticker import AutoMinorLocator
 from .mixing import Models 
