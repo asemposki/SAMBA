@@ -1,6 +1,12 @@
 # Testing SAMBA
 
-Welcome to the SAMBA pytest suite! This is a developing folder where, currently, three pytest files exist that will run basic assertion tests over the three methods of BMM in this package. They are based on the three tutorial notebooks in the `Tutorials` folder, and cover most of the functions in the package. To run any test file alone, type `pytest <file name>` into a terminal in the `Tests` folder. If you wish to run them all at once, type `pytest` in the same terminal and it will automatically grab all test files and run them in sequence.  
+Welcome to the SAMBA pytest suite! This is a developing folder where, currently, three pytest files exist that will run basic assertion tests over the three methods of BMM in this package. They are based on the three tutorial notebooks in the `Tutorials` folder, and cover most of the functions in the package. To run any test file alone, type `pytest <file name>` into a terminal in the `Tests` folder. If you wish to run them all at once, type `pytest` in the same terminal and it will automatically grab all test files and run them in sequence. 
+
+## Dependencies
+
+To run the SAMBA tests, you will need to have the following packages/tools:
+- pytest
+- Jupyter notebook
 
 ## Common warnings
 
