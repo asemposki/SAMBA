@@ -6,6 +6,7 @@ theme:
     features:
     - navigation.tabs
     - navigation.expand
+    - navigation.path
     - toc.integrate
     - content.action.edit
     
@@ -27,6 +28,26 @@ theme:
 
 markdown_extensions:
   - footnotes
+
+plugins:
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [samba]
+        options:
+          docstring_options:
+            ignore_init_summary: false
+          merge_init_into_class: true
+
+watch:
+- samba
+
+nav:
+  - index.md
+  - Tutorials:
+    - Tutorials/LMM.ipynb
+    - Tutorials/Bivariate_BMM.ipynb
+    - Tutorials/GP_BMM.ipynb
 
 repo_url: https://github.com/asemposki/SAMBA
 
