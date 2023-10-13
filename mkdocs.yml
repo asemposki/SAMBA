@@ -1,6 +1,13 @@
 site_name: SAMBA
 theme:
     name: material
+
+    # headers for navigating tabs
+    features:
+    - navigation.tabs
+    - navigation.expand
+    - toc.integrate
+    - content.action.edit
     
     palette: 
 
@@ -17,6 +24,9 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+
+markdown_extensions:
+  - footnotes
 
 repo_url: https://github.com/asemposki/SAMBA
 
