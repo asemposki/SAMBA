@@ -17,3 +17,9 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+
+repo_url: https://github.com/asemposki/SAMBA
+
+repo_name: asemposki/SAMBA
+
+copyright: Copyright &copy; 2021-2023 BAND Collaboration
