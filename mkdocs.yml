@@ -1,3 +1,5 @@
 site_name: SAMBA
 theme:
     name: material
+    palette:
+        primary: light blue
