@@ -29,6 +29,7 @@ theme:
 markdown_extensions:
   - footnotes
 
+# allows for API style docs
 plugins:
 - mkdocstrings:
     handlers:
