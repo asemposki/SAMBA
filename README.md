@@ -34,7 +34,7 @@ An animated `.gif` of our toy models is below.
 
 At its present status, there are two ways to test SAMBA:
 
-- After cloning this repo, make sure you have all of the required packages installed (see requirements.txt for a list of external packages needed) and open the Tutorials folder. Open the 3 notebooks there and run each notebook. If each cell is free of any errors, SAMBA is working correctly!
+- After cloning this repo, make sure you have all of the required packages installed (see requirements.txt for a list of external packages needed) and open the docs/Tutorials folder. Open the 3 notebooks there and run each notebook. If each cell is free of any errors, SAMBA is working correctly!
 
 - After cloning this repo, open a terminal and go to the Tests folder. This contains two pytest-compatible files (stay tuned for more!) that test the Bivariate and GP methods. Type `pytest` in your terminal and it should run both of the files. If all tests are passing and only a couple of warnings (about external packages) show up, SAMBA is passing its tests!
 <!-- #endregion -->
