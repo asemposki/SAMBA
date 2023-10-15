@@ -29,6 +29,11 @@ theme:
 markdown_extensions:
   - footnotes
 
+extra_javascript:
+  - javascripts/katex.js 
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.js  
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/contrib/auto-render.min.js
+
 # allows for API style docs
 plugins:
 - search:
