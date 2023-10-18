@@ -56,7 +56,8 @@ watch:
 
 nav:
   - index.md
-  - models.md
+  - Documentation:
+    - models.md
   - Tutorials:
     - Tutorials/LMM.ipynb
     - Tutorials/Bivariate_BMM.ipynb
