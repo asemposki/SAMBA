@@ -2,7 +2,6 @@ name: ci
 on:
   push:
     branches:
-      - master 
       - main
 permissions:
   contents: write
@@ -24,4 +23,5 @@ jobs:
       - run: pip install mkdocs-material 
       - run: pip install 'mkdocstrings[python]'
       - run: pip install mkdocs-jupyter
+      - run: pip install numpy
       - run: mkdocs gh-deploy --force
