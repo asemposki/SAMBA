@@ -50,8 +50,8 @@ plugins:
           docstring_options:
             ignore_init_summary: false
           merge_init_into_class: true
-    watch:
-        - samba
+watch:
+- samba
 
 nav:
   - index.md
