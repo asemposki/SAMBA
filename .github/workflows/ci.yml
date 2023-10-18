@@ -24,4 +24,5 @@ jobs:
       - run: pip install 'mkdocstrings[python]'
       - run: pip install mkdocs-jupyter
       - run: pip install numpy
+      - run: pip install seaborn
       - run: mkdocs gh-deploy --force
