@@ -19,8 +19,7 @@ For our documentation, visit our Docs page: https://asemposki.github.io/SAMBA/.
 
 To cite our software repository, please use
 
-.. code-block:: bibtex
-
+```
    @techreport{samba2023,
      author      = {Alexandra C. Semposki and Richard. J. Furnstahl and Daniel R. Phillips},
      title       = {{samba 1.0.1} User Manual},
@@ -28,11 +27,11 @@ To cite our software repository, please use
      year        = {2023},
      url         = {https://asemposki.github.io/SAMBA}
    }
+```
 
 To cite our accompanying scientific publication, use
 
-.. code-block:: bibtex
-
+```
    @article{Semposki:2022gcp,
       author = "Semposki, A. C. and Furnstahl, R. J. and Phillips, D. R.",
       title = "{Interpolating between small- and large-g expansions using Bayesian model mixing}",
@@ -46,6 +45,7 @@ To cite our accompanying scientific publication, use
       pages = "044002",
       year = "2022"
     }
+```
 
 ## Workflow 
 
