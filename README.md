@@ -20,9 +20,9 @@ For our documentation, visit our Docs page: https://asemposki.github.io/SAMBA/.
 To cite our software repository, please use
 
 ```
-   @techreport{samba2023,
+   @techreport{SAMBA2023,
      author      = {Alexandra C. Semposki and Richard. J. Furnstahl and Daniel R. Phillips},
-     title       = {{samba 1.0.1} User Manual},
+     title       = {{SAMBA 1.0.1} User Manual},
      number      = {Version 1.0.1},
      year        = {2023},
      url         = {https://asemposki.github.io/SAMBA}
