@@ -15,6 +15,38 @@ For our documentation, visit our Docs page: https://asemposki.github.io/SAMBA/.
 <img align="right" width="200" src="./logos/band_logo.PNG">
 
 
+## Citing SAMBA
+
+To cite our software repository, please use
+
+.. code-block:: bibtex
+
+   @techreport{samba2023,
+     author      = {Alexandra C. Semposki and Richard. J. Furnstahl and Daniel R. Phillips},
+     title       = {{samba 1.0.1} User Manual},
+     number      = {Version 1.0.1},
+     year        = {2023},
+     url         = {https://asemposki.github.io/SAMBA}
+   }
+
+To cite our accompanying scientific publication, use
+
+.. code-block:: bibtex
+
+   @article{Semposki:2022gcp,
+      author = "Semposki, A. C. and Furnstahl, R. J. and Phillips, D. R.",
+      title = "{Interpolating between small- and large-g expansions using Bayesian model mixing}",
+      eprint = "2206.04116",
+      archivePrefix = "arXiv",
+      primaryClass = "nucl-th",
+      doi = "10.1103/PhysRevC.106.044002",
+      journal = "Phys. Rev. C",
+      volume = "106",
+      number = "4",
+      pages = "044002",
+      year = "2022"
+    }
+
 ## Workflow 
 
 - Instantiate an object using the method of your choice (`LMM` (linear mixture model), `Bivariate` (bivariate BMM), or `GP` (trivariate BMM with a GP)) and select the truncation orders for the small-$g$ and large-$g$ expansions. 
