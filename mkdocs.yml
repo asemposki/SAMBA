@@ -43,13 +43,14 @@ plugins:
 - search:
 - mkdocs-jupyter:
 - mkdocstrings:
-    handlers:
-      python:
-        paths: [samba]
-        options:
-          docstring_options:
-            ignore_init_summary: false
-          merge_init_into_class: true
+    default_handler: python
+        handlers:
+          python:
+          setup_commands:
+            - import sys
+            - sys.path.append("samba")
+          rendering:
+            show_source: true
 watch:
 - samba
 
