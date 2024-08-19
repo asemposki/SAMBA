@@ -30,4 +30,4 @@ $$
 l_{k} = \frac{\Gamma{\left(\frac{k}{2} + \frac{1}{4}\right)}}{2k!} \left(-\frac{1}{2}\right)^{k}.
 $$
 
-::: samba.models
+:: samba.models.Models
