@@ -42,7 +42,7 @@ extra_css:
 plugins:
 - search:
 - mkdocs-jupyter:
-- mkdocstrings:
+- mkdocstrings-python:
     default_handler: python
     handlers:
       python:
