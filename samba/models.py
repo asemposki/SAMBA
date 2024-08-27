@@ -12,26 +12,24 @@ class Models():
 
     def __init__(self, loworder, highorder):
 
-        '''
+        r'''
         The class containing the expansion models from Honda's paper
         and the means to plot them. 
 
-        :Example:
+        Example:
             Models(loworder=np.array([2]), highorder=np.array([5]))
 
         Parameters:
-        -----------
-        loworder : numpy.ndarray, int, float
-            The value of N_s to be used to truncate the small-g expansion.
-            Can be an array of multiple values or one. 
+            loworder (numpy.ndarray, int, float): The value of N_s to be used 
+                to truncate the small-g expansion. Can be an array of multiple 
+                values or one. 
 
-        highorder : numpy.ndarray, int, float
-            The value of N_l to be used to truncate the large-g expansion.
-            Can be an array of multiple values or one. 
+            highorder (numpy.ndarray, int, float): The value of N_l to be used 
+                to truncate the large-g expansion. Can be an array of multiple 
+                values or one. 
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #check type and assign to class variable
@@ -51,22 +49,20 @@ class Models():
     def low_g(self, g):
         
         '''
-        A function to calculate the small-g divergent asymptotic expansion for a given range in the coupling 
-        constant, g.
+        A function to calculate the small-g divergent asymptotic expansion for a 
+        given range in the coupling constant, g.
         
-        :Example:
+        Example:
             Models.low_g(g=np.linspace(0.0, 0.5, 20))
             
         Parameters:
-        -----------
-        g : linspace
-            The linspace of the coupling constant for this calculation. 
+            g (linspace): The linspace of the coupling constant for 
+                this calculation. 
            
         Returns:
-        --------
-        output : numpy.ndarray
-            The array of values of the expansion in small-g at each point in g_true space, for each value of 
-            loworder (highest power the expansion reaches).
+            output (numpy.ndarray): The array of values of the expansion in 
+                small-g at each point in g_true space, for each value of loworder 
+                (highest power the expansion reaches).
         '''
 
         output = []
@@ -117,23 +113,20 @@ class Models():
         
     def high_g(self, g):
         
-        '''
+        r'''
         A function to calculate the large-g convergent Taylor expansion for a given range in the coupling 
         constant, g.
         
-        :Example:
+        Example:
             Models.high_g(g=np.linspace(1e-6,1.0,100))
             
         Parameters:
-        -----------
-        g : linspace
-            The linspace of the coupling constant for this calculation.
+            g (linspace): The linspace of the coupling constant for this calculation.
             
-        Returns
-        -------
-        output : numpy.ndarray        
-            The array of values of the expansion at large-g at each point in g_true space, for each value of highorder
-            (highest power the expansion reaches).
+        Returns:
+            output (numpy.ndarray): The array of values of the expansion at large-g at 
+                each point in g_true space, for each value of highorder (highest power 
+                the expansion reaches).
         '''
 
         output = []
@@ -183,22 +176,19 @@ class Models():
 
     def true_model(self, g):
         
-        '''
-        The true model of the zero-dimensional phi^4 theory partition function using an input linspace.
+        r'''
+        The true model of the zero-dimensional phi^4 theory partition function using an input 
+        linspace.
         
-        :Example:
+        Example:
             Models.true_model(g=np.linspace(0.0, 0.5, 100))
             
         Parameters:
-        -----------
-        g : linspace
-            The linspace for g desired to calculate the true model. This can be the g_true linspace, g_data
-            linspace, or another linspace of the user's choosing. 
+            g (linspace): The linspace for g desired to calculate the true model. This can be 
+                the g_true linspace, g_data linspace, or another linspace of the user's choosing. 
             
         Returns:
-        -------
-        model : numpy.ndarray        
-            The model calculated at each point in g space. 
+            model (numpy.ndarray): The model calculated at each point in g space. 
         '''
     
         #define a function for the integrand
@@ -218,22 +208,18 @@ class Models():
 
     def plot_models(self, g, only_true=False):
         
-        '''
+        r'''
         A plotting function to produce a figure of the model expansions calculated in Models.low_g and Models.high_g, 
         and including the true model calculated using Mixing.true_model.
         
-        :Example:
+        Example:
             Mixing.plot_models(g=np.linspace(0.0, 0.5, 100))
             
         Parameters:
-        -----------
-        g : linspace
-            The linspace in on which the models will be plotted here. 
+            g (linspace): The linspace in on which the models will be plotted here. 
 
-        Returns
-        -------
-        None.
-        
+        Returns:
+            None.
         '''
         
         #uncertainties
@@ -311,22 +297,19 @@ class Models():
          
     def residuals(self):
         
-        '''
+        r'''
         A calculation and plot of the residuals of the model expansions vs the true model values at each point in g.
         g is set internally for this plot, as the plot must be shown in loglog format to see the power law of the
         residuals. 
         
-        :Example:
+        Example:
             Mixing.residuals()
             
         Parameters:
-        -----------
-        None.
+            None.
                   
         Returns:
-        --------
-        None. 
-        
+            None. 
         '''
         
         #set up the plot
@@ -379,22 +362,19 @@ class Uncertainties:
 
     def __init__(self, error_model='informative'):
 
-        '''
+        r'''
         An accompanying class to Models() that possesses the truncation error models
         that are included as variances with the small-g and large-g expansions. 
 
-        :Example:
+        Example:
             Uncertainties()
 
         Parameters:
-        -----------
-        error_model : str
-            The name of the error model to use in the calculation. Options are
-            'uninformative' and 'informative'. Default is 'informative'.
+            error_model (str): The name of the error model to use in the calculation. 
+                Options are 'uninformative' and 'informative'. Default is 'informative'.
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #assign error model 
@@ -413,25 +393,21 @@ class Uncertainties:
     def variance_low(self, g, loworder):
 
 
-        '''
+        r'''
         A function to calculate the variance corresponding to the small-g expansion model.
 
-        :Example:
+        Example:
             Bivariate.variance_low(g=np.linspace(1e-6, 0.5, 100), loworder=5)
 
         Parameters:
-        -----------
-        g : numpy.linspace
-            The linspace over which this calculation is performed.
+            g (numpy.linspace): The linspace over which this calculation is performed.
 
-        loworder : int
-            The order to which we know our expansion model. Must be passed one at a time if
-            more than one model is to be calculated.
+            loworder (int): The order to which we know our expansion model. Must be 
+                passed one at a time if more than one model is to be calculated.
 
         Returns:
-        --------
-        var1 : numpy.ndarray
-            The array of variance values corresponding to each value in the linspace of g. 
+            var1 (numpy.ndarray): The array of variance values corresponding to each 
+                value in the linspace of g. 
         '''
 
         #even order 
@@ -527,24 +503,21 @@ class Uncertainties:
 
     def variance_high(self, g, highorder):
 
-        '''
+        r'''
         A function to calculate the variance corresponding to the large-g expansion model.
 
-        :Example:
+        Example:
             Bivariate.variance_low(g=np.linspace(1e-6, 0.5, 100), highorder=23)
 
         Parameters:
-        -----------
-        g : numpy.linspace
-            The linspace over which this calculation is performed.
+            g (numpy.linspace): The linspace over which this calculation is performed.
 
-        highorder : int
-            The order to which we know our expansion model. This must be a single value.
+            highorder (int): The order to which we know our expansion model. This must be 
+                a single value.
             
         Returns:
-        --------
-        var2 : numpy.ndarray
-            The array of variance values corresponding to each value in the linspace of g. 
+            var2 (numpy.ndarray): The array of variance values corresponding to each value 
+                in the linspace of g. 
         '''
 
         #find coefficients
@@ -580,4 +553,3 @@ class Uncertainties:
                     * (4.0 * g)**(-2.0*highorder - 2.0)
 
         return var2
-
