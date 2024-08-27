@@ -1,0 +1,9 @@
+*.pdf
+Proofs/
+Dan_LMM_tests/
+.pytest_cache/
+.ipynb_checkpoints/
+.vscode/
+Archive/
+README.rst
+__pycache__/
