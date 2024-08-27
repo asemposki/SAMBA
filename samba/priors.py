@@ -7,32 +7,41 @@ class Priors:
 
     def __init__(self):
 
-        '''
+        r'''
         Prior class for the three mixing functions currently
         in the package -> logistic, cdf, and cosine. These are 
         found in the LMM() class. In future, users can input 
         these functions themselves for their choice of mixing 
         function and data set. 
 
-        :Example:
+        Example:
             Priors()
 
         Parameters:
-        -----------
-        None.
+            None.
 
         Returns:
-        --------
-        None.
+            None.
         '''
         return None 
 
     
     def luniform(self, theta, a, b):
 
-        '''
+        r'''
         General uniform prior to be used to truncate the normal
         distributions used in the parameter priors. 
+
+        Parameters:
+            theta (float): The parameter in question.
+
+            a (float): The lower cutoff of the uniform prior.
+
+            b (float): The upper cutoff of the uniform prior.
+
+        Returns:
+            The value of the log uniform prior given the 
+                value of the hyperparameter theta.
         '''
 
         if theta > a and theta < b:
@@ -43,9 +52,17 @@ class Priors:
     
     def lpdf(self, params):
 
-        '''
+        r'''
         Log pdf of the priors for the parameters. Must be truncated
         for the sampler to walk in valid regions. 
+
+        Parameters:
+            params (numpy.ndarray): The hyperparameters of the 
+                mixing function that are being estimated.
+
+        Returns:
+            The value of the total log pdf of the priors on the 
+                hyperparameters.
         '''
 
         if isinstance(params, float) == True:

@@ -15,48 +15,41 @@ plt.rcParams['savefig.facecolor']='white'
 __all__ = ['GP']
 
 
-# +
 class GP(Bivariate):
-
 
     def __init__(self, g, loworder, highorder, kernel="RBF", nu=None, ci=68, error_model='informative'):
 
-        '''
+        r'''
         A class that will pull from the Models class to perform GP emulation on 
         two models from the small-g expansion region to the large-g expansion region. 
         The parameter settings of the kernel will be set by the user in this 
         initial function. This class 'wraps' the scikit learn package. 
 
-        :Example:
+        Example:
             GP(g=np.linspace(1e-6,1.0,100), loworder=5, highorder=2, kernel="Matern",
-            ci=68, error_model='informative')
+                ci=68, error_model='informative')
 
         Parameters:
-        -----------
-        g : numpy linspace
-            The linspace across the coupling constant space used for the GP.
-        
-        highorder : numpy.ndarray, float, int
-            The truncation order of the large-g expansion. 
-        
-        kernel : str
-            The type of kernel the user wishes to use. Default is the RBF kernel;
-            possible choices are RBF, Matern, and Rational Quadratic. 
+            g (numpy linspace): The linspace across the coupling constant space 
+                used for the GP.
+            
+            highorder (numpy.ndarray, float, int): The truncation order of the 
+                large-g expansion. 
+            
+            kernel (str): The type of kernel the user wishes to use. Default is 
+                the RBF kernel; possible choices are RBF, Matern, and Rational 
+                Quadratic. 
 
-        nu : float
-            The value of the Matern kernel used, if kernel="Matern". Otherwise, 
-            default is None.
+            nu (float): The value of the Matern kernel used, if kernel="Matern". 
+                Otherwise, default is None.
 
-        ci : int
-            The uncertainty interval to use. Must be 68 or 95. 
+            ci (int): The uncertainty interval to use. Must be 68 or 95. 
 
-        error_model : str
-            The error model to be used in the calculation. Options are
-            'uninformative' and 'informative'. Default is 'informative'. 
+            error_model (str): The error model to be used in the calculation. 
+                Options are 'uninformative' and 'informative'. Default is 'informative'. 
 
         Returns:
-        -------
-        None.
+            None.
         ''' 
         
         #set up the prediction array as a class variable for use later
@@ -107,32 +100,26 @@ class GP(Bivariate):
     
     def training(self, error=True, method=2, plot=True):
 
-        '''
+        r'''
         A function that links the model data and the training function in 
         scikit learn, and plots the training data using GP.plot_training().
 
-        :Example:
+        Example:
             GP.training(error=False, method=3)
 
         Parameters:
-        -----------
-        error : bool
-            A boolean variable to toggle use of a truncation error model in the 
-            kernel during training. Default is True.
+            error (bool): A boolean variable to toggle use of a truncation error model 
+                in the kernel during training. Default is True.
 
-        method : int  
-            The method used for determining the training points. Options: 1,2,3.
-            For an extensive explanation of the methods, see the paper.
+            method (int): The method used for determining the training points. Options: 
+                1,2,3. For an extensive explanation of the methods, see the paper.
 
-        plot : bool
-            Option to plot the training set with series expansions and true model.
-            Default is True. 
+            plot (bool): Option to plot the training set with series expansions and 
+                true model. Default is True. 
 
         Returns:
-        --------
-        sk : scikit learn object
-            The object storing all training information from the sklearn regression
-            performed on the data.
+            sk (object): The object storing all training information from the sklearn 
+                regression performed on the data.
         '''
 
         #first set the method
@@ -180,30 +167,25 @@ class GP(Bivariate):
 
     def validate(self, plot=True, run_taweret=False):
 
-        '''
+        r'''
         A wrapper function for scikit learn's GP prediction function. This will 
         predict the GP results with an interval and plot against the expansions
         using GP.plot_validate().
 
-        :Example:
+        Example:
             GP.validate()
 
         Parameters:
-        -----------
-        plot : bool
-            The option to plot the GP mean and variance over the testing
-            set and true model. Default is True. 
+            plot (bool): The option to plot the GP mean and variance over the testing
+                set and true model. Default is True. 
 
         Returns:
-        -------
-        meanp : numpy.ndarray
-            The mean array of the GP prediction results.
+            meanp (numpy.ndarray): The mean array of the GP prediction results.
 
-        sigp : numpy.ndarray
-            The standard deviation array of the GP prediction results. 
-        
-        cov : numpy.ndarray
-            The covariance matrix of the GP prediction results. 
+            sigp (numpy.ndarray): The standard deviation array of the GP prediction 
+                results. 
+            
+            cov (numpy.ndarray): The covariance matrix of the GP prediction results. 
         '''
 
         #make the prediction values into a column vector
@@ -235,29 +217,26 @@ class GP(Bivariate):
 
     def plot_training(self, gs, datas, sigmas):
 
-        '''
+        r'''
         A simple plotter to plot the trained GP results and models, 
         as well as the points at which the GP was trained. 
 
-        :Example:
+        Example:
             GP.plot_training(gs=np.array([]), datas=np.array([]),
-            sigmas=np.array([]))
+                sigmas=np.array([]))
 
         Parameters:
-        ------------
-        gs : numpy.ndarray
-            Points chosen by GP.training_set() in input space g.
-        
-        datas : numpy.ndarray
-            Corresponding values of the series expansions at gs.
-        
-        sigmas : numpy.ndarray
-            Corresponding error model results at each training
-            point.
+            gs (numpy.ndarray): Points chosen by GP.training_set() in input 
+                space g.
+            
+            datas (numpy.ndarray): Corresponding values of the series expansions 
+                at gs.
+            
+            sigmas (numpy.ndarray): Corresponding error model results at each 
+                training point.
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #set up the plot
@@ -300,21 +279,19 @@ class GP(Bivariate):
     
     def plot_validate(self, intervals):
 
-        '''
+        r'''
         A simple plotter to show the results of the GP 
         predictions at new points in g. 
 
-        :Example:
+        Example:
             GP.plot_validate(intervals=np.array([,]))
 
         Parameters:
-        -----------
-        intervals : numpy.ndarray
-            The uncertainty band around the prediction set.
+            intervals (numpy.ndarray): The uncertainty band around the 
+                prediction set.
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #plot the results
@@ -358,27 +335,23 @@ class GP(Bivariate):
     
     def training_set(self):
 
-        '''
+        r'''
         An internal function to calculate the necessary training data set from
         the input prediction set. 
 
-        :Example:
+        Example:
             GP.training_set() 
 
         Parameters:
-        -----------
-        None. 
+            None. 
 
         Returns:
-        -------
-        gs : numpy.ndarray
-            The modified array of input values for the training. 
+        gs (numpy.ndarray): The modified array of input values for the training. 
 
-        datas : numpy.ndarray
-            The modified array of data values for the training. 
+        datas (numpy.ndarray): The modified array of data values for the training. 
 
-        sigmas : numpy.ndarray 
-            The modified array of the truncation errors for the training. 
+        sigmas (numpy.ndarray): The modified array of the truncation errors for 
+            the training. 
         '''
 
         #set up the training set from the prediction set (offset by midpoint)
@@ -481,7 +454,7 @@ class GP(Bivariate):
 
     def MD_set(self, pts=3, plot=False):
 
-        '''
+        r'''
         Takes the training set of points and uses them to cut the
         testing set to their limits. This reduces the MD calculation
         to the region of interest.  
@@ -490,29 +463,23 @@ class GP(Bivariate):
             GP.MD_set()
 
         Parameters:
-        -----------
-        pts : int
-            The number of points to use to calculate the Mahalanobis
-            distance. Can be any number up to the size of self.gpredict. 
+            pts (int): The number of points to use to calculate the Mahalanobis
+                distance. Can be any number up to the size of self.gpredict. 
 
-        plot : bool
-            The option to plot the MD points across the input space. 
-            Default is False. 
+            plot (bool): The option to plot the MD points across the input space. 
+                Default is False. 
 
         Returns:
-        --------
-        md_g : numpy.ndarray
-            The input values used in the MD calculation.
+            md_g (numpy.ndarray): The input values used in the MD calculation.
 
-        md_mean : numpy.ndarray
-            The mean values from the GP corresponding to the 
-            md_g points.
+            md_mean (numpy.ndarray): The mean values from the GP corresponding 
+                to the md_g points.
 
-        md_sig : numpy.ndarray
-            The error bars corresponding to the md_g points.
+            md_sig (numpy.ndarray): The error bars corresponding to the md_g 
+                points.
 
-        md_cov : numpy.ndarray
-            The covariance matrix corresponding to the md_g points.
+            md_cov (numpy.ndarray): The covariance matrix corresponding to the md_g 
+                points.
         '''
 
         #import the GP mean, cov, and errors for the prediction set
@@ -573,38 +540,33 @@ class GP(Bivariate):
 
     def md_squared(self, md_g, md_mean, md_cov, n_curves=1000):
 
-        '''
+        r'''
         A wrapper for the Mahalanobis distance calculation for the
         reference distribution and the GP curve. To calculate the 
         Cholesky decomposition or to perform an SVD analysis, consult
         GP.mahalanobis() below. 
 
-        :Example:
+        Example:
             GP.md_squared(md_g=np.linspace, md_mean=np.array([]), 
                           md_cov=np.array([,]), n_curves=1000)
 
         Parameters:
-        -----------
-        md_g : numpy.linspace
-            The points in input space g from the GP.MD_set() function. 
+            md_g (numpy.linspace): The points in input space g from the GP.MD_set() 
+                function. 
 
-        md_mean : numpy.ndarray
-            The values of the GP mean at the md_g points. 
+            md_mean (numpy.ndarray): The values of the GP mean at the md_g points. 
 
-        md_cov : numpy.ndarray
-            The values of the GP covariance matrix at the md_g points. 
+            md_cov (numpy.ndarray): The values of the GP covariance matrix at the 
+                md_g points. 
 
-        n_curves : int
-            The number of curves from the reference distribution that
-            are drawn for the MD^2 calculation (md_ref). 
+            n_curves (int): The number of curves from the reference distribution that
+                are drawn for the MD^2 calculation (md_ref). 
 
         Returns:
-        --------
-        md_gp : float
-            The individual MD^2 value for the GP curve. 
+            md_gp (float): The individual MD^2 value for the GP curve. 
 
-        md_ref : numpy.ndarray  
-            The array of MD^2 values from the reference distribution.
+        md_ref (numpy.ndarray): The array of MD^2 values from the reference 
+            distribution.
         '''
 
         #calculate the ref distribution MDs
@@ -629,7 +591,7 @@ class GP(Bivariate):
     
     def md_plotter(self, md_gp, md_ref, md_mean=None, md_cov=None, hist=True, box=False):
 
-        '''
+        r'''
         A plotting function that allows the Mahalanobis distance
         to be plotted using either a histogram or a box and whisker
         plot, or both. 
@@ -637,36 +599,28 @@ class GP(Bivariate):
         Box and whisker plot code heavily drawn from J. Melendez' gsum
         code (https://github.com/buqeye/gsum).
 
-        :Example:
+        Example:
             GP.md_plotter(md_gp=np.array([]), md_ref=np.array([]),
             hist=False, box=True)
         
         Parameters:
-        -----------
-        md_gp : float
-            The MD^2 value for the GP curve. 
+            md_gp (float): The MD^2 value for the GP curve. 
 
-        md_ref : numpy.ndarray
-            The array of MD^2 values for the reference
-            distribution.
-        
-        md_mean : numpy.ndarray
-            The values of the GP mean at the md_g points. Only used
-            for box and whisker option; default is None. 
+            md_ref (numpy.ndarray): The array of MD^2 values for the reference
+                distribution.
+            
+            md_mean (numpy.ndarray): The values of the GP mean at the md_g points. 
+                Only used for box and whisker option; default is None. 
 
-        md_cov : numpy.ndarray
-            The values of the GP covariance matrix at the md_g points. 
-            Only used for box and whisker option; default is None.
+            md_cov (numpy.ndarray): The values of the GP covariance matrix at the 
+                md_g points. Only used for box and whisker option; default is None.
 
-        hist : bool
-            Toggle for plotting a histogram. Default is True. 
+            hist (bool): Toggle for plotting a histogram. Default is True. 
 
-        box : bool
-            Toggle for plotting a box plot. Default is False. 
+            box (bool): Toggle for plotting a box plot. Default is False. 
 
         Returns:
-        --------
-        None.
+            None.
         '''
         
         title = 'Mahalanobis Distance'
@@ -738,7 +692,7 @@ class GP(Bivariate):
     @staticmethod
     def mahalanobis(y, mean, inv=None, chol=False, svd=False):
 
-        '''
+        r'''
         A diagnostic testing function that can calculate the Mahalanobis 
         distance for a given set of mean, covariance data and a vector. 
 
@@ -752,43 +706,35 @@ class GP(Bivariate):
               4). Perform an SVD analysis and send back the MD 
                   calculated via SVD. 
 
-        :Example:
+        Example:
             GP.MD(y=np.array([]), mean=np.array([]), inv=numpy.ndarray([]),
-            chol=False, svd=False)
+                chol=False, svd=False)
 
         Parameters:
-        -----------
-        y : numpy.ndarray
-            An array of predicted values from the emulator.
+            y (numpy.ndarray): An array of predicted values from the emulator.
 
-        mean : numpy.ndarray
-            An array of true values from the true model (simulator).
+            mean (numpy.ndarray): An array of true values from the true model 
+                (simulator).
 
-        inv : numpy.ndarray
-            The covariance matrix to be inverted in the MD calculation.
-        
-        chol : bool
-            The option to calculate the Cholesky decomposition
-            of the data. 
+            inv (numpy.ndarray): The covariance matrix to be inverted in the 
+                MD calculation.
+            
+            chol (bool): The option to calculate the Cholesky decomposition
+                of the data. 
 
-        svd : bool
-            An option to perform the SVD analysis of the MD data.
-            To use, must also have a covariance matrix sent to inv. 
+            svd (bool): An option to perform the SVD analysis of the MD data.
+                To use, must also have a covariance matrix sent to inv. 
 
         Returns:
-        --------
-        md : float (if calculating MD)
-            The Mahalanobis distance. 
+            md (float): (if calculating MD) The Mahalanobis distance. 
 
-        chol_decomp : numpy.ndarray (if calculating Cholesky
-                                     decomposition)
-            The Cholesky decomposition results. 
+            chol_decomp (numpy.ndarray): (if calculating Cholesky decomposition) 
+                The Cholesky decomposition results. 
 
-        svderrs : numpy.ndarray (if calculating SVD)
-            The SVD errors at each point in the MD testing set. 
+            svderrs (numpy.ndarray): (if calculating SVD) The SVD errors at each   
+                point in the MD testing set. 
 
-        svd_md : float (if calculating SVD)
-            The Mahalanobis distance. 
+            svd_md (float) (if calculating SVD) The Mahalanobis distance. 
         '''
 
         y = np.atleast_2d(y)
@@ -835,25 +781,20 @@ class GP(Bivariate):
     @staticmethod
     def nearest_value(array, value):
 
-        '''
+        r'''
         A static method to find the index of the nearest value
         of an array to a desired value. 
 
-        :Example:
+        Example:
             GP.nearest_value(array=numpy.ndarray, value=5)
 
         Parameters:
-        -----------
-        array : numpy.ndarray
-            The array of values to search. 
+            array (numpy.ndarray): The array of values to search. 
 
-        value : int
-            The desired value to search the array for. 
+            value (int): The desired value to search the array for. 
 
         Returns:
-        --------
-        index : int
-            The index of the nearest value of the array
+        index (int): The index of the nearest value of the array
             to the desired value. 
         '''
 
@@ -869,28 +810,24 @@ class GP(Bivariate):
     @staticmethod
     def ref_dist(mean, cov):
 
-        '''
+        r'''
         Constructs a multivariate normal distribution to act
         as a reference distribution for the Mahalanobis distance
         calculation. 
 
-        :Example:
+        Example:
             Diagnostics.ref_dist(mean=np.array([]), cov=np.array([]))
 
         Parameters:
-        -----------
-        mean : numpy.ndarray
-            The mean of the GP (given by the prediction set). 
-        
-        cov : numpy.ndarray
-            The covariance matrix of the GP (given by the prediction
-            set). 
+            mean (numpy.ndarray): The mean of the GP (given by the 
+                prediction set). 
+            
+            cov (numpy.ndarray): The covariance matrix of the GP 
+                (given by the prediction set). 
 
         Returns:
-        --------
-        dist : stats object
-            A multivariate normal distribution that can be used to 
-            generate samples for the reference distribution. 
+            dist (object): A multivariate normal distribution that can 
+                be used to generate samples for the reference distribution. 
         '''
 
         dist = stats.multivariate_normal(mean=mean, cov=cov)
@@ -901,24 +838,21 @@ class GP(Bivariate):
     @staticmethod
     def sample_ref(dist, n_curves):
 
-        '''
+        r'''
         Generate some sample curves from the reference distribution.
 
-        :Example:
+        Example:
             Diagnostics.sample_ref(dist, n_curves=10)
 
         Parameters:
-        -----------
-        dist : stats object
-            The reference distribution object. 
+            dist (object): The reference distribution object. 
 
-        n_curves : int
-            The number of draws from the reference distribution.
+            n_curves (int): The number of draws from the reference 
+                distribution.
 
         Returns:
-        --------
-        samples : numpy.ndarray
-            The array of curves from the distribution. 
+            samples (numpy.ndarray): The array of curves from the 
+                distribution. 
         '''
 
         samples = dist.rvs(n_curves).T
@@ -929,28 +863,24 @@ class GP(Bivariate):
     @staticmethod
     def create_points(N, a, b):
 
-        '''
+        r'''
         A code to create a given number of points from a 
         linspace evenly from points a to b. 
 
-        :Example:
+        Example:
             GP.create_points(N=3, a=0.0, b=1.0)
 
         Parameters:
-        -----------
-        N : int
-            The number of points desired.
+            N (int): The number of points desired.
 
-        a : float, int
-            The left endpoint of the region of interest. 
+            a (float, int): The left endpoint of the region of 
+                interest. 
 
-        b : float, int
-            The right endpoint of the region of interest. 
+            b (float, int): The right endpoint of the region of 
+                interest. 
 
         Returns:
-        --------
-        pts : numpy.ndarray
-            The resulting array of points. 
+            pts (numpy.ndarray): The resulting array of points. 
         '''
         
         #create the linspace with endpoints
@@ -965,7 +895,7 @@ class GP(Bivariate):
     @staticmethod 
     def ref_boxplot(dist, q1=0.25, q3=0.75, whislo=0.025, whishi=0.975, ax=None, **kwargs):
 
-        '''
+        r'''
         Taken from the gsum code written by J. Melendez (https://github.com/buqeye/gsum).
         '''
 

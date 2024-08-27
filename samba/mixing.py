@@ -19,31 +19,27 @@ class LMM(Models, Uncertainties):
     
     def __init__(self, loworder, highorder, error_model='informative'):
         
-        '''
-        This class is designed with all of the necessary functions for creating a data set, plotting it 
-        along with the true model, and calculating expansions of specific orders of the true model to mix.
-        Dependent on the Models class to run the expansion functions. 
+        r'''
+        This class is designed with all of the necessary functions for creating 
+        a data set, plotting it along with the true model, and calculating expansions 
+        of specific orders of the true model to mix. Dependent on the Models class to 
+        run the expansion functions. 
     
-        :Example:            
+        Example:            
             LMM(loworder=np.array([2]), highorder=np.array([2]), error_model='informative')
             
         Parameters:
-        -----------
-        loworder : numpy.ndarray, int
-            The truncation order to which we calculate the small-g
-            expansion. 
+            loworder (numpy.ndarray, int): The truncation order to which we calculate 
+                the small-g expansion. 
 
-        highorder : numpy.ndarray, int
-            The truncation order to which we calculate the large-g
-            expansion. 
+            highorder (numpy.ndarray, int): The truncation order to which we calculate the 
+                large-g expansion. 
 
-        error_model : str
-            The error model chosen for this calculation. Can be either 
-            'uninformative' or 'informative'. Default is 'informative'. 
+            error_model (str): The error model chosen for this calculation. Can be either 
+                'uninformative' or 'informative'. Default is 'informative'. 
             
         Returns:
-        --------
-        None.
+            None.
         '''    
 
         #check type and create class variables
@@ -66,44 +62,37 @@ class LMM(Models, Uncertainties):
         
     def add_data(self, g_true, g_data, data=None, sigma=None, error=None, plot=True):
         
-        '''
-        A data generation function that generates data based on the g_data linspace provided (with the number of 
-        points chosen by the user) and the error desired on each point (also input by the user), or accepts the
-        user's input of an array of data and standard deviations of the data points. 
+        r'''
+        A data generation function that generates data based on the g_data linspace 
+        provided (with the number of points chosen by the user) and the error desired on 
+        each point (also input by the user), or accepts the user's input of an array of data 
+        and standard deviations of the data points. 
         
-        :Example:
+        Example:
             LMM.add_data(g_true=np.linspace(0.0, 0.5, 100), g_data=np.linspace(0.0, 0.5, 20),
             error=0.01, plot=False)
         
         Parameters:
-        -----------
-        g_true : linspace     
-            The linspace desired for the true model to be calculated.
-        
-        g_data : linspace    
-            The linspace input for the data to be generated within. 
+            g_true (linspace): The linspace desired for the true model to be calculated.
+            
+            g_data (linspace): The linspace input for the data to be generated within. 
 
-        data : numpy.ndarray
-            The data array entered by the user; if user wishes to generate data, this remains set to None.
-        
-        sigma : numpy.ndarray
-            The standard deviation array entered by the user; if user wishes to generate data, this will
-            remain set to None. 
+            data (numpy.ndarray): The data array entered by the user; if user wishes to 
+                generate data, this remains set to None.
+            
+            sigma (numpy.ndarray): The standard deviation array entered by the user; if 
+                user wishes to generate data, this will remain set to None. 
 
-        error : float
-            The error to put on the data set if the data set is not being given by
-            the user. Enter in decimal form (0.01 = 1%). Default is None. 
+            error (float): The error to put on the data set if the data set is not being 
+                given by the user. Enter in decimal form (0.01 = 1%). Default is None. 
 
-        plot : bool
-            The option to plot the data. Default is True. 
+            plot (bool): The option to plot the data. Default is True. 
             
         Returns:
-        --------
-        data : numpy.ndarray         
-            The array of data (generated or entered by the user).
-            
-        sigma : numpy.ndarray    
-            The standard deviation at each data point (generated or entered by the user).
+            data (numpy.ndarray): The array of data (generated or entered by the user).
+                
+            sigma (numpy.ndarray): The standard deviation at each data point (generated or 
+                entered by the user).
         '''
         
         #if user has an array of data, skip data generation
@@ -132,27 +121,22 @@ class LMM(Models, Uncertainties):
     
     def plot_data(self, g_true, g_data, data):
         
-        '''
+        r'''
         The plotting function to display the generated data and true model. 
         
-        :Example:
+        Example:
             LMM.plot_data(g_true=np.linspace(0.0, 0.5, 100), g_data=np.linspace(0.0, 0.5, 20), 
             data=np.array([]))
             
         Parameters:
-        -----------
-        g_true : linspace
-            The linspace desired for the true model to be calculated.
-            
-        g_data : linspace
-            The linspace over which the data was generated. 
-            
-        data : numpy.ndarray
-            The array of data generated using the LMM.add_data function.
+            g_true (linspace): The linspace desired for the true model to be calculated.
+                
+            g_data (linspace): The linspace over which the data was generated. 
+                
+            data (numpy.ndarray): The array of data generated using the LMM.add_data function.
             
         Returns:
-        --------
-        None.
+            None.
         
         '''
         
@@ -185,29 +169,24 @@ class LMM(Models, Uncertainties):
     
     def likelihood_low(self, g_data, data, sigma, siglow):
         
-        '''
+        r'''
         The likelihood function for the data using the small-g expansion as the model in the 
         chi-squared.
         
-        :Example:
+        Example:
             LMM.likelihood_low(g_data=np.linspace(0.0, 0.5, 20), data=np.array(), 
-            sigma=np.array(), loworder=5)
+                sigma=np.array(), loworder=5)
             
         Parameters:
-        -----------
-        g_data : linspace     
-            A linspace used to generate data points. 
+            g_data (linspace): A linspace used to generate data points. 
+                
+            data (numpy.ndarray): An array of data points generated or supplied by 
+                the user.
+                
+            sigma (numpy.ndarray): An array of standard deviations at each point in 'data'. 
             
-        data : numpy.ndarray      
-            An array of data points generated or supplied by the user.
-            
-        sigma : numpy.ndarray          
-            An array of standard deviations at each point in 'data'. 
-           
         Returns:
-        --------
             An array of the likelihood calculated at each data point. 
-            
         '''
 
         #set up the uncertainties using experimental & theory errors
@@ -221,27 +200,24 @@ class LMM(Models, Uncertainties):
     
     def likelihood_high(self, g_data, data, sigma, sighigh):
         
-        '''
+        r'''
         The likelihood function for the data using the large-g expansion as the model in the 
         chi-squared.
         
-        :Example:
+        Example:
             LMM.likelihood_high(g_data=np.linspace(0.0, 0.5, 20), data=np.array(), 
-            sigma=np.array(), highorder=23)
+                sigma=np.array(), highorder=23)
             
         Parameters:
-        -----------
-        g_data : linspace       
-            A linspace used to generate data points. 
+            g_data (linspace): A linspace used to generate data points. 
+                
+            data (numpy.ndarray): An array of data points generated or supplied by 
+                the user.
+                
+            sigma (numpy.ndarray): An array of standard deviations at each point 
+                in 'data'. 
             
-        data : numpy.ndarray       
-            An array of data points generated or supplied by the user.
-            
-        sigma : numpy.ndarray         
-            An array of standard deviations at each point in 'data'. 
-           
         Returns:
-        --------
             An array of the likelihood calculated at each data point. 
         '''
 
@@ -256,32 +232,28 @@ class LMM(Models, Uncertainties):
 
     def sampler_mix(self, params, g_data, data, sigma, siglow, sighigh):
 
-        '''
+        r'''
         The model mixing function sent to the sampler to find the values of the parameters in the 
         selected mixing function. 
 
-        :Example:
+        Example:
             emcee.EnsembleSampler(nwalkers, self.sampler_mix,
-                                  args=[g_data, data, sigma])
+                args=[g_data, data, sigma])
 
         Parameters:
-        -----------
-        params : numpy.ndarray
-            The parameters that are being determined by the sampler, in an array (not input).
+            params (numpy.ndarray): The parameters that are being determined by the 
+                sampler, in an array (not input).
 
-        g_data : linspace
-            The linspace used to generate the data.
+            g_data (linspace): The linspace used to generate the data.
 
-        data : numpy.ndarray
-            An array of data either generated or supplied by the user. 
+            data (numpy.ndarray): An array of data either generated or supplied by 
+                the user. 
 
-        sigma : numpy.ndarray
-            An array of standard deviations for each data point.
+            sigma (numpy.ndarray): An array of standard deviations for each data point.
 
         Returns:
-        --------
-        mixed_results : numpy.ndarray
-            The results of the mixing function for the entire linspace in g, in an array format.
+            mixed_results (numpy.ndarray): The results of the mixing function for the 
+                entire linspace in g, in an array format.
         '''
 
         #set up arrays
@@ -318,42 +290,35 @@ class LMM(Models, Uncertainties):
         
     def mixed_model(self, g_data, data, sigma, mixing_function='cosine', nsteps=1000):
         
-        '''
+        r'''
         A function that will run the emcee ensemble sampler for a given mixed model to determine at least one
         unknown parameter in the mixing function selected. The function asks the user to decide which mixing
         function to use, and runs the subsequent code to use the correct one. Functions sent to the sampler are
         static methods defined at the end of this class.
         
-        :Example:
+        Example:
             LMM.mixed_model(g_data=np.linspace(0.0, 0.5, 20), data=np.array(), sigma=np.array(),
-            mixing_function='cosine', nsteps=3000)
+                mixing_function='cosine', nsteps=3000)
             
         Parameters:
-        -----------
-        g_data : linspace      
-            The linspace over which the data was generated.
-      
-        data : numpy.ndarray          
-            An array of data points, either generated or supplied by the user.
-            
-        sigma : numpy.ndarray     
-            An array of standard deviations at each data point.
-
-        mixing_function : str
-            The name of the mixing function to use for the LMM method. 
-            Default is the piecewise cosine. 
-
-        nsteps : int
-            The number of steps per walker for the sampler to use. 
-   
-        Returns:
-        --------
-        sampler_mixed : emcee object
-            The sampler results, contained in a sampler object, from the determination of the
-            unknown parameter. 
+            g_data (linspace): The linspace over which the data was generated.
         
-        emcee_trace_mixed : numpy.ndarray
-            The trace of each parameter, with burnin samples extracted.
+            data (numpy.ndarray): An array of data points, either generated or supplied by 
+                the user.
+                
+            sigma (numpy.ndarray): An array of standard deviations at each data point.
+
+            mixing_function (str): The name of the mixing function to use for the LMM method. 
+                Default is the piecewise cosine. 
+
+            nsteps (int): The number of steps per walker for the sampler to use. 
+    
+        Returns:
+            sampler_mixed (object): The sampler results, contained in a sampler object, from 
+                the determination of the unknown parameter. 
+            
+            emcee_trace_mixed (numpy.ndarray): The trace of each parameter, with burnin samples 
+                extracted.
         '''
 
         #dictionary of LMM functions
@@ -428,45 +393,40 @@ class LMM(Models, Uncertainties):
     
     def ppd(self, trace, param_values, g_data, g, data, ci, plot=True):
         
-        '''
+        r'''
         A function to calculate the posterior predictive distribution (PPD) 
         for any chosen mixing function defined in this class. 
         
-        :Example:
+        Example:
             LMM.ppd(trace, param_values=np.array([]),g_data=np.linspace(1e-6,1.0,10), 
-                    g_ppd=np.linspace(0.0, 0.5, 100), ci=68)
+                g_ppd=np.linspace(0.0, 0.5, 100), ci=68)
             
         Parameters:
-        -----------
-        trace : numpy.ndarray
-            The trace of each of the parameters from the sampler.
+            trace (numpy.ndarray): The trace of each of the parameters from 
+                the sampler.
 
-        param_values : numpy.ndarray
-            The mean, median, or MAP values of the parameters. 
+            param_values (numpy.ndarray): The mean, median, or MAP values of the 
+                parameters. 
 
-        g_data : numpy.linspace
-            The linspace in g from which the data set was calculated.
+            g_data (numpy.linspace): The linspace in g from which the data set 
+                was calculated.
 
-        g : numpy.linspace
-            The linspace over which the PPD result will be calculated.
+            g (numpy.linspace): The linspace over which the PPD result will be 
+                calculated.
 
-        data : numpy.ndarray
-            The data set used to calculate the mixed model. 
+            data (numpy.ndarray): The data set used to calculate the mixed model. 
 
-        ci : int
-            The desired credibility interval. Can be either 68 or 95.
+            ci (int): The desired credibility interval. Can be either 68 or 95.
 
-        plot : bool
-            The option to plot the PPD result with the series expansions
-            and true model. Default is True. 
+            plot (bool): The option to plot the PPD result with the series expansions
+                and true model. Default is True. 
            
         Returns:
-        --------
-        switch_med_results : numpy.ndarray
-            The array of median values from the PPD at each point in g.
+            switch_med_results (numpy.ndarray): The array of median values from the 
+                PPD at each point in g.
 
-        switch_g_intervals : numpy.ndarray
-            The array of credibility interval values for the median results of the PPD.
+            switch_g_intervals (numpy.ndarray): The array of credibility interval values 
+                for the median results of the PPD.
         '''
 
         #convert list to array
@@ -530,7 +490,7 @@ class LMM(Models, Uncertainties):
 
         for i in range(len(g)):
             switch_med_results[i] = statistics.median(result_array[i,:])
-            switch_g_intervals[i, :] = self.hpd_interval(result_array[i,:], ci)
+            switch_g_intervals[i, :] = self.hpd_interval(result_array[i,:], ci)  # this is what I need (put in M-R curves)
 
         #plot the PPD results
         if plot is True:
@@ -541,43 +501,38 @@ class LMM(Models, Uncertainties):
     
     def plot_ppd(self, results, g_data, g_ppd, data, ppd_results, ppd_intervals, percent):
         
-        '''
+        r'''
         A plotting function that can be used to plot the posterior predictive distribution (PPD) results (mean and 
         credible interval) obtained from calling the functions above in the main code, as well as data generated, 
         the true model, and the small- and large-g expansions chosen for the mixed model calculation. 
         
-        :Example:
+        Example:
             LMM.plot_ppd(g_data=np.linspace(0.0, 0.5, 20), g_true=np.linspace(0.0, 0.5, 100), 
-            g_ppd=np.linspace(0.0, 0.5, 200), data=np.array(), ppd_results=np.array(), ppd_intervals=np.array(),
-            percent=68)
+                g_ppd=np.linspace(0.0, 0.5, 200), data=np.array(), ppd_results=np.array(), 
+                ppd_intervals=np.array(), percent=68)
             
         Parameters:
-        -----------
-        results : numpy.ndarray
-            The mean or the median of the estimated parameters from the posterior draws. 
+            results (numpy.ndarray): The mean or the median of the estimated parameters 
+                from the posterior draws. 
 
-        g_data : linspace
-            The linspace used to generate the data.
-        
-        g_ppd : linspace
-            The linspace chosen to calculate the PPD over. 
-        
-        data : numpy.ndarray
-            An array of data either generated or supplied by the user.
+            g_data (linspace): The linspace used to generate the data.
             
-        ppd_results : numpy.ndarray
-            An array of the mean of the PPD at each point in the g_ppd linspace.
-        
-        ppd_intervals : numpy.ndarray
-            A 2D array of the credibility interval calculated for the PPD (containing both bounds).
+            g_ppd (linspace): The linspace chosen to calculate the PPD over. 
             
-        percent : int
-            The percent credibility interval calculated for the variable ppd_intervals (used in the plot
-            legend). 
+            data (numpy.ndarray): An array of data either generated or supplied by 
+                the user.
+                
+            ppd_results (numpy.ndarray): An array of the mean of the PPD at each point 
+                in the g_ppd linspace.
+            
+            ppd_intervals (numpy.ndarray): A 2D array of the credibility interval calculated 
+                for the PPD (containing both bounds).
+                
+            percent (int): The percent credibility interval calculated for the variable 
+                ppd_intervals (used in the plot legend). 
           
         Returns:
-        --------
-        None.
+            None.
         '''
         
         fig = plt.figure(figsize=(8,6), dpi=600)
@@ -632,24 +587,22 @@ class LMM(Models, Uncertainties):
 
     def _select_function(self, x):
 
-        '''
+        r'''
         A function that selects the proper mixing function given the input from the user
         in the function 'LMM.mixed_model'. 
 
         *Internal function only for use inside the LMM class.*
 
-        :Example:
+        Example:
             LMM._select_function(x=self.choice)
         
         Parameters:
-        -----------
-        x : string
-            The string that is input by the user to select one of the available mixing functions. 
+            x (string): The string that is input by the user to select one of the 
+                available mixing functions. 
         
         Returns:
-        --------
-        self.function_mappings[x]
-            The correct function label for the chosen mixing function, converted from string to object.
+            self.function_mappings[x]: The correct function label for the chosen mixing 
+                function, converted from string to object.
         '''
         while True:
             try:
@@ -660,29 +613,24 @@ class LMM(Models, Uncertainties):
     
     def _autocorrelation(self, chain, max_lag=100):
 
-        '''
+        r'''
         Borrowed from Christian Forssen's nuclear TALENT school work on 
         'Learning from Data: Bayesian Methods and Machine Learning' course
         in June 2019 (see https://github.com/NuclearTalent/Bayes2019). 
 
         *Internal function, only for use inside the LMM class.*
 
-        :Example:
+        Example:
             LMM._autocorrelation(chain, max_lag=200)
 
         Parameters:
-        -----------
-        chain : numpy.ndarray
-            The array of samples from the emcee chain object that are returned by
-            the sampler. 
+            chain (numpy.ndarray): The array of samples from the emcee chain object that 
+                are returned by the sampler. 
 
-        max_lag : int
-            The maximum lagtime for the autocorrelation length. 
+            max_lag (int): The maximum lagtime for the autocorrelation length. 
         
         Returns:
-        --------
-        acors : numpy.ndarray
-            The array of autocorrelation calculated.
+            acors (numpy.ndarray): The array of autocorrelation calculated.
         '''
 
         #determine the autocorrelation length
@@ -708,25 +656,23 @@ class LMM(Models, Uncertainties):
 
     def burnin_trace(self, sampler_object, nsteps):
         
-        '''
-        A small function to take the burn-in samples off of the sampler chain from the LMM.mixed_model
-        function, and to send back the trace of the sampler chain to LMM.mixed_model.
+        r'''
+        A small function to take the burn-in samples off of the sampler chain from the 
+        LMM.mixed_model function, and to send back the trace of the sampler chain to 
+        LMM.mixed_model.
         
-        :Example:
+        Example:
             LMM.burnin_trace(sampler_object=sampler_mixed, nsteps=3000)
             
         Parameters:
-        -----------
-        sampler_object : emcee object         
-            The chain sent back by the emcee sampler after it finishes running through the samples and walkers.
+            sampler_object (object): The chain sent back by the emcee sampler after 
+                it finishes running through the samples and walkers.
 
-        nsteps : int
-            The number of steps per walker.
-            
+            nsteps (int): The number of steps per walker.
+                
         Returns:
-        ---------
-        emcee_trace_mixed : numpy.ndarray            
-            The trace of the sampler chain with the user's desired number of burn-in samples removed.
+            emcee_trace_mixed (numpy.ndarray): The trace of the sampler chain with 
+                the user's desired number of burn-in samples removed.
         '''
         
         nburnin = int((1/15) * nsteps)
@@ -739,38 +685,31 @@ class LMM(Models, Uncertainties):
 
     def stats_chain(self, chain, plot=True):
 
-        '''
+        r'''
         Calculates the autocorrelation time and thins the samples
         accordingly for a better estimate of the mean, median, and MAP values. 
 
-        :Example: 
+        Example: 
             LMM.stats_chain(chain=emcee.object, plot=False)
 
         Parameters:
-        -----------
-        chain : emcee object
-            The object resulting from sampling the parameters
-            using emcee. The chain of samples must be extracted
-            from it. 
+            chain (object): The object resulting from sampling the parameters
+                using emcee. The chain of samples must be extracted
+                from it. 
 
-        plot : bool
-            The option to plot the traces of the sample
-            chains and the corner plot of the parameter
-            distributions. Default is True.  
+            plot (bool): The option to plot the traces of the sample
+                chains and the corner plot of the parameter
+                distributions. Default is True.  
 
         Returns:
-        --------
-        thin : numpy.ndarray
-            The array of thinned samples per parameter. Used 
-            externally to calculate the MAP values.
+            thin (numpy.ndarray): The array of thinned samples per parameter. 
+                Used externally to calculate the MAP values.
 
-        median_results : numpy.ndarray
-            Each of the median parameter values found from the 
-            sampling.
+            median_results (numpy.ndarray): Each of the median parameter 
+                values found from the sampling.
 
-        mean_results : numpy.ndarray
-            Each of the mean parameter values found from the
-            sampling. 
+            mean_results (numpy.ndarray): Each of the mean parameter values found 
+                from the sampling. 
         '''
 
         #retrieve the chain
@@ -890,41 +829,36 @@ class LMM(Models, Uncertainties):
 
     def MAP_values(self, thin, g, g_data, data, sigma, plot=True):
 
-        '''
+        r'''
         A function to calculate the MAP values of sampled distributions 
         of parameters. Will calculate for as many parameters as are present 
         and return results in an array. 
 
-        :Example:
+        Example:
             LMM.MAP_values(thin=np.array([]), g_data=np.linspace(),
-                           g=np.linspace(), data=np.array([]), 
-                           sigma=np.array([]))
+                g=np.linspace(), data=np.array([]), sigma=np.array([]))
 
         Parameters:
-        -----------
-        thin : numpy.ndarray
-            The array of thinned samples from the stats_chain() function.
+            thin (numpy.ndarray): The array of thinned samples from the 
+                stats_chain() function.
 
-        g : numpy.linspace
-            The input space over which the mixing is calculated.
+            g (numpy.linspace): The input space over which the mixing 
+                is calculated.
 
-        g_data : numpy.linspace
-            The array of input points in g for the data set. 
+            g_data (numpy.linspace): The array of input points in g for 
+                the data set. 
 
-        data : numpy.ndarray
-            The data set being used for the mixing calculation.
+            data (numpy.ndarray): The data set being used for the mixing 
+                calculation.
 
-        sigma : numpy.ndarray
-            The data error set being used for the mixing calculation.
+            sigma (numpy.ndarray): The data error set being used for the 
+                mixing calculation.
 
-        plot : bool
-            The option to plot the weights over the input space in g. 
-            Default is True. 
+            plot (bool): The option to plot the weights over the input space 
+                in g. Default is True. 
 
         Returns:
-        --------
-        map_values : numpy.ndarray
-            The MAP values of each parameter. 
+            map_values (numpy.ndarray): The MAP values of each parameter. 
         '''
     
         #calculate theory error needed 
@@ -961,26 +895,24 @@ class LMM(Models, Uncertainties):
     
     def plot_MAP(self, g, map_values):
 
-        '''
+        r'''
         A simple rough plotter to plot the weight/mixing function
         for the LMM method using the mixing function calculated at
         the points in g and the MAP values of its parameters. 
 
-        :Example:
+        Example:
             LMM.plot_MAP(g=np.linspace(), map_values=numpy.ndarray([]))
 
         Parameters:
-        -----------
-        g : numpy.linspace
-            The input space over which the mixing is calculated.
+            g (numpy.linspace): The input space over which the mixing 
+                is calculated.
 
-        map_values : numpy.ndarray
-            The results of the MAP_values() function (MAP values of 
-            each parameter in the mixing function selected).
+            map_values (numpy.ndarray): The results of the MAP_values() 
+                function (MAP values of each parameter in the mixing function 
+                selected).
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #set up figure
@@ -1023,26 +955,22 @@ class LMM(Models, Uncertainties):
     
     def stats_trace(self, trace):
 
-        '''
+        r'''
         A function to calculate the mean and credible intervals corresponding to
         each parameter. The trace plots for each parameter are plotted. 
 
-        :Example:
+        Example:
             LMM.stats_trace(trace=np.array([]))
 
         Parameters:
-        -----------
-        trace : numpy.ndarray
-            The trace from the sampler object that was generated when estimating the
-            parameters of the mixing function.
+            trace (numpy.ndarray): The trace from the sampler object that was generated 
+                when estimating the parameters of the mixing function.
 
         Returns:
-        --------
-        mean : numpy.ndarray
-            The array of mean values for each parameter.
-        
-        ci : numpy.ndarray
-            The array of sets of credible interval bounds for each parameter. 
+            mean (numpy.ndarray): The array of mean values for each parameter.
+            
+            ci (numpy.ndarray): The array of sets of credible interval bounds for 
+                each parameter. 
         '''
 
         #calculate mean and credible intervals
@@ -1122,36 +1050,33 @@ class LMM(Models, Uncertainties):
     @staticmethod
     def hpd_interval(trace, fraction):
         
-        '''
+        r'''
         A function to calculate the Bayesian credible intervals of a posterior distribution. This function
         uses the HPD (highest posterior density) method.
         
-        :Example:
+        Example:
             LMM.hpd_interval(trace=emcee_trace, fraction=0.95)
             
         Parameters:
-        -----------
-        trace : numpy.ndarray         
-            The trace generated by a sampler when sampling a variable to obtain its posterior distribution.
-        
-        fraction : float    
-            The percent (in decimal form) requested by the user to set the credibility interval. 
+            trace (numpy.ndarray): The trace generated by a sampler when sampling a variable to obtain 
+                its posterior distribution.
+            
+            fraction (float): The percent (in decimal form) requested by the user to set the credibility 
+                interval. 
             
         Returns:
-        --------
-        interval : numpy.ndarray         
-            The credibility interval bounds in a numpy array (format: [min, max]).
+            interval (numpy.ndarray): The credibility interval bounds in a numpy array (format: [min, max]).
         '''
     
         sort_list = np.sort(np.copy(trace))
         total_samples = len(trace)
     
         int_samples = np.floor(fraction * total_samples).astype(int)
-        int_width = sort_list[int_samples:] - sort_list[:total_samples-int_samples]
+        int_width = sort_list[int_samples:] - sort_list[:total_samples-int_samples]  # cutting the tails off
     
-        min_int = np.argmin(int_width)
+        min_int = np.argmin(int_width)  # tells me the location
         
-        interval = np.array([sort_list[min_int], sort_list[min_int+int_samples]])
+        interval = np.array([sort_list[min_int], sort_list[min_int+int_samples]])  # gives me the interval
     
         return interval
     
@@ -1159,23 +1084,20 @@ class LMM(Models, Uncertainties):
     @staticmethod
     def logistic(params, g):
         
-        '''
+        r'''
         A basic logistic function often used in machine learning, implemented here with two free
         parameters to be determined via sampling.
         
-        :Example:
+        Example:
             logistic(params=np.array(), g=0.5)
             
         Parameters:
-        -----------
-        params : numpy.ndarray
-            The array of parameters the sampler will determine (here labelled beta0 and beta1, where
-            beta0 controls the location of the function and beta1 controls the slope). 
+            params (numpy.ndarray): The array of parameters the sampler will determine (here 
+                labelled beta0 and beta1, where beta0 controls the location of the function and 
+                beta1 controls the slope). 
 
         Returns:
-        --------
-        mixing : float        
-            The result of the logistic function given the value g.
+            mixing (float): The result of the logistic function given the value g.
         '''
         beta0, beta1 = params
     
@@ -1186,26 +1108,23 @@ class LMM(Models, Uncertainties):
     @staticmethod
     def cdf(params, g):
         
-        '''
-        The cumulative distribution function of a standard normal distribution, with two free parameters
-        determined by sampling.
+        r'''
+        The cumulative distribution function of a standard normal distribution, with two free 
+        parameters determined by sampling.
         
-        :Example:
+        Example:
             cdf(params=np.array(), g=0.5)
         
         Parameters:
-        -----------
-        params : numpy.ndarray
-            The array of parameters the sampler will determine (here labelled beta0 and beta1, where
-            beta0 controls the location of the function and beta1 controls the slope). 
-        
-        g : float
-            The value of g the cdf is calculated at.
+            params (numpy.ndarray): The array of parameters the sampler will determine (here 
+                labelled beta0 and beta1, where beta0 controls the location of the function and 
+                beta1 controls the slope). 
+            
+            g : float
+                The value of g the cdf is calculated at.
 
         Returns:
-        --------
-        function : float         
-            The result of the cdf function at the value of g. 
+            function (float): The result of the cdf function at the value of g. 
         '''
         beta0, beta1 = params
     
@@ -1217,26 +1136,23 @@ class LMM(Models, Uncertainties):
     @staticmethod
     def switchcos(params, g):
         
-        '''
+        r'''
         A piecewise function using two constants at either end, and two cosine functions in the centre,
         to be used as a mixing function. One free parameter, g3, is found by sampling. 
         
-        :Example:
+        Example:
             switchcos(params=np.array(), g=0.5)
             
         Parameters:
-        -----------
-        params : numpy.ndarray
-            The array of parameters to be determined by the sampler (here labelled g1, g2, and g3, where
-            g1 is the separation point between the first constant function and the first cosine function, 
-            g2 is the separation point between the second cosine function and the second constant function, 
-            and g3 is the point between the two cosine functions). 
+            params (numpy.ndarray): The array of parameters to be determined by the sampler 
+                (here labelled g1, g2, and g3, where g1 is the separation point between the first constant 
+                function and the first cosine function, g2 is the separation point between the second 
+                cosine function and the second constant function, 
+                and g3 is the point between the two cosine functions). 
 
-        g : float
-            The value of g that this cosine function is calculated at.
+            g (float): The value of g that this cosine function is calculated at.
 
         Returns:
-        --------
             The value of the function at a specific point in g. 
         '''
 
@@ -1261,24 +1177,20 @@ class LMM(Models, Uncertainties):
     @staticmethod
     def step(params, g):
 
-        '''
+        r'''
         A step mixing function to switch between two models. 
         ***Only useful for two models.***
 
-        :Example:
+        Example:
             step(params, g=0.2)
         
         Parameters:
-        -----------
-        params : np.ndarray 
-            One single parameter to determine where the step
-            function will break from one model to the other.
+            params (np.ndarray): One single parameter to determine 
+                where the step function will break from one model to the other.
 
-        g : float
-            One value of the input space. 
+            g (float): One value of the input space. 
 
         Returns:
-        --------
             The value of the step function at a specific 
             point in g. 
         '''

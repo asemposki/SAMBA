@@ -30,28 +30,26 @@ class FPR(Models):
 
     def __init__(self, g, loworder, highorder):
 
-        '''
+        r'''
         A class to calculate the FPR method curves for comparison
         to the mixed models in the three BMM methods of this package.
         
-        :Example:
+        Example:
             FPR(g=np.linspace(1e-6,1.0,100), loworder=np.array([5]),
                 highorder=np.array([5]))
 
         Parameters:
-        -----------
-        g : numpy.linspace
-            The input space array over which the models are mixed.
+            g (numpy.linspace): The input space array over which the models are 
+                mixed.
 
-        loworder : numpy.ndarray 
-            The highest order considered in the small-g expansion.
-        
-        highorder : numpy.ndarray
-            The highest order considered in the large-g expansion.
+            loworder (numpy.ndarray): The highest order considered in the small-g 
+                expansion.
+            
+            highorder (numpy.ndarray): The highest order considered in the large-g 
+                expansion.
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         self.g = g
@@ -66,26 +64,22 @@ class FPR(Models):
     
     def fprset(self, key):
 
-        '''
+        r'''
         Call the proper FPR function desired and obtain 
         an array of the results in the input space, g. 
 
-        :Example: 
+        Example: 
             FPR.fprset(key='(2,4)^(1/8)')
 
         Parameters:
-        -----------
-        key : str
-            The preferred FPR function. Enter a key in the
-            convention: '(m,n)^(\alpha)', where m,n are orders
-            less than or equal to N_s and N_l (loworder, highorder
-            in the other classes). \alpha is the value the FPR is 
-            raised to in Eq. (2.7) (Honda 2014). 
+            key (str): The preferred FPR function. Enter a key in the
+                convention: '(m,n)^(\alpha)', where m,n are orders
+                less than or equal to N_s and N_l (loworder, highorder
+                in the other classes). \alpha is the value the FPR is 
+                raised to in Eq. (2.7) (Honda 2014). 
 
         Returns:
-        --------
-        fpr : numpy.ndarray
-            Results of the FPR function in an array. 
+            fpr (numpy.ndarray): Results of the FPR function in an array. 
         '''
 
         #if statement for calling the proper FPR function
@@ -183,34 +177,30 @@ class FPR(Models):
     #at the moment, this is very specific to the paper plot---disassemble later for package
     def fpr_plot(self, mean, intervals, fpr_keys=None, ci=68):
 
-        '''
+        r'''
         A plotter for the overlay of the GP results and the FPR results
         from Honda (2014). 
 
-        :Example:
+        Example:
             FPR.fpr_plot(mean=np.array(), intervals=np.array([,]), 
-            fpr_keys=['(3,3)^(1/6)'], ci=95)
+                fpr_keys=['(3,3)^(1/6)'], ci=95)
 
         Parameters:
-        -----------
-        mean : numpy.ndarray
-            A PPD mean to be compared to the FPR results.
-        
-        intervals : numpy.ndarray
-            A 2D array to plot a UQ band around the PPD. 
+            mean (numpy.ndarray): A PPD mean to be compared to the FPR 
+                results.
+            
+            intervals (numpy.ndarray): A 2D array to plot a UQ band around 
+                the PPD. 
 
-        fpr_keys : list
-            A list of strings of fpr keys to be read in 
-            by the function and calculated using the fprset()
-            function above.
+            fpr_keys (list): A list of strings of fpr keys to be read in 
+                by the function and calculated using the fprset()
+                function above.
 
-        ci : int
-            The uncertainty calculated on the expansions. Can
-            be either 68 or 95. 
+            ci (int): The uncertainty calculated on the expansions. Can
+                be either 68 or 95. 
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #set up plot configuration
