@@ -31,7 +31,6 @@ class Bivariate(Models, Uncertainties):
 
         Returns:
             None.
-
         '''
 
         #get interval
@@ -64,38 +63,30 @@ class Bivariate(Models, Uncertainties):
         indicated by inputting arrays into the loworder and highorder variables,
         and accept GP mean and variance arrays in the GP_mean and GP_var options.
 
-        :Example:
-            Bivariate.fdagger(g=np.linspace(1e-6, 0.5, 100), GP_mean=np.array([]), GP_var=np.array([]))
+        Example:
+            Bivariate.fdagger(g=np.linspace(1e-6, 0.5, 100), GP_mean=np.array([]), 
+                GP_var=np.array([]))
 
         Parameters:
-        -----------
-        g : numpy.linspace
-            The linspace over which this calculation is performed.
-
-        GP_mean : numpy.ndarray
-            An array of mean values from a Gaussian process to be mixed in
-            as a third model (optional).  
-
-        GP_var : numpy.ndarray
-            An array of variances from a Gaussian process to be mixed in as
-            a third model (optional).  
+            g (numpy.linspace): The linspace over which this calculation is performed.
+            
+            GP_mean (numpy.ndarray): An array of mean values from a Gaussian process 
+                to be mixed in as a third model (optional).  
+            
+            GP_var (numpy.ndarray): An array of variances from a Gaussian process to 
+                be mixed in as a third model (optional).
 
         Returns:
-        --------
-        mean : numpy.ndarray
-            The mixed model mean (either including a GP or not depending on the
-            function arguments).
-        
-        intervals : numpy.ndarray
-            The credibility interval of the mixed model mean.
-        
-        interval_low : numpy.ndarray
-            The variance interval for the small-g expansion (calculated from 
-            the next order after the truncation). 
+            mean (numpy.ndarray): The mixed model mean (either including a GP or not 
+                depending on the function arguments).
+            
+            intervals (numpy.ndarray): The credibility interval of the mixed model mean.
+            
+            interval_low (numpy.ndarray): The variance interval for the small-g expansion 
+                (calculated from the next order after the truncation). 
 
-        interval_high : numpy.ndarray
-            The variance interval for the large-g expansion (calculated from the
-            next order after the truncation).
+            interval_high (numpy.ndarray): The variance interval for the large-g expansion 
+                (calculated from the next order after the truncation).
         '''
 
         #check type
@@ -178,36 +169,27 @@ class Bivariate(Models, Uncertainties):
         of models, the next orders of the expansion models, and the validation step of the 
         model mixing in fdagger to test fdagger results.
 
-        :Example:
+        Example:
             Bivariate.plot_mix(g=np.linspace(1e-6, 0.5, 100), plot_fdagger=True)
 
         Parameters:
-        -----------
-        g : numpy.linspace
-            The space over which the models are calculated.
-    
-        plot_fdagger : bool
-            If True, this parameter will allow for the plotting of fdagger and
-            its credibility interval. 
+            g (numpy.linspace): The space over which the models are calculated.
         
-        plot_true : bool
-            Determines whether or not to plot the true model curve. 
-            Default is True. 
+            plot_fdagger (bool): If True, this parameter will allow for the 
+                plotting of fdagger and its credibility interval. 
+            
+            plot_true (bool): Determines whether or not to plot the true model curve. 
+                Default is True. 
 
-        GP_mean : numpy.ndarray
-            The mean array from the GP being included. 
+            GP_mean (numpy.ndarray): The mean array from the GP being included. 
 
-        GP_var : numpy.ndarray
-            The variance array from the GP being included.
+            GP_var (numpy.ndarray): The variance array from the GP being included.
 
         Returns:
-        --------
-        mean : numpy.ndarray    
-            The mean of the mixed model at each point in g.
+            mean (numpy.ndarray): The mean of the mixed model at each point in g.
 
-        intervals : numpy.ndarray
-            The values of the credibility intervals at each
-            point in g. 
+            intervals (numpy.ndarray): The values of the credibility intervals at each
+                point in g. 
         '''
 
         #set up plot configuration
@@ -291,28 +273,22 @@ class Bivariate(Models, Uncertainties):
         of models side-by-side with the 2 model case to compare. Currently used to plot the GP
         results alongside those without the GP; N models case not color-coded yet.  
 
-        :Example:
+        Example:
             Bivariate.subplot_mix(g=np.linspace(1e-6, 0.5, 100))
 
         Parameters:
-        -----------
-        g : numpy.linspace
-            The space over which the models are calculated.
+            g (numpy.linspace): The space over which the models are calculated.
 
-        GP_mean : numpy.ndarray
-            An array of GP PPD results (that MUST be at input points in g)
-            to be mixed in with the expansions chosen. Optional. 
+            GP_mean (numpy.ndarray): An array of GP PPD results (that MUST be at 
+                input points in g) to be mixed in with the expansions chosen. Optional. 
 
-        GP_var : numpy.ndarray
-            An array of GP variance results (that MUST be at input points in g)
-            to be mixed in with the expansions chosen. Optional. 
+            GP_var (numpy.ndarray): An array of GP variance results (that MUST be at 
+                input points in g) to be mixed in with the expansions chosen. Optional. 
 
-        log : bool
-            A toggle for logscale. Default is False. 
+            log (bool): A toggle for logscale. Default is False. 
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #set up plot configuration
@@ -422,17 +398,14 @@ class Bivariate(Models, Uncertainties):
         refers to the uninformative error model panel in the subplot, and panel b
         corresponds to the informative error model panel. 
 
-        :Example:
+        Example:
             Bivariate.plot_error_models(g=np.linspace(1e-6, 0.5, 100))
 
         Parameters:
-        -----------
-        g : numpy.linspace
-            The space over which the models are calculated.
+            g (numpy.linspace): The space over which the models are calculated.
 
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #set up plot configuration
@@ -527,29 +500,29 @@ class Bivariate(Models, Uncertainties):
         r'''
         Vertical panel plotter for the paper to generate two mixed model plots. 
 
-        :Example:
+        Example:
             Bivariate.vertical_plot_fdagger(g1=np.linspace(1e-6, 0.5, 100), g2=np.linspace(1e-6,1.0,100),
             gp_mean1=np.array([]), gp_mean2=np.array([]), gp_var1=np.array([,]), gp_var2=np.array([,]))
 
         Parameters:
-        -----------
-        g1 : numpy.linspace
-            The space over which the models (and GP) were calculated for panel a. 
+            g1 (numpy.linspace): The space over which the models (and GP) were calculated 
+                for panel a. 
 
-        g2 : numpy.linspace
-            The space over which the models (and GP) were calculated for panel b. 
+            g2 (numpy.linspace): The space over which the models (and GP) were calculated 
+                for panel b. 
 
-        gp_mean1 : GP mean results to be mixed with the models in panel a. Optional. 
+            gp_mean1 (numpy.ndarray): GP mean results to be mixed with the models in panel a. 
+                Optional. 
 
-        gp_mean2 : GP mean results to be mixed with the models in panel b. Optional.
+            gp_mean2 (numpy.ndarray): GP mean results to be mixed with the models in panel b. 
+                Optional.
 
-        gp_var1 : GP variance results for panel a. Optional.
+            gp_var1 (numpy.ndarray): GP variance results for panel a. Optional.
 
-        gp_var2 : GP variance results for panel b. Optional. 
+            gp_var2 (numpy.ndarray): GP variance results for panel b. Optional. 
       
         Returns:
-        --------
-        None.
+            None.
         '''
 
         #set up plot configuration
