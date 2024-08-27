@@ -10,7 +10,7 @@ class Bivariate(Models, Uncertainties):
 
     def __init__(self, loworder, highorder, error_model='informative', ci=68):
 
-        '''
+        r'''
         The bivariate BMM method used to construct the mixed model of two series
         expansions. This class contains the fdagger function and the plotter.
 
@@ -62,7 +62,7 @@ class Bivariate(Models, Uncertainties):
     
     def fdagger(self, g, GP_mean=np.zeros([2]), GP_var=np.zeros([2])): 
 
-        '''
+        r'''
         A do-it-all function to determine the pdf of the mixed model. Can use models 
         indicated by inputting arrays into the loworder and highorder variables,
         and accept GP mean and variance arrays in the GP_mean and GP_var options.
@@ -176,7 +176,7 @@ class Bivariate(Models, Uncertainties):
     
     def plot_mix(self, g, plot_fdagger=True, plot_true=True, GP_mean=np.zeros([2]), GP_var=np.zeros([2])):
 
-        '''
+        r'''
         An all-in-one plotting function that will plot the results of fdagger for N numbers
         of models, the next orders of the expansion models, and the validation step of the 
         model mixing in fdagger to test fdagger results.
@@ -289,7 +289,7 @@ class Bivariate(Models, Uncertainties):
 
     def subplot_mix(self, g, GP_mean=np.zeros([2]), GP_var=np.zeros([2]), log=False): 
 
-        '''
+        r'''
         An all-in-one plotting function that will plot the results of fdagger for N numbers
         of models side-by-side with the 2 model case to compare. Currently used to plot the GP
         results alongside those without the GP; N models case not color-coded yet.  
@@ -419,7 +419,7 @@ class Bivariate(Models, Uncertainties):
 
     def plot_error_models(self, g): 
 
-        '''
+        r'''
         A plotter to compare the uninformative error model results of two models 
         to the informative error model results for the same two models. Panel a
         refers to the uninformative error model panel in the subplot, and panel b
@@ -527,7 +527,7 @@ class Bivariate(Models, Uncertainties):
 
     def vertical_plot_fdagger(self, g1, g2, gp_mean1=np.zeros([2]), gp_mean2=np.zeros([2]), gp_var1=np.zeros([2]), gp_var2=np.zeros([2])):
 
-        '''
+        r'''
         Vertical panel plotter for the paper to generate two mixed model plots. 
 
         :Example:
