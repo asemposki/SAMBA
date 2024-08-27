@@ -7,3 +7,12 @@ Dan_LMM_tests/
 Archive/
 README.rst
 __pycache__/
+docs/Tutorials/correlated_plots_2models/
+docs/Tutorials/incremental_plots/
+docs/Tutorials/animated_fig_SAMBA.ipynb
+docs/Tutorials/animated_seminar_samba.gif
+docs/Tutorials/model_mixing_gps-Copy1.ipynb 
+docs/Tutorials/Retreat_plot_generator.ipynb 
+docs/Tutorials/toy_model_data.npz 
+docs/Tutorials/Weights_Investigation.ipynb
+docs/Tutorials/samba_results.txt
