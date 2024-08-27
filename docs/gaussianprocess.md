@@ -1,1 +1,1 @@
-::: samba.gaussianprocess
+::: samba.gaussprocess
