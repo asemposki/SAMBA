@@ -19,22 +19,20 @@ class Bivariate(Models, Uncertainties):
 
         Parameters:
         -----------
-        loworder : numpy.ndarray, int, float
-            The value of N_s to be used to truncate the small-g expansion.
+        loworder (numpy.ndarray, int, float): The value of N_s to be 
+            used to truncate the small-g expansion.
 
-        highorder : numpy.ndarray, int, float
-            The value of N_l to be used to truncate the large-g expansion.
+        highorder (numpy.ndarray, int, float): The value of N_l to be 
+            used to truncate the large-g expansion.
 
-        error_model : str
-            The error model to be used in the calculation. Options are
-            'uninformative' and 'informative'. Default is 'informative'. 
+        error_model (str): The error model to be used in the calculation. 
+            Options are 'uninformative' and 'informative'. Default is 'informative'. 
         
-        ci : int
-            The value of the credibility interval desired (can be 68 or 95).
+        ci (int): The value of the credibility interval desired (can be 68 or 95).
 
         Returns:
         --------
-        None.
+            None.
         '''
 
         #get interval
