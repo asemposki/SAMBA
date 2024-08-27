@@ -58,6 +58,11 @@ nav:
   - index.md
   - Documentation:
     - models.md
+    - mixing.md
+    - discrepancy.md
+    - gaussianprocess.md
+    - fprdat.md
+    - priors.md
   - Tutorials:
     - Tutorials/LMM.ipynb
     - Tutorials/Bivariate_BMM.ipynb
