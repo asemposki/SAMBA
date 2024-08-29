@@ -6,7 +6,7 @@ uses a mixing function with hyperparameters to be estimated using data, to const
 Once the mixing function has been chosen, and data supplied or simulated, the user can construct the mixed model by sampling the parameter space using the sampler wrapper below, and then building the posterior predictive distribution (PPD). This is given as
 
 $$
-p(\tilde y(g)|\bm{\theta}, \mathbf{D}) = \sum_{j=1}^{M} \alpha(g; \bm{\theta_{j}}) F^{N_s}_s(g) + (1 - \alpha(g; \bm{\theta_{j}})) F^{N_l}_{l}(g),
+p(\tilde y(g)|\theta, \mathbf{D}) = \sum_{j=1}^{M} \alpha(g; \theta_{j}) F^{N_s}_s(g) + (1 - \alpha(g; \theta_{j})) F^{N_l}_{l}(g),
 $$
 
 where $\alpha(g; \theta_{j})$ is the chosen mixing function with hyperparameters $\theta_{j}$.
