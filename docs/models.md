@@ -33,14 +33,16 @@ $$
 We also include models for the uncertainties of each expansion, given in the uninformative limit, for the small-$g$ expansion, as
 
 $$
-\sigma_{N_s}(g)= 
-\begin{cases}
-	\Gamma(N_s+3) g^{N_s + 2} \bar{c}, & if $N_s$ is even,\\
-        \Gamma(N_s+2) g^{N_s+1} \bar{c}, & if $N_s$ is odd.,
-\end{cases}
+\sigma_{N_s}(g)= \Gamma(N_s+3) g^{N_s + 2} \bar{c},
 $$
 
-and, for the large-$g$ limit,
+if $N_s$ is even, and
+
+$$
+\sigma_{N_s}(g)= \Gamma(N_s+2) g^{N_s+1} \bar{c},
+$$
+
+if $N_s$ is odd. For the large-$g$ limit,
 
 $$
 \sigma_{N_l}(g)=\frac{1}{\Gamma(N_l+2)} \frac{1}{g^{N_l+3/2}} \bar{d}.
@@ -49,14 +51,16 @@ $$
 We also devise expressions for the informative limit, for the small-$g$ expansion, as
 
 $$
-\sigma_{N_s}(g)= 
-\begin{cases}
-    \Gamma(N_s/2+1) (4g)^{N_s + 2} \bar{c}, & if $N_s$ is even,\\
-    \Gamma(N_s/2+1/2) (4g)^{N_s+1} \bar{c}, & if $N_s$ is odd.
-\end{cases},
+\sigma_{N_s}(g)= \Gamma(N_s/2+1) (4g)^{N_s + 2} \bar{c}, 
 $$
 
-and, for the large-$g$ limit,
+if $N_s$ is even, and
+
+$$
+\sigma_{N_s}(g)= \Gamma(N_s/2+1/2) (4g)^{N_s+1} \bar{c},
+$$
+
+if $N_s$ is odd. For the large-$g$ limit,
 
 $$
 \sigma_{N_l}(g)=\left(\frac{1}{4g}\right)^{N_l + 3/2} \frac{1}{\Gamma(N_l/2+3/2)} \bar{d}.
