@@ -30,4 +30,28 @@ $$
 l_{k} = \frac{\Gamma{\left(\frac{k}{2} + \frac{1}{4}\right)}}{2k!} \left(-\frac{1}{2}\right)^{k}.
 $$
 
+We also include models for the uncertainties of each expansion, given in the uninformative limit, for the small-$g$ expansion, as
+$$
+\sigma_{N_s}(g)=\left\{ \begin{array}{lc}
+	\Gamma(N_s+3) g^{N_s + 2} \cbar, & \mbox{if $N_s$ is even;}\\
+        \Gamma(N_s+2) g^{N_s+1} \cbar, & \mbox{if $N_s$ is odd.}
+        \end{array} \right,
+$$
+and, for the large-$g$ limit,
+$$
+\sigma_{N_l}(g)=\frac{1}{\Gamma(N_l+2)} \frac{1}{g^{N_l+3/2}} \bar{d}.
+$$
+
+We also devise expressions for the informative limit, for the small-$g$ expansion, as
+$$
+\sigma_{N_s}(g)=\left\{ \begin{array}{lc}
+	\Gamma(N_s/2+1) (4g)^{N_s + 2} \cbar, & \mbox{if $N_s$ is even;}\\
+    \Gamma(N_s/2+1/2) (4g)^{N_s+1} \cbar, & \mbox{if $N_s$ is odd.}
+    \end{array} \right,
+$$
+and, for the large-$g$ limit,
+$$
+\sigma_{N_l}(g)=\left(\frac{1}{4g}\right)^{N_l + 3/2} \frac{1}{\Gamma(N_l/2+3/2)} \bar{d}.
+$$
+
 ::: samba.models
