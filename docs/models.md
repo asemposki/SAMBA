@@ -33,10 +33,11 @@ $$
 We also include models for the uncertainties of each expansion, given in the uninformative limit, for the small-$g$ expansion, as
 
 $$
-\sigma_{N_s}(g)=\left\{ \begin{array}{lc}
+\sigma_{N_s}(g)= 
+\begin{cases}
 	\Gamma(N_s+3) g^{N_s + 2} \cbar, & \mbox{if $N_s$ is even;}\\
-        \Gamma(N_s+2) g^{N_s+1} \cbar, & \mbox{if $N_s$ is odd.}
-        \end{array} \right,
+        \Gamma(N_s+2) g^{N_s+1} \cbar, & \mbox{if $N_s$ is odd.},
+\end{cases}
 $$
 
 and, for the large-$g$ limit,
