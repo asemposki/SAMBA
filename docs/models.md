@@ -35,8 +35,8 @@ We also include models for the uncertainties of each expansion, given in the uni
 $$
 \sigma_{N_s}(g)= 
 \begin{cases}
-	\Gamma(N_s+3) g^{N_s + 2} \cbar, & \mbox{if $N_s$ is even;}\\
-        \Gamma(N_s+2) g^{N_s+1} \cbar, & \mbox{if $N_s$ is odd.},
+	\Gamma(N_s+3) g^{N_s + 2} \bar{c}, & \mbox{if $N_s$ is even;}\\
+        \Gamma(N_s+2) g^{N_s+1} \bar{c}, & \mbox{if $N_s$ is odd.},
 \end{cases}
 $$
 
