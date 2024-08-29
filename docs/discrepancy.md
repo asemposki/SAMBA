@@ -11,7 +11,7 @@ $$
 where we can also define
 
 $$
-f_{\dagger} \sim \normal\bigl(Z_P^{-1}\sum_k \frac{1}{v_k}f_k, Z_P^{-1}\bigr).
+f_{\dagger} \sim \mathcal{N}\bigl(Z_P^{-1}\sum_k \frac{1}{v_k}f_k, Z_P^{-1}\bigr).
 $$
 
 This method is precision-weighted because it uses the variances of the models at each point in the input space as the inverse weights of the corresponding model prediction, hence the model with the smallest variance at a given point will dominate the mixed model at that location.
