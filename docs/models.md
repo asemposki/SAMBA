@@ -49,10 +49,11 @@ $$
 We also devise expressions for the informative limit, for the small-$g$ expansion, as
 
 $$
-\sigma_{N_s}(g)=\left\{ \begin{array}{lc}
-	\Gamma(N_s/2+1) (4g)^{N_s + 2} \cbar, & \mbox{if $N_s$ is even;}\\
-    \Gamma(N_s/2+1/2) (4g)^{N_s+1} \cbar, & \mbox{if $N_s$ is odd.}
-    \end{array} \right,
+\sigma_{N_s}(g)= 
+\begin{cases}
+    \Gamma(N_s/2+1) (4g)^{N_s + 2} \bar{c}, & \mbox{if $N_s$ is even;}\\
+    \Gamma(N_s/2+1/2) (4g)^{N_s+1} \bar{c}, & \mbox{if $N_s$ is odd.}
+\end{cases},
 $$
 
 and, for the large-$g$ limit,
