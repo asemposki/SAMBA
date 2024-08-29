@@ -35,8 +35,8 @@ We also include models for the uncertainties of each expansion, given in the uni
 $$
 \sigma_{N_s}(g)= 
 \begin{cases}
-	\Gamma(N_s+3) g^{N_s + 2} \bar{c}, & \mbox{if $N_s$ is even;}\\
-        \Gamma(N_s+2) g^{N_s+1} \bar{c}, & \mbox{if $N_s$ is odd.},
+	\Gamma(N_s+3) g^{N_s + 2} \bar{c}, & if $N_s$ is even,\\
+        \Gamma(N_s+2) g^{N_s+1} \bar{c}, & if $N_s$ is odd.,
 \end{cases}
 $$
 
@@ -51,8 +51,8 @@ We also devise expressions for the informative limit, for the small-$g$ expansio
 $$
 \sigma_{N_s}(g)= 
 \begin{cases}
-    \Gamma(N_s/2+1) (4g)^{N_s + 2} \bar{c}, & \mbox{if $N_s$ is even;}\\
-    \Gamma(N_s/2+1/2) (4g)^{N_s+1} \bar{c}, & \mbox{if $N_s$ is odd.}
+    \Gamma(N_s/2+1) (4g)^{N_s + 2} \bar{c}, & if $N_s$ is even,\\
+    \Gamma(N_s/2+1/2) (4g)^{N_s+1} \bar{c}, & if $N_s$ is odd.
 \end{cases},
 $$
 
