@@ -14,7 +14,7 @@
 <!-- #region -->
 **Website:** https://www.github.com/asemposki/SAMBA
 **Contact:** Alexandra Semposki (as727414@ohio.edu)
-<!---**Icon:** \<url of icon you would like to display\> -->
+**Icon:** https://github.com/asemposki/SAMBA/blob/main/logos/samba_logo.jpg
 **Description:** SAMBA (SAndbox for Mixing using Bayesian Analysis) is an open-source code designed to be used by the nuclear physics community to try out different implementations of Bayesian Model Mixing on a toy problem. It will be upgraded to allow use for any functions the community wishes to use in the next release. 
 
 ### Mandatory Policies
