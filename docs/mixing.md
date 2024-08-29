@@ -9,6 +9,6 @@ $$
 p(\tilde y(g)|\bm{\theta}, \mathbf{D}) = \sum_{j=1}^{M} \alpha(g; \bm{\theta_{j}}) F^{N_s}_s(g) + (1 - \alpha(g; \bm{\theta_{j}})) F^{N_l}_{l}(g),
 $$
 
-where $\alpha(g; \bm{\theta_{j}})$ is the chosen mixing function with hyperparameters $\bm{\theta_{j}}$.
+where $\alpha(g; \theta_{j})$ is the chosen mixing function with hyperparameters $\theta_{j}$.
 
 ::: samba.mixing
