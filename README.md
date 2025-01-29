@@ -20,11 +20,11 @@ For our documentation, visit our Docs page: https://asemposki.github.io/SAMBA/.
 To cite our software repository, please use
 
 ```
-   @techreport{SAMBA2023,
+   @techreport{SAMBAacs,
      author      = {Semposki, A. C. and Furnstahl, R. J. and Phillips, D. R.},
-     title       = {{SAMBA 1.0.1} SAndbox for Mixing using Bayesian Analysis},
-     number      = {Version 1.0.1},
-     year        = {2023},
+     title       = {{SAMBA 1.1.0} SAndbox for Mixing using Bayesian Analysis},
+     number      = {Version 1.1.0},
+     year        = {2024},
      url         = {https://github.com/asemposki/SAMBA}
    }
 ```
