@@ -66,4 +66,4 @@ $$
 \sigma_{N_l}(g)=\left(\frac{1}{4g}\right)^{N_l + 3/2} \frac{1}{\Gamma(N_l/2+3/2)} \bar{d}.
 $$
 
-::: samba.models
+:: samba.models
