@@ -4,11 +4,14 @@ theme:
 
     # headers for navigating tabs
     features:
-    - navigation.tabs
-    - navigation.expand
-    - navigation.path
-    - toc.integrate
-    - content.action.edit
+      - navigation.tabs
+      - navigation.sections
+      - navigation.path
+      - toc.integrate
+      - search.highlight
+      - search.share
+      - search.suggest
+      - content.action.edit
     
     palette: 
 
@@ -29,6 +32,17 @@ theme:
 markdown_extensions:
   - footnotes
   - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - admonition
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - def_list
+  - pymdownx.arithmatex: # Added for rendering math (LaTeX) in Markdown and notebooks
+      generic: true
 
 extra_javascript:
   - javascripts/katex.js 
@@ -40,28 +54,37 @@ extra_css:
 
 # allows for API style docs
 plugins:
-- search:
-- mkdocs-jupyter:
-- mkdocstrings:
-    default_handler: python
-    handlers:
-      python:
-        paths:
-          - samba
-        options:
-          show_source: true
-          show_bases: false
-          show_docstring_parameters: true
-          show_signature_annotations: true
-          merge_init_into_class: true
-          docstring_options:
-            ignore_init_summary: true
-          filters: ["!^_"]
-          extra:
-            render_module_root: true
-            render_submodules: true
-watch:
-- samba
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - samba
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_bases: false
+            show_docstring_parameters: true
+            show_signature_annotations: true
+            merge_init_into_class: true
+            docstring_options:
+              ignore_init_summary: true
+            filters: ["!^_"]
+            extra:
+              render_module_root: true
+              render_submodules: true
+              show_instance_attributes: false
+
+  - mknotebooks:
+      execute_notebooks: true
+      notebook_extensions:
+        - jupyter_execute
+        - jupyter_link
+      jupyter_execute:
+        execute: true
+        timeout: 600
+        kernel_name: python3
+        allow_errors: true
 
 nav:
   - index.md
@@ -83,4 +106,4 @@ repo_name: asemposki/SAMBA
 
 edit_uri: edit/main/docs
 
-copyright: Copyright &copy; 2021-2024 BAND Collaboration
+copyright: Copyright &copy; 2021-2025 BAND Collaboration
