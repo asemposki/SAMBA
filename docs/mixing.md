@@ -11,4 +11,4 @@ $$
 
 where $\alpha(g; \theta_{j})$ is the chosen mixing function with hyperparameters $\theta_{j}$.
 
-:: samba.mixing
+::: samba.mixing
