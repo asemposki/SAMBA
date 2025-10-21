@@ -924,18 +924,84 @@ l_{k} = \frac{\Gamma{\left(\frac{k}{2} + \frac{1}{4}\right)}}{2k!} \left(-\frac{
     <div class="doc doc-contents ">
 
 
-        <p>Example:
-    Models(loworder=np.array([2]), highorder=np.array([5]))</p>
-<p>Parameters:
-    loworder (numpy.ndarray, int, float): The value of N_s to be used 
-        to truncate the small-g expansion. Can be an array of multiple 
-        values or one. </p>
-<div class="highlight"><pre><span></span><code>highorder (numpy.ndarray, int, float): The value of N_l to be used 
-    to truncate the large-g expansion. Can be an array of multiple 
-    values or one.
-</code></pre></div>
-<p>Returns:
-    None.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Models(loworder=np.array([2]), highorder=np.array([5]))</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>loworder</code>
+            </td>
+            <td>
+                  <code>(<span title="numpy.ndarray">ndarray</span>, <span title="int">int</span>, <span title="float">float</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value of N_s to be used 
+to truncate the small-g expansion. Can be an array of multiple 
+values or one. </p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>highorder</code>
+            </td>
+            <td>
+                  <code>(<span title="numpy.ndarray">ndarray</span>, <span title="int">int</span>, <span title="float">float</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value of N_l to be used 
+to truncate the large-g expansion. Can be an array of multiple 
+values or one. </p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>None.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -1042,14 +1108,67 @@ l_{k} = \frac{\Gamma{\left(\frac{k}{2} + \frac{1}{4}\right)}}{2k!} \left(-\frac{
 
         <p>A function to calculate the large-g convergent Taylor expansion for a given range in the coupling 
 constant, g.</p>
-<p>Example:
-    Models.high_g(g=np.linspace(1e-6,1.0,100))</p>
-<p>Parameters:
-    g (linspace): The linspace of the coupling constant for this calculation.</p>
-<p>Returns:
-    output (numpy.ndarray): The array of values of the expansion at large-g at 
-        each point in g_true space, for each value of highorder (highest power 
-        the expansion reaches).</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Models.high_g(g=np.linspace(1e-6,1.0,100))</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>g</code>
+            </td>
+            <td>
+                  <code><span title="linspace">linspace</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The linspace of the coupling constant for this calculation.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>output</code></td>            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The array of values of the expansion at large-g at 
+each point in g_true space, for each value of highorder (highest power 
+the expansion reaches).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -1194,15 +1313,68 @@ constant, g.</p>
 
         <p>A function to calculate the small-g divergent asymptotic expansion for a 
 given range in the coupling constant, g.</p>
-<p>Example:
-    Models.low_g(g=np.linspace(0.0, 0.5, 20))</p>
-<p>Parameters:
-    g (linspace): The linspace of the coupling constant for 
-        this calculation. </p>
-<p>Returns:
-    output (numpy.ndarray): The array of values of the expansion in 
-        small-g at each point in g_true space, for each value of loworder 
-        (highest power the expansion reaches).</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Models.low_g(g=np.linspace(0.0, 0.5, 20))</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>g</code>
+            </td>
+            <td>
+                  <code><span title="linspace">linspace</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The linspace of the coupling constant for 
+this calculation. </p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>output</code></td>            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The array of values of the expansion in 
+small-g at each point in g_true space, for each value of loworder 
+(highest power the expansion reaches).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -1351,12 +1523,64 @@ given range in the coupling constant, g.</p>
 
         <p>A plotting function to produce a figure of the model expansions calculated in Models.low_g and Models.high_g, 
 and including the true model calculated using Mixing.true_model.</p>
-<p>Example:
-    Mixing.plot_models(g=np.linspace(0.0, 0.5, 100))</p>
-<p>Parameters:
-    g (linspace): The linspace in on which the models will be plotted here. </p>
-<p>Returns:
-    None.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Mixing.plot_models(g=np.linspace(0.0, 0.5, 100))</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>g</code>
+            </td>
+            <td>
+                  <code><span title="linspace">linspace</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The linspace in on which the models will be plotted here. </p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>None.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -1554,12 +1778,33 @@ and including the true model calculated using Mixing.true_model.</p>
         <p>A calculation and plot of the residuals of the model expansions vs the true model values at each point in g.
 g is set internally for this plot, as the plot must be shown in loglog format to see the power law of the
 residuals. </p>
-<p>Example:
-    Mixing.residuals()</p>
-<p>Parameters:
-    None.</p>
-<p>Returns:
-    None.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Mixing.residuals()</p>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>None.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -1702,13 +1947,66 @@ residuals. </p>
 
         <p>The true model of the zero-dimensional phi^4 theory partition function using an input 
 linspace.</p>
-<p>Example:
-    Models.true_model(g=np.linspace(0.0, 0.5, 100))</p>
-<p>Parameters:
-    g (linspace): The linspace for g desired to calculate the true model. This can be 
-        the g_true linspace, g_data linspace, or another linspace of the user's choosing. </p>
-<p>Returns:
-    model (numpy.ndarray): The model calculated at each point in g space.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Models.true_model(g=np.linspace(0.0, 0.5, 100))</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>g</code>
+            </td>
+            <td>
+                  <code><span title="linspace">linspace</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The linspace for g desired to calculate the true model. This can be 
+the g_true linspace, g_data linspace, or another linspace of the user's choosing. </p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>model</code></td>            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The model calculated at each point in g space.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -1799,13 +2097,65 @@ linspace.</p>
     <div class="doc doc-contents ">
 
 
-        <p>Example:
-    Uncertainties()</p>
-<p>Parameters:
-    error_model (str): The name of the error model to use in the calculation. 
-        Options are 'uninformative' and 'informative'. Default is 'informative'.</p>
-<p>Returns:
-    None.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Uncertainties()</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>error_model</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The name of the error model to use in the calculation. 
+Options are 'uninformative' and 'informative'. Default is 'informative'.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;informative&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>None.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
@@ -1899,16 +2249,83 @@ linspace.</p>
     <div class="doc doc-contents ">
 
         <p>A function to calculate the variance corresponding to the large-g expansion model.</p>
-<p>Example:
-    Bivariate.variance_low(g=np.linspace(1e-6, 0.5, 100), highorder=23)</p>
-<p>Parameters:
-    g (numpy.linspace): The linspace over which this calculation is performed.</p>
-<div class="highlight"><pre><span></span><code>highorder (int): The order to which we know our expansion model. This must be 
-    a single value.
-</code></pre></div>
-<p>Returns:
-    var2 (numpy.ndarray): The array of variance values corresponding to each value 
-        in the linspace of g.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Bivariate.variance_low(g=np.linspace(1e-6, 0.5, 100), highorder=23)</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>g</code>
+            </td>
+            <td>
+                  <code><span title="numpy.linspace">linspace</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The linspace over which this calculation is performed.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>highorder</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The order to which we know our expansion model. This must be 
+a single value.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>var2</code></td>            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The array of variance values corresponding to each value 
+in the linspace of g.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
@@ -2034,16 +2451,83 @@ linspace.</p>
     <div class="doc doc-contents ">
 
         <p>A function to calculate the variance corresponding to the small-g expansion model.</p>
-<p>Example:
-    Bivariate.variance_low(g=np.linspace(1e-6, 0.5, 100), loworder=5)</p>
-<p>Parameters:
-    g (numpy.linspace): The linspace over which this calculation is performed.</p>
-<div class="highlight"><pre><span></span><code>loworder (int): The order to which we know our expansion model. Must be 
-    passed one at a time if more than one model is to be calculated.
-</code></pre></div>
-<p>Returns:
-    var1 (numpy.ndarray): The array of variance values corresponding to each 
-        value in the linspace of g.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>Bivariate.variance_low(g=np.linspace(1e-6, 0.5, 100), loworder=5)</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>g</code>
+            </td>
+            <td>
+                  <code><span title="numpy.linspace">linspace</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The linspace over which this calculation is performed.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>loworder</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The order to which we know our expansion model. Must be 
+passed one at a time if more than one model is to be calculated.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>var1</code></td>            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The array of variance values corresponding to each 
+value in the linspace of g.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="quote">
