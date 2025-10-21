@@ -10,4 +10,4 @@ $$
 
 and given in the functions below.
 
-:: samba.gaussprocess
+::: samba.gaussprocess
