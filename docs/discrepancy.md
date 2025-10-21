@@ -16,4 +16,4 @@ $$
 
 This method is precision-weighted because it uses the variances of the models at each point in the input space as the inverse weights of the corresponding model prediction, hence the model with the smallest variance at a given point will dominate the mixed model at that location.
 
-:: samba.discrepancy
+::: samba.discrepancy
