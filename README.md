@@ -8,7 +8,7 @@ Bayesian model mixing is a novel concept that surpasses the more widely used Bay
 
 ## About 
 
-This package is intended to contain a variety of methods to perform Bayesian Model Mixing on a given set of data points and errors across an input space. In the current version, it can apply three different BMM methods to series expansions in the limits of a coupling constant. In future versions, we will include the option for users to implement their own functions or data sets to mix using SAMBA. It is a part of the BAND collaboration's v0.2 software. 
+This package is intended to contain a variety of methods to perform Bayesian Model Mixing on a given set of data points and errors across an input space. In the current version, it can apply three different BMM methods to series expansions in the limits of a coupling constant. In future versions, we will include the option for users to implement their own functions or data sets to mix using SAMBA. It is a part of the BAND collaboration's software as of bandframework v0.2.0 (and beyond). 
 
 For our documentation, visit our Docs page: https://asemposki.github.io/SAMBA/.
 
@@ -22,9 +22,9 @@ To cite our software repository, please use
 ```
    @techreport{SAMBAacs,
      author      = {Semposki, A. C. and Furnstahl, R. J. and Phillips, D. R.},
-     title       = {{SAMBA 1.1.0} SAndbox for Mixing using Bayesian Analysis},
-     number      = {Version 1.1.0},
-     year        = {2024},
+     title       = {{SAMBA 1.2.0} SAndbox for Mixing using Bayesian Analysis},
+     number      = {Version 1.2.0},
+     year        = {2025},
      url         = {https://github.com/asemposki/SAMBA}
    }
 ```
